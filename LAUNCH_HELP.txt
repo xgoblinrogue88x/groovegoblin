@@ -1,0 +1,32 @@
+GROOVE GOBLIN - STARTUP REPAIR
+
+1. Extract ALL files from this ZIP to a new writable folder.
+2. Double-click START_GROOVE_GOBLIN.bat in that extracted folder.
+3. Leave the console open while using Groove Goblin. Startup errors remain visible.
+   The first launch may install Mutagen using your internet connection.
+
+The launcher checks Python 3.10+, the ability to open a Tk window, and Mutagen.
+It tries py -3, py, python, python3, and common Python installation folders.
+It uses the SAME detected Python executable for installation and launch.
+VERIFY_PYTHON.bat checks prerequisites without installing packages or opening the app.
+
+If detection still fails:
+- Open Command Prompt and run: py --version
+- If you installed Python Install Manager without a runtime: py install default
+- If you know where Python is installed, drag its python.exe onto
+  START_GROOVE_GOBLIN.bat. Do not drag pythonw.exe.
+- Or run from Command Prompt:
+  START_GROOVE_GOBLIN.bat "C:\path\to\python.exe"
+- If Tcl/Tk or pip is missing, Modify/repair that Python installation and enable it.
+- If a company policy blocks PowerShell, do not change company policy. Run from
+  Command Prompt in the extracted folder using your actual Python path:
+  "C:\path\to\python.exe" -m pip install --user -r requirements.txt
+  "C:\path\to\python.exe" GrooveGoblin.pyw
+
+This repair changes only the launcher, diagnostic launcher, and startup help.
+It does not implement the larger v1.1 roadmap or change music editing behavior.
+The supplied screenshot is a design mockup; the current Tkinter UI differs.
+This is source code, not a standalone EXE. Windows launch is not yet verified.
+The existing five application tests passed on Linux with Python 3.12 and Mutagen.
+Try scans on a COPY of a small music folder before using Apply on important music.
+If launch still fails, send the text shown in the console. Do not send music files.
