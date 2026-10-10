@@ -2,3 +2,4 @@ Groove Goblin first-release application source is provided for the user's person
 Third-party dependency: Mutagen (GPLv2 or later), separately installed from PyPI.
 Album lookup source: MusicBrainz, community-maintained metadata.
 Logo and icon created specifically for Groove Goblin.
+Image dependency: Pillow, separately installed from PyPI; current package license expression is MIT-CMU.

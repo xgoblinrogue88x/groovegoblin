@@ -70,6 +70,7 @@ class Album:
     note: str=''
     mbid: str=''
     lookup_results: list=field(default_factory=list)
+    partial_selection: bool=False
 
     @property
     def file_count(self): return len(self.tracks)
@@ -124,12 +125,20 @@ def infer_album(folder,tracks):
         return album,''
     return album,album
 
-def scan_folders(roots,callback=None,cancel=None):
+def scan_folders(roots,callback=None,cancel=None,*,recursive=True):
     seen=set(); paths=[];errors=[]
     for root in roots:
         root=Path(root)
-        if not root.is_dir():errors.append(f'Not a directory: {root}');continue
-        for parent,dirs,files in os.walk(root):
+        if root.is_file():
+            if root.suffix.lower() not in EXTENSIONS:
+                errors.append(f'Unsupported music file: {root}');continue
+            k=str(root.resolve()).casefold()
+            if k not in seen:seen.add(k);paths.append(root)
+            continue
+        if not root.is_dir():errors.append(f'Not a directory or music file: {root}');continue
+        for parent,dirs,files in os.walk(root,onerror=lambda e:errors.append(str(e))):
+            if cancel and cancel.is_set():break
+            if not recursive:dirs[:]=[]
             dirs[:]=[d for d in dirs if not d.startswith('.') and d.lower() not in {'$recycle.bin','system volume information'}]
             for f in files:
                 p=Path(parent)/f
@@ -149,6 +158,12 @@ def scan_folders(roots,callback=None,cancel=None):
         year=majority(year4(t.year) for t in tracks)
         # If the release year in tags is from a remaster, online lookup should replace it.
         item=Album(uuid.uuid4().hex[:12],folder,tracks,artist,old,guess,year)
+        selected={str(Path(t.path).resolve()).casefold() for t in tracks}
+        try:
+            available={str(p.resolve()).casefold() for p in Path(folder).iterdir() if p.is_file() and p.suffix.lower() in EXTENSIONS}
+            item.partial_selection=bool(available-selected)
+        except OSError:
+            item.partial_selection=True
         if not artist:item.note='Artist could not be identified; enter it manually.'
         tracktitles=[t.title for t in sorted(tracks,key=lambda t:(t.number or 999,t.path))]
         hint=' '.join(str(Path(folder).resolve()).split(os.sep)[-3:])
@@ -179,6 +194,8 @@ def plan_actions(albums,options):
         if group_folders[a.folder.casefold()]>1:problems.append(f'{a.folder}: multiple album groups share a folder');continue
         if a.folder in nested:problems.append(f'{a.folder}: contains other album folders; move or select only leaf folders');continue
         target_folder=album_destination(a) if opts['folders'] else a.folder
+        if a.partial_selection and target_folder!=a.folder:
+            problems.append(f'{a.folder}: only some music files were selected; turn off Rename album folders or scan the full folder');continue
         if opts['folders'] and Path(target_folder).exists() and Path(target_folder).resolve()!=Path(a.folder).resolve():
             problems.append(f'{a.folder}: destination folder already exists: {target_folder}');continue
         if target_folder.casefold() in dest_map and dest_map[target_folder.casefold()]!=a.folder:

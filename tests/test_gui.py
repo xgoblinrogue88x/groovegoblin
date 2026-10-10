@@ -21,8 +21,12 @@ class LayoutTests(unittest.TestCase):
         self.app.update()
 
     def tearDown(self):
+        # Cancel root-owned callbacks through their owner; child widgets cancel
+        # their own redraw callbacks on destruction.
         for callback in self.app.tk.call('after', 'info'):
-            self.app.after_cancel(callback)
+            script, _ = self.app.tk.call('after', 'info', callback)
+            if script.split()[0] in (self.app._tclCommands or []):
+                self.app.after_cancel(callback)
         self.app.destroy()
 
     def test_workspace_and_footer_at_supported_sizes(self):
@@ -92,3 +96,33 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(a.var_album.get(), '')
         self.assertFalse(a.albums_tree.get_children())
         self.assertIn('disabled', a.btn_apply.state())
+
+    def test_table_checkbox_bulk_selection_problem_filter_and_result_pick(self):
+        from groove_core import Album
+        a=self.app
+        one=Album('one','/test/one',[],'One','Old','New','1990',approved=True)
+        two=Album('two','/test/two',[],'Two','Old','New','2000',approved=False)
+        a.matched=[one,two];a.album_map={x.uid:x for x in a.matched}
+        a.populate_albums();a.update()
+        a.albums_tree.body.event_generate('<Button-1>',x=15,y=16)
+        a.update()
+        self.assertFalse(one.enabled)
+        self.assertEqual(a.selected_id,'one')
+        a.toggle_all_albums();self.assertTrue(all(x.enabled for x in a.matched))
+        a.show_problems.set(True);a.populate_albums();a.update()
+        self.assertEqual(a.albums_tree.get_children(),('two',))
+        a.show_problems.set(False);a.populate_albums()
+        a.albums_tree.selection_set('two');a.update()
+        two.lookup_results=[{'title':'Chosen','artist':'Two','year':'1985','id':'mock','type':'Album','score':90}]
+        a.populate_results(two);a.update()
+        width=a.results_tree.body.winfo_width()
+        a.results_tree.body.event_generate('<Button-1>',x=width-30,y=33)
+        a.update()
+        self.assertTrue(two.approved);self.assertEqual(two.album,'Chosen')
+        self.assertEqual(two.year,'1985')
+
+    def test_add_files_uses_explicit_picker_paths(self):
+        a=self.app
+        with patch.object(self.module.filedialog, 'askopenfilenames', return_value=('one.mp3','two.flac','one.mp3')):
+            a.add_files()
+        self.assertEqual(a.roots,['one.mp3','two.flac'])

@@ -1,28 +1,26 @@
 # Groove Goblin
 
-Windows desktop music tagger and organizer. Python 3.10+, Tkinter and Mutagen.
+Windows desktop music tagger and organizer, using Python 3.10+, Tkinter, Mutagen
+and Pillow. The supplied design reference guides the layout and styling:
+large branded sidebar, icon toolbar, albums and preview together, and a compact
+right rail for options, cover artwork, album details and online results.
 
-This revision brings the existing Tkinter prototype closer to the supplied design:
-large goblin wordmark and navigation on the left, albums above a read-only preview
-in the center, and rename options, editable album details and MusicBrainz results
-on the right. It retains the existing music engine and apply/undo confirmations.
-It is not a pixel-perfect reproduction of the design image.
+![Running application with generated test music and mocked lookup results](docs/interface-linux.png)
 
-![Actual application running on a Linux virtual display](docs/interface-linux.png)
-
-The image above is the running application, not the original mockup. Windows
-fonts and controls may render differently.
+This screenshot shows the actual application on a Linux virtual display, using
+12 disposable test files, generated test covers and mocked MusicBrainz results.
+It is not a mockup or a screenshot of the user's music. Windows fonts and DPI
+rendering still need to be checked on Windows.
 
 ## Run on Windows
 
-Extract the entire project to a writable folder and double-click
-`START_GROOVE_GOBLIN.bat`. It detects a usable Python installation, tests Tkinter,
-installs Mutagen if necessary, and runs the app with that exact interpreter.
-Leave the console open. It preserves startup errors for troubleshooting.
-If detection fails, drag your installed `python.exe` onto the launcher.
-See `LAUNCH_HELP.txt` for more diagnostics.
+Extract the whole project into a new writable folder. Double-click
+`START_GROOVE_GOBLIN.bat`. The launcher finds an installed Python, checks whether
+it can open a Tk window, installs Mutagen and Pillow if needed, and runs the app
+with the same exact interpreter. Leave its console open for error messages.
 
-For a command-line launch, open Command Prompt in this folder:
+If Python detection fails, drag your installed `python.exe` onto the launcher.
+See `LAUNCH_HELP.txt` for diagnostics. In Command Prompt inside the app folder:
 
 ```bat
 "C:\path\to\python.exe" -m pip install --user -r requirements.txt
@@ -31,60 +29,82 @@ For a command-line launch, open Command Prompt in this folder:
 
 ## Workflow
 
-Add folders (subfolders are scanned), Start Scan, select an album, correct its
-artist/album/year or choose a MusicBrainz result, Save & Approve Match, inspect
-the preview, then explicitly Apply Selected Changes. Use Include / Skip to
-exclude an album. Preview filters show folder, tag or filename changes.
-Save Report exports a dry-run report; Undo Last Apply uses the saved journal.
+1. Add Folders or Add Files. Scan subfolders controls folder recursion.
+2. Start Scan. Local scanning and preview are read-only.
+3. Select an album to see its local artwork and editable artist, album and year.
+4. Search Online for MusicBrainz suggestions, then use a result's Select button,
+   or edit the fields and click Approve Edit. Suggestions require approval.
+5. Use row checkboxes to include or skip albums; the album header checkbox
+   changes the visible albums together. Show only problems filters the table.
+6. Inspect Folders, File Tags, File Names and Skipped preview tabs. Selected Only
+   narrows the preview to the album currently being inspected.
+7. Apply Selected Changes requires confirmation. Save Report exports the preview.
+   Undo Last Apply uses the saved undo journal; View Logs shows that journal.
 
-MusicBrainz searches send artist/album lookup text to MusicBrainz. They do not
-upload audio. Disable Search MusicBrainz after scan for offline/manual use.
+The settings page controls online search after scanning and provides batch
+online lookup. MusicBrainz searches send artist/album lookup text, never audio.
+Artwork is read from embedded FLAC/MP3 pictures or local cover/folder images,
+loaded in background workers. Visible online results can load public Cover Art Archive previews over HTTPS,
+using release IDs only. Artwork is held in memory; it is not written into music.
+Missing artwork or internet access leaves a disc placeholder.
 
-At smaller window sizes, scroll the workspace horizontally/vertically to reach
-all panels. The Apply, Undo and Report buttons remain outside the scroll area.
-A divider adjusts the album/preview split. Ctrl +/- adjusts text size, F11 toggles
-fullscreen and Esc exits fullscreen.
+## Music safety and current limits
 
-## Scope and limitations
+- FLAC and MP3 editing only. Other formats from the reference image are planned.
+- Album folder names use `Artist - Album Title (Year)`.
+- Track filename renaming defaults off and uses `01 - Song Title.ext`.
+- Add Files processes only selected tracks. If a selection omits other audio in
+  its folder, folder renaming is blocked; disable that option or scan the whole
+  folder. This prevents moving unselected music as part of a folder rename.
+- Grouping is always by music-containing directory. Mixed-album directories
+  still need separation; the grouping control is read-only.
+- Create artist folders and Move to new folders are disabled and marked planned.
+- The checked undo-journal option is always on. It records targeted metadata and
+  paths, not complete audio-file backups. Keep separate music backups.
+- Existing destinations are not merged or overwritten. Unapproved albums block
+  Apply until approved or excluded. Review MusicBrainz suggestions yourself.
+- This is Python source, not a compiled EXE. Test on a copy of a small music
+  folder before applying changes to important music.
 
-- FLAC and MP3 only. Other formats in the design image are not implemented.
-- Folder name: `Artist - Album Title (Year)`; filename renaming defaults off.
-- Scanning, lookup and preview are read-only. Apply requires confirmation.
-- Each directory containing music is treated as one album.
-- Matching may be incorrect: review and approve individual albums.
-- Undo is a targeted metadata/path journal, not a complete music backup.
-- Artwork thumbnails, Add Files, artist-folder creation, and other controls from
-  the reference image are not implemented in this revision.
-- This is source code, not a compiled EXE. Actual Windows GUI/DPI testing remains
-  necessary; do not treat Linux display checks as Windows certification.
+## Small screens and keyboard
 
-Try scans and apply/undo on a copy of a small music folder first.
+The workspace scrolls when the reference layout cannot fit. Apply, Undo and
+Report remain outside that scroll area. Tab moves between controls, Space
+activates checkboxes, arrow keys select table rows, and Enter opens the selected
+album or chooses the selected online result. Ctrl +/- adjusts table text; F11
+enters fullscreen and Esc exits it.
 
 ## Validation
 
-Requires Mutagen and ffmpeg (tests generate disposable FLAC/MP3 files).
+Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 
 ```bat
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-Eight tests passed under Python 3.12 on Linux with a virtual Tk display:
-five existing core tests plus GUI workflow and 800x600/1024x768/1920x1080 layout
-checks, plus launcher probes tested with legacy quote removal. The actual
-Windows PowerShell launch test is skipped on Linux; it still needs a Windows
-run. GUI tests skip when no display is available. No live online requests or
-real user music are used by these tests. Windows launcher and DPI are unverified.
+15 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
+existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
+GUI scanning/approval/filtering, row and bulk inclusion, result selection,
+800x600/1024x768/1920x1080 layouts, launcher quote removal, explicit-file scope,
+recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
+cover lookup/redirect checks.
+
+The real Windows PowerShell launcher test is skipped on Linux. Actual Windows
+launcher, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
+No live MusicBrainz requests or real user media are used in these tests.
 
 ## Source
 
-- `GrooveGoblin.pyw`: existing UI workflow/controller; captures scan settings on
-  the main thread before starting the worker.
-- `groove_layout.py`: reference-inspired layout and preview filters.
-- `groove_core.py`: existing scan, preview, tag edits, moves and undo engine.
-- `musicbrainz_client.py`: MusicBrainz lookup, timeouts and rate limiting.
+- `GrooveGoblin.pyw`: existing controller and background-task queue.
+- `groove_layout.py`: reference layout and preview display.
+- `groove_widgets.py`: small Tk canvas widgets, vector icons and virtual tables.
+- `groove_artwork.py`: background local and public cover-preview loading.
+- `groove_core.py`: scanning, preview, tag edits, moves and undo engine.
+- `musicbrainz_client.py`: MusicBrainz lookup and rate limiting.
 - `legacy_collections.py`: existing Van Halen collection mappings.
-- `Launch-GrooveGoblin.ps1`: exact-interpreter Windows startup/diagnostics.
+- `Launch-GrooveGoblin.ps1`: exact-interpreter Windows startup and diagnostics.
 - `assets/`: original branding.
 
+`GUI_Preview.png` is the original mockup; the image above is the running app.
 The handoff documents describe a broader roadmap, not completed features.
-Read `LICENSE_NOTES.txt` before any public redistribution.
+Read `LICENSE_NOTES.txt` before public redistribution.

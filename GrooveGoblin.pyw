@@ -271,8 +271,9 @@ class GrooveGoblin(tk.Tk):
         self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview()
         roots=list(self.roots)
         auto_lookup=self.auto_lookup.get()
+        recursive=self.scan_subfolders.get()
         def work():
-            albums,errors=scan_folders(roots,lambda s:self.queue.put(('status',s)),self.cancel)
+            albums,errors=scan_folders(roots,lambda s:self.queue.put(('status',s)),self.cancel,recursive=recursive)
             self.queue.put(('scan_done',albums,errors))
             if auto_lookup and not self.cancel.is_set():self.worker_match_albums(albums)
         self.run_background(work)

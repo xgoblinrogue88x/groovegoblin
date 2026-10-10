@@ -1,3 +1,6 @@
+UPDATED DESKTOP LAYOUT: See README.md for the current controls and limitations.
+The launcher now installs Mutagen and Pillow when needed.
+
 GROOVE GOBLIN 1.0 - Music Metadata Tagger & Batch Organizer
 ============================================================
 
@@ -5,8 +8,8 @@ WINDOWS QUICK START
 -------------------
 1. Extract the ENTIRE ZIP into a normal, writable folder (for example, Desktop\Groove Goblin).
 2. Double-click START_GROOVE_GOBLIN.bat. Do not run the program from inside the ZIP.
-3. This version requires Python 3.10+, Tkinter, and the free Mutagen package.
-   The launcher checks your actual runtime and installs Mutagen if missing.
+3. This version requires Python 3.10+, Tkinter, and the free Mutagen/Pillow packages.
+   The launcher checks your actual runtime and installs required packages if missing.
    If startup fails, read LAUNCH_HELP.txt and copy the visible console error.
 4. Click + Add folder to add your first artist or album root. Repeat for other roots.
 5. Click Analyze. The scan is READ-ONLY. Folders are scanned recursively.

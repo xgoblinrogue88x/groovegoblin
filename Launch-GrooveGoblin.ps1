@@ -62,10 +62,10 @@ try {
     & $runtime -c 'import tkinter; t=tkinter.Tk(); t.withdraw(); t.update(); t.destroy()'
     if ($LASTEXITCODE -ne 0) { throw 'Python could not create a Tk window. Modify/repair this Python installation and enable Tcl/Tk and IDLE.' }
     Write-Host 'Tk window check passed'
-    & $runtime -c 'import mutagen'
+    & $runtime -c 'import mutagen; import PIL'
     if ($LASTEXITCODE -ne 0) {
-        if ($CheckOnly) { throw 'Mutagen is missing. Run START_GROOVE_GOBLIN.bat to install the dependency.' }
-        Write-Host 'Installing the music-tagging dependency for this exact Python...'
+        if ($CheckOnly) { throw 'Mutagen or Pillow is missing. Run START_GROOVE_GOBLIN.bat to install the dependency.' }
+        Write-Host 'Installing the music-tagging and image dependencies for this exact Python...'
         & $runtime -m pip --version
         if ($LASTEXITCODE -ne 0) {
             & $runtime -m ensurepip --upgrade
@@ -77,8 +77,8 @@ try {
         $installArgs += @('-r', (Join-Path $PSScriptRoot 'requirements.txt'))
         & $runtime @installArgs
         if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. Check the error above and your internet connection.' }
-        & $runtime -c 'import mutagen'
-        if ($LASTEXITCODE -ne 0) { throw 'Mutagen still cannot be imported. Copy the errors above for support.' }
+        & $runtime -c 'import mutagen; import PIL'
+        if ($LASTEXITCODE -ne 0) { throw 'Required packages still cannot be imported. Copy the errors above for support.' }
     }
     if ($CheckOnly) { Write-Host 'Startup prerequisites passed.'; exit 0 }
     Write-Host 'Opening Groove Goblin. Keep this console open while using the app.'
