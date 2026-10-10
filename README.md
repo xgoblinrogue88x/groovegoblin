@@ -68,8 +68,12 @@ Missing artwork or internet access leaves a disc placeholder.
 
 ## Small screens and keyboard
 
-The workspace scrolls when the reference layout cannot fit. Apply, Undo and
-Report remain outside that scroll area. Tab moves between controls, Space
+The whole program fits the window without an outer scrollbar, down to the
+800×600 minimum window size. [See the compact view](docs/interface-compact-linux.png)
+(captured on Linux with generated test music). Resizing adjusts panel sizes, artwork and spacing;
+small windows use sidebar icons with hover labels and wrap the toolbar controls.
+Album, preview and search lists scroll internally when they contain more rows
+than fit. Apply, Undo and Report stay visible. Tab moves between controls, Space
 activates checkboxes, arrow keys select table rows, and Enter opens the selected
 album or chooses the selected online result. Ctrl +/- adjusts table text; F11
 enters fullscreen and Esc exits it.
@@ -85,7 +89,7 @@ Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 15 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
 existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
 GUI scanning/approval/filtering, row and bulk inclusion, result selection,
-800x600/1024x768/1920x1080 layouts, launcher quote removal, explicit-file scope,
+window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
 recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
 cover lookup/redirect checks.
 
@@ -97,6 +101,7 @@ No live MusicBrainz requests or real user media are used in these tests.
 
 - `GrooveGoblin.pyw`: existing controller and background-task queue.
 - `groove_layout.py`: reference layout and preview display.
+- `groove_responsive.py`: live window sizing and compact layouts.
 - `groove_widgets.py`: small Tk canvas widgets, vector icons and virtual tables.
 - `groove_artwork.py`: background local and public cover-preview loading.
 - `groove_core.py`: scanning, preview, tag edits, moves and undo engine.

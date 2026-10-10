@@ -121,7 +121,7 @@ class Button(tk.Canvas):
 
     def draw(self):
         self.delete('all')
-        w=max(self.winfo_width(),int(self.cget('width')));h=max(self.winfo_height(),int(self.cget('height')))
+        w=self.winfo_width() if self.winfo_width()>1 else int(self.cget('width'));h=self.winfo_height() if self.winfo_height()>1 else int(self.cget('height'))
         green_selected=self.green_active and self.active
         purple=(self.primary or self.active) and not green_selected
         if green_selected:
@@ -147,21 +147,24 @@ class Button(tk.Canvas):
         fg='#7d8998' if self.disabled else (BG if green_selected else FG)
         col=self.accent or ('#ffffff' if purple else '#b3bfd7')
         if self.disabled:col='#647181'
+        text=self.text
+        if getattr(self,'short_labels',False):text=text.replace('File Tags','Tags').replace('File Names','Names')
         if self.vertical:
-            if self.symbol:icon(self,self.symbol,w/2-12,10,24,col)
-            self.create_text(w/2,h-13,text=self.text,font=(self.font[0],9),fill=fg)
+            size=18 if h<50 else 24
+            if self.symbol:icon(self,self.symbol,w/2-size/2,5 if h<50 else 10,size,col)
+            self.create_text(w/2,h-(9 if h<50 else 13),text=text,font=self.font,fill=fg)
         else:
             x=50 if self.symbol else 14
             icon_x=14
             if self.primary:
                 import tkinter.font as font
-                text_width=font.Font(master=self,font=(*self.font,'bold')).measure(self.text)
+                text_width=font.Font(master=self,font=(*self.font,'bold')).measure(text)
                 group_width=text_width+(36 if self.symbol else 0)
                 icon_x=max(8,(w-group_width)/2)
                 x=icon_x+(36 if self.symbol else 0)
             if self.symbol:icon(self,self.symbol,icon_x,h/2-13,26 if self.subtitle else 22,col)
             if self.navigation:x=58
-            self.create_text(x,h/2-(9 if self.subtitle else 0),anchor='w',text=self.text,font=(*self.font, 'bold') if purple or self.subtitle else self.font,fill=fg)
+            self.create_text(x,h/2-(9 if self.subtitle else 0),anchor='w',text=text,font=(*self.font, 'bold') if purple or self.subtitle else self.font,fill=fg)
             if self.subtitle:self.create_text(w/2 if self.primary else x,h/2+13,anchor='center' if self.primary else 'w',text=self.subtitle,font=(self.font[0],8),fill=MUTED,width=w-16 if self.primary else w-x-9)
 
 
@@ -174,6 +177,7 @@ class Check(tk.Canvas):
         self.bind('<Button-1>',lambda e:self.invoke());self.bind('<space>',lambda e:self.invoke())
         self.bind('<FocusIn>',lambda e:self.draw());self.bind('<FocusOut>',lambda e:self.draw())
         self.bind('<Destroy>',self.cleanup)
+        self.bind('<Configure>',lambda e:self.draw())
         self.draw()
     def cleanup(self,event):
         if event.widget is self:
@@ -185,10 +189,11 @@ class Check(tk.Canvas):
         if self.command:self.command()
     def draw(self):
         self.delete('all');enabled=bool(self.variable.get())
+        h=self.winfo_height() if self.winfo_height()>1 else int(self.cget('height'));mid=h/2;size=16 if h>=25 else 14
         color=GREEN if enabled else '#132029'
-        rounded(self,3,4,20,21,2,fill=color,outline='#788c98' if not enabled else color,width=1)
-        if enabled:icon(self,'check',6,7,11,BG)
-        self.create_text(31,13,anchor='w',text=self.text,font=self.font,fill='#8291a2' if self.disabled and not enabled else FG)
+        rounded(self,3,mid-size/2,3+size,mid+size/2,2,fill=color,outline='#788c98' if not enabled else color,width=1)
+        if enabled:icon(self,'check',6,mid-5,10,BG)
+        self.create_text(27,mid,anchor='w',text=self.text,font=self.font,fill='#8291a2' if self.disabled and not enabled else FG)
         if self.focus_get() is self:self.create_rectangle(0,1,max(self.winfo_width(),int(self.cget('width')))-1,24,outline=GREEN)
 
 
@@ -201,9 +206,10 @@ class Radio(Check):
         if self.command:self.command()
     def draw(self):
         self.delete('all');selected=self.variable.get()==self.value
-        self.create_oval(4,5,20,21,fill=GREEN if selected else BG,outline=GREEN if selected else '#647887')
-        if selected:self.create_oval(9,10,15,16,fill=BG,outline=BG)
-        self.create_text(28,13,anchor='w',text=self.text,font=self.font,fill=FG)
+        h=self.winfo_height() if self.winfo_height()>1 else int(self.cget('height'));mid=h/2
+        self.create_oval(4,mid-8,20,mid+8,fill=GREEN if selected else BG,outline=GREEN if selected else '#647887')
+        if selected:self.create_oval(9,mid-3,15,mid+3,fill=BG,outline=BG)
+        self.create_text(28,mid,anchor='w',text=self.text,font=self.font,fill=FG)
 
 
 class Panel(tk.Canvas):
@@ -217,6 +223,7 @@ class Panel(tk.Canvas):
         self.delete('border')
         rounded(self,1,1,event.width-1,event.height-1,7,fill=PANEL,outline=LINE,tags='border')
         self.tag_lower('border')
+        self.coords(self.window,self.padding,self.padding)
         self.itemconfigure(self.window,width=max(1,event.width-self.padding*2),height=max(1,event.height-self.padding*2))
 
 
@@ -325,18 +332,18 @@ class Table(tk.Frame):
         if getattr(self,'_region',None)!=region:
             self._region=region;c.configure(scrollregion=region)
         if self.mode=='albums':
-            widths=[34,44,.17,.23,.27,60,55,92]
-            fixed=sum(v for v in widths if v>=1);remaining=max(200,w-fixed)
+            widths=[28,28,.17,.23,.27,42,34,66] if w<700 else [34,44,.17,.23,.27,60,55,92]
+            fixed=sum(v for v in widths if v>=1);remaining=max(1,w-fixed)
             widths=[v if v>=1 else v*remaining/.67 for v in widths]
-            labels=['','', 'Artist','Current Album Tag','Suggested Album','Year','Tracks','Status']
+            labels=['','', 'Artist','Current' if w<700 else 'Current Album Tag','Suggested' if w<700 else 'Suggested Album','Year','Trks' if w<700 else 'Tracks','Status']
         elif self.mode=='preview':
-            widths=[34,.39,.45,52,100];remaining=max(200,w-186)
+            widths=[28,.39,.45,32,70] if w<700 else [34,.39,.45,52,100];remaining=max(1,w-sum(v for v in widths if v>=1))
             widths=[v if v>=1 else v*remaining/.84 for v in widths]
             labels=['','Current Folder / File','New Folder / Tags','Files','Status']
         else:widths=[];labels=[]
         x=0
         for i,(width,label) in enumerate(zip(widths,labels)):
-            self.text(self.head,x+9,15,label,width,color='#c5d2e4')
+            self.text(self.head,x+5,13 if w<700 else 15,label,width,color='#c5d2e4')
             self.head.create_line(x+width,0,x+width,30,fill='#2b3641');x+=width
         if self.mode!='results':
             checked=bool(self.data) and all(row['values'][0]=='✓' if self.mode=='albums' else row.get('enabled',True) for row in self.data.values())
@@ -351,14 +358,14 @@ class Table(tk.Frame):
                 use,artist,old,new,year,tracks,status,confidence=values
                 self.checkbox(c,8,mid,use=='✓')
                 if self.cover_provider:
-                    photo=self.cover_provider(key,28)
-                    if photo:c.create_image(40,mid,anchor='w',image=photo)
-                    else:icon(c,'disc',43,mid-11,22,'#7c93a3')
-                x=78
+                    photo=self.cover_provider(key,22 if w<700 else 28)
+                    if photo:c.create_image(widths[0]+3,mid,anchor='w',image=photo)
+                    else:icon(c,'disc',widths[0]+3,mid-11,22,'#7c93a3')
+                x=sum(widths[:2])
                 ready=status=='READY';color=MUTED if 'disabled' in row['tags'] else FG
                 for i,value in enumerate((artist,old,new,year,tracks)):
-                    width=widths[i+2];self.text(c,x+9,mid,value,width,color=GREEN if i==2 and color!=MUTED else color,bold=i==2);x+=width
-                self.badge(c,x+12,mid,'Match' if ready else 'Verify',ready)
+                    width=widths[i+2];self.text(c,x+5,mid,value,width,color=GREEN if i==2 and color!=MUTED else color,bold=i==2);x+=width
+                self.badge(c,x+3,mid,'Match' if ready else 'Verify',ready,width=widths[-1]-6)
             elif self.mode=='preview':
                 action,old,new,detail=values
                 self.checkbox(c,8,mid,row.get('enabled',True))
@@ -367,15 +374,15 @@ class Table(tk.Frame):
                 self.text(c,x+35,mid,PathName(old),widths[1]-30)
                 x+=widths[1];self.text(c,x+9,mid,PathName(new) if action=='FOLDER' else new,widths[2],GREEN if action!='SKIP' else '#ffce53', bold=True)
                 x+=widths[2];self.text(c,x+9,mid,row.get('files','—'),widths[3]);x+=widths[3]
-                self.badge(c,x+7,mid,('Skipped' if not row.get('enabled',True) else 'Review') if action=='SKIP' else ('Will Rename' if action in ('FOLDER','FILENAME') else 'Will Tag'),action!='SKIP',width=83)
+                self.badge(c,x+7,mid,('Skipped' if not row.get('enabled',True) else 'Review') if action=='SKIP' else (('Rename' if w<700 else 'Will Rename') if action in ('FOLDER','FILENAME') else ('Tag' if w<700 else 'Will Tag')),action!='SKIP',width=widths[-1]-8)
             else:
                 album,artist,year,kind,score=values
-                photo=self.cover_provider(key,48) if self.cover_provider else None
+                photo=self.cover_provider(key,40 if self.rowheight<60 else 48) if self.cover_provider else None
                 if photo:c.create_image(7,mid,anchor='w',image=photo)
                 else:icon(c,'disc',10,mid-19,38,'#91a4b6')
-                self.text(c,58,y+17,album,max(50,w-150),GREEN if key==self.selected else FG,bold=True)
-                self.text(c,58,y+35,artist,max(50,w-150),MUTED)
-                self.text(c,58,y+52,f'{year or "Year unknown"} · {kind or "Release group"}',max(50,w-150),MUTED)
+                self.text(c,58,y+14,album,max(50,w-150),GREEN if key==self.selected else FG,bold=True)
+                self.text(c,58,y+31,artist,max(50,w-150),MUTED)
+                self.text(c,58,y+47,f'{year or "Year unknown"} · {kind or "Release group"}',max(50,w-150),MUTED)
                 bx=max(0,w-81);selected=key==self.selected
                 rounded(c,bx,mid-15,bx+70,mid+15,4,fill='#123a1c' if selected else '#172128',outline='#26bd48' if selected else '#485966')
                 c.create_text(bx+35,mid,text='Select',fill=GREEN if selected else FG,font=(self.font[0],9))

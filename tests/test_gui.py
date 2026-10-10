@@ -31,18 +31,21 @@ class LayoutTests(unittest.TestCase):
 
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app
-        for width, height in [(800, 600), (1024, 768), (1920, 1080)]:
+        self.assertFalse(hasattr(a, 'workspace_canvas'))
+        for width, height in [(800,600),(1024,768),(1213,813),(1536,1000),(1920,1080),(850,620),(800,600)]:
             a.geometry(f'{width}x{height}')
             a.update()
-            self.assertTrue(a.btn_apply.winfo_ismapped())
-            self.assertGreaterEqual(a.btn_apply.winfo_rootx(), a.winfo_rootx())
-            self.assertLessEqual(a.btn_apply.winfo_rooty() + a.btn_apply.winfo_height(), a.winfo_rooty() + height)
-            a.workspace_canvas.xview_moveto(1)
-            a.workspace_canvas.yview_moveto(1)
+            a._responsive.apply()
             a.update()
-            self.assertTrue(a.album_entry.winfo_ismapped())
-            self.assertTrue(a.preview_tree.winfo_ismapped())
-            self.assertTrue(a.results_tree.winfo_ismapped())
+            for widget in (a.btn_apply,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
+                self.assertTrue(widget.winfo_ismapped())
+                x=widget.winfo_rootx()-a.winfo_rootx();y=widget.winfo_rooty()-a.winfo_rooty()
+                if widget in a._responsive.buttons:
+                    self.assertGreaterEqual(widget.winfo_height(),int(widget.cget('height'))-2,(width,height,str(widget)))
+                self.assertGreaterEqual(x,0)
+                self.assertGreaterEqual(y,0)
+                self.assertLessEqual(x+widget.winfo_width(),width, (width,height,str(widget)))
+                self.assertLessEqual(y+widget.winfo_height(),height, (width,height,str(widget)))
         a.tabs.select(a.tab_history)
         a.update()
         self.assertTrue(a.log_box.winfo_ismapped())

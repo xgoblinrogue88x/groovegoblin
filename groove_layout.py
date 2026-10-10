@@ -82,32 +82,16 @@ def install_layout(cls):
                 footer_spacer.pack(side='left',fill='y',before=controls)
                 controls.pack_configure(side='right',anchor='e')
                 self.status_label.pack_configure(side='left',fill='x',expand=True)
-                self.status_label.configure(wraplength=max(200,event.width-controls.winfo_reqwidth()-285))
+                self.status_label.configure(wraplength=max(200,event.width-controls.winfo_reqwidth()-footer_spacer.winfo_reqwidth()-12))
         footer.bind('<Configure>',footer_resize)
         self._footer_controls=controls
 
         viewport=tk.Frame(self,bg=BG)
         viewport.pack(fill='both',expand=True)
-        self.workspace_canvas=tk.Canvas(viewport,bg=BG,highlightthickness=0)
-        self.workspace_y=ttk.Scrollbar(viewport,orient='vertical',command=self.workspace_canvas.yview)
-        self.workspace_x=ttk.Scrollbar(viewport,orient='horizontal',command=self.workspace_canvas.xview)
-        self.workspace_canvas.configure(yscrollcommand=self.workspace_y.set,xscrollcommand=self.workspace_x.set)
-        viewport.rowconfigure(0,weight=1);viewport.columnconfigure(0,weight=1)
-        self.workspace_canvas.grid(row=0,column=0,sticky='nsew')
-        desktop=tk.Frame(self.workspace_canvas,bg=BG)
+        desktop=tk.Frame(viewport,bg=BG)
+        desktop.pack(fill='both',expand=True)
+        desktop.grid_propagate(False)
         self._desktop=desktop
-        window=self.workspace_canvas.create_window(0,0,anchor='nw',window=desktop)
-        def resize(event):
-            # Use scrollbars only when the reference layout cannot fit.
-            need_x=event.width<1280;need_y=event.height<850
-            if need_x:self.workspace_x.grid(row=1,column=0,sticky='ew')
-            else:self.workspace_x.grid_remove();self.workspace_canvas.xview_moveto(0)
-            if need_y:self.workspace_y.grid(row=0,column=1,sticky='ns')
-            else:self.workspace_y.grid_remove();self.workspace_canvas.yview_moveto(0)
-            self.workspace_canvas.itemconfigure(window,width=max(1280,event.width),height=max(850,event.height))
-            self.workspace_canvas.configure(scrollregion=self.workspace_canvas.bbox('all'))
-        self.workspace_canvas.bind('<Configure>',resize)
-        desktop.bind('<Configure>',lambda e:self.workspace_canvas.configure(scrollregion=self.workspace_canvas.bbox('all')))
         desktop.rowconfigure(0,weight=1);desktop.columnconfigure(1,weight=1)
 
         # Full-height branded sidebar.
@@ -120,7 +104,8 @@ def install_layout(cls):
         with Image.open(Path(__file__).parent/'assets/groove_goblin_logo.png') as source:
             im=source.convert('RGBA');im.thumbnail((238,316),Image.Resampling.LANCZOS)
             self.logo=ImageTk.PhotoImage(im,master=self)
-        tk.Label(brand,image=self.logo,bg=PANEL).pack(pady=(0,8))
+        self._logo_label=tk.Label(brand,image=self.logo,bg=PANEL)
+        self._logo_label.pack(pady=(0,8))
         tk.Label(brand,text='MUSIC TAGGER & ORGANIZER',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(pady=(0,17))
         nav=tk.Frame(side,bg=PANEL)
         nav.grid(row=1,column=0,sticky='ew')
@@ -272,15 +257,22 @@ def install_layout(cls):
         self.btn_auto.pack(anchor='w',pady=(0,8))
         self.make_history()
         self.refresh_preview()
+        from groove_responsive import ResponsiveLayout
+        self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,formats=formats,doc=doc,
+            center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,
+            opts=opts,details=details,results=results,form=form,yearrow=yearrow,actions=actions,
+            footer=footer,footer_spacer=footer_spacer,controls=controls))
 
     def update_cover(self):
         if not hasattr(self,'cover_box'):return
         self.cover_box.delete('all')
-        self._cover_photo=self._art.request(self.selected_id,142) if self.selected_id else None
-        if self._cover_photo:self.cover_box.create_image(72,73,image=self._cover_photo)
+        self._cover_photo=self._art.request(self.selected_id,getattr(self,'cover_size',142)) if self.selected_id else None
+        width=int(self.cover_box.cget('width'));height=int(self.cover_box.cget('height'))
+        if self._cover_photo:self.cover_box.create_image(width/2,height/2,image=self._cover_photo)
         else:
-            icon(self.cover_box,'disc',42,31,60,'#5b7181')
-            self.cover_box.create_text(71,112,text='No local artwork',fill=MUTED,font=(self.ui_font,8))
+            size=min(60,width-12)
+            icon(self.cover_box,'disc',(width-size)/2,max(4,(height-size)/2-10),size,'#5b7181')
+            self.cover_box.create_text(width/2,height-15,text='No artwork' if width<100 else 'No local artwork',fill=MUTED,font=(self.ui_font,8))
 
     def show_editor(self):
         old_show(self)
@@ -411,6 +403,7 @@ def install_layout(cls):
         self.build_style()
         for table in (self.albums_tree,self.preview_tree,self.results_tree):
             table.font=(self.ui_font,self.font_size);table.rowheight=max(32,self.font_size*3) if table.mode!='results' else max(66,self.font_size*6);table.schedule()
+        self._responsive.apply()
         self.status.set('Table text size: '+str(self.font_size))
 
     cls.build_style=build_style;cls.build_ui=build_ui
