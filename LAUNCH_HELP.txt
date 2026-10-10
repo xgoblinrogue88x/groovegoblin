@@ -23,10 +23,11 @@ If detection still fails:
   "C:\path\to\python.exe" -m pip install --user -r requirements.txt
   "C:\path\to\python.exe" GrooveGoblin.pyw
 
-This repair changes only the launcher, diagnostic launcher, and startup help.
-It does not implement the larger v1.1 roadmap or change music editing behavior.
-The supplied screenshot is a design mockup; the current Tkinter UI differs.
+This revision includes a reference-inspired desktop layout and a launch repair.
+It retains the existing music editing engine; the larger v1.1 roadmap is incomplete.
+GUI_Preview.png is the original design mockup. docs/interface-linux.png shows
+the actual updated application running on Linux; Windows rendering may differ.
 This is source code, not a standalone EXE. Windows launch is not yet verified.
-The existing five application tests passed on Linux with Python 3.12 and Mutagen.
+Seven tests passed on Linux with Python 3.12, Mutagen and a virtual Tk display.
 Try scans on a COPY of a small music folder before using Apply on important music.
 If launch still fails, send the text shown in the console. Do not send music files.

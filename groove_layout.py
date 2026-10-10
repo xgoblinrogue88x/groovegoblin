@@ -149,7 +149,7 @@ def install_layout(cls):
         self.root_text.pack(fill='x', pady=(0, 8))
         panes = ttk.Panedwindow(center, orient='vertical')
         panes.pack(fill='both', expand=True)
-        self.after_idle(lambda: panes.sashpos(0, int(panes.winfo_height() * .58)))
+        panes.bind('<Configure>', lambda e: panes.sashpos(0, int(e.height * .58)))
         self.tab_albums = ttk.LabelFrame(panes, text='Albums Found', style='Card.TLabelframe', padding=9)
         self.tab_preview = ttk.LabelFrame(panes, text='Preview Changes — read-only', style='Card.TLabelframe', padding=9)
         panes.add(self.tab_albums, weight=3)

@@ -8,6 +8,11 @@ in the center, and rename options, editable album details and MusicBrainz result
 on the right. It retains the existing music engine and apply/undo confirmations.
 It is not a pixel-perfect reproduction of the design image.
 
+![Actual application running on a Linux virtual display](docs/interface-linux.png)
+
+The image above is the running application, not the original mockup. Windows
+fonts and controls may render differently.
+
 ## Run on Windows
 
 Extract the entire project to a writable folder and double-click
