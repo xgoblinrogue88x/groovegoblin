@@ -29,7 +29,9 @@ See `LAUNCH_HELP.txt` for diagnostics. In Command Prompt inside the app folder:
 
 ## Workflow
 
-1. Add Folders or Add Files. Scan subfolders controls folder recursion.
+1. Add Folders or Add Files, or drag one or more folders from Windows Explorer
+   onto the main window. Drops add folders without starting a scan; duplicates
+   are ignored. Click Start Scan when ready. Scan subfolders controls folder recursion.
 2. Start Scan. Local scanning and preview are read-only.
 3. Select an album to see its local artwork and editable artist, album and year.
 4. Search Online for MusicBrainz suggestions, then use a result's Select button,
@@ -86,21 +88,24 @@ Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-15 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
+18 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
 existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
 GUI scanning/approval/filtering, row and bulk inclusion, result selection,
 window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
 recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
-cover lookup/redirect checks.
+cover lookup/redirect checks, read-only folder drops, and native message
+dispatch/handle cleanup with a simulated Windows API.
 
 The real Windows PowerShell launcher test is skipped on Linux. Actual Windows
-launcher, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
+launcher, Explorer drag-and-drop, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
 No live MusicBrainz requests or real user media are used in these tests.
 
 ## Source
 
 - `GrooveGoblin.pyw`: existing controller and background-task queue.
 - `groove_layout.py`: reference layout and preview display.
+- `groove_drop.py`: read-only folder adding and drop feedback.
+- `groove_windows_drop.py`: native Windows folder drops; no extra dependency.
 - `groove_responsive.py`: live window sizing and compact layouts.
 - `groove_widgets.py`: small Tk canvas widgets, vector icons and virtual tables.
 - `groove_artwork.py`: background local and public cover-preview loading.

@@ -29,6 +29,36 @@ class LayoutTests(unittest.TestCase):
                 self.app.after_cancel(callback)
         self.app.destroy()
 
+    def test_folder_drop_multiple_unicode_duplicates_invalid_and_busy_is_read_only(self):
+        import tempfile
+        a = self.app
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = root / 'Björk {Live} album'
+            second = root / 'Other album'
+            first.mkdir();second.mkdir()
+            media = first / 'track.mp3'
+            media.write_bytes(b'disposable fixture - not real audio')
+            before = hashlib.sha256(media.read_bytes()).digest()
+            with patch.object(a,'scan') as scan, patch.object(a,'run_background') as worker:
+                self.assertTrue(a.drop_folder_paths([str(first),str(second),str(media),str(root/'missing')]))
+                self.assertEqual(a.roots,[str(first.resolve()),str(second.resolve())])
+                self.assertIn('Ignored 2',a.status.get())
+                self.assertTrue(a.drop_folder_paths([str(first),str(first / '..' / first.name)]))
+                self.assertEqual(len(a.roots),2)
+                self.assertIn('already',a.status.get())
+                self.assertFalse(a.drop_folder_paths([str(media)]))
+                a.worker_busy=True
+                self.assertFalse(a.drop_folder_paths([str(root)]))
+                self.assertEqual(len(a.roots),2)
+                a.worker_busy=False
+                scan.assert_not_called();worker.assert_not_called()
+            self.assertEqual(hashlib.sha256(media.read_bytes()).digest(),before)
+            self.assertFalse(a.matched)
+            with patch.object(self.module.filedialog,'askdirectory',return_value=str(first)):
+                a.add_folder()
+            self.assertEqual(len(a.roots),2)
+
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app
         self.assertFalse(hasattr(a, 'workspace_canvas'))

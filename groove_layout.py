@@ -147,7 +147,7 @@ def install_layout(cls):
         toolbar=tk.Frame(center,bg=BG)
         toolbar.grid(row=0,column=0,sticky='ew',pady=(5,10))
         toolbar.columnconfigure(3,weight=1)
-        Button(toolbar,'Add Folders',self.add_folder,width=174,height=66,symbol='music',accent='#b52bf4',subtitle='Select music folders to scan',font=self.button_font).grid(row=0,column=0,sticky='ew',padx=(0,12))
+        Button(toolbar,'Add Folders',self.add_folder,width=174,height=66,symbol='music',accent='#b52bf4',subtitle='Select or drop music folders',font=self.button_font).grid(row=0,column=0,sticky='ew',padx=(0,12))
         Button(toolbar,'Add Files',self.add_files,width=174,height=66,symbol='folder',accent='#ffd443',subtitle='Select specific music files',font=self.button_font).grid(row=0,column=1,sticky='ew',padx=(0,12))
         Button(toolbar,'Clear List',self.clear,width=158,height=66,symbol='cross',accent='#ff464e',subtitle='Remove all items',font=self.button_font).grid(row=0,column=2,sticky='ew',padx=(0,25))
         self.btn_scan=Button(toolbar,'Start Scan',self.scan,width=200,height=66,symbol='play',primary=True,subtitle='Analyze and find metadata',font=self.button_font)

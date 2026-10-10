@@ -5,6 +5,7 @@ import os, queue, sys, threading, traceback
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from groove_drop import FolderDropMixin
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
                          newest_journal, export_preview, backup_dir, year4)
 from musicbrainz_client import MusicBrainz
@@ -13,7 +14,7 @@ BASE=Path(__file__).resolve().parent
 BG='#0a1117'; PANEL='#131d27'; PANEL2='#1a2530'; INPUT='#202c38'; LINE='#31404e'
 FG='#e9f2f4'; MUTED='#9eb0bd'; GREEN='#71f28b'; PURPLE='#cc75ff'; ORANGE='#ffc777'
 
-class GrooveGoblin(tk.Tk):
+class GrooveGoblin(FolderDropMixin, tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Groove Goblin - Music Tagger & Organizer')
@@ -34,6 +35,8 @@ class GrooveGoblin(tk.Tk):
         self.count=tk.StringVar(value='0 albums · 0 files')
         self.font_size=10
         self.build_style();self.build_ui()
+        self.update_roots()
+        self.install_folder_drop()
         self.after(120,self.poll_queue)
         self.bind('<F11>',lambda e:self.toggle_fullscreen())
         self.bind('<Escape>',lambda e:self.attributes('-fullscreen',False))
@@ -256,16 +259,16 @@ class GrooveGoblin(tk.Tk):
         except tk.TclError:pass
 
     def add_folder(self):
+        if self.worker_busy:return
         p=filedialog.askdirectory(title='Choose a folder containing music (subfolders included)',mustexist=True)
         if not p:return
-        if p not in self.roots:self.roots.append(p)
-        self.update_roots()
+        self.add_folder_paths([p])
     def clear(self):
         if self.worker_busy:return
         self.roots=[];self.matched=[];self.album_map={};self.selected_id=None
         self.update_roots();self.populate_albums();self.refresh_preview()
     def update_roots(self):
-        self.root_text.configure(text=(f'{len(self.roots)} selected: '+', '.join(Path(x).name[:25] for x in self.roots[:2])+(' ...' if len(self.roots)>2 else '')) if self.roots else '(none selected)')
+        self.root_text.configure(text=(f'{len(self.roots)} selected: '+', '.join(Path(x).name[:25] for x in self.roots[:2])+(' ...' if len(self.roots)>2 else '')) if self.roots else 'Add or drop folders here.')
     def scan(self):
         if not self.roots:messagebox.showinfo('Add folders first','Choose one or more music folders to scan.');return
         self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview()
