@@ -147,8 +147,8 @@ def install_layout(cls):
         toolbar=tk.Frame(center,bg=BG)
         toolbar.grid(row=0,column=0,sticky='ew',pady=(5,10))
         toolbar.columnconfigure(3,weight=1)
-        Button(toolbar,'Add Folders',self.add_folder,width=174,height=66,symbol='music',accent='#b52bf4',subtitle='Select or drop music folders',font=self.button_font).grid(row=0,column=0,sticky='ew',padx=(0,12))
-        Button(toolbar,'Add Files',self.add_files,width=174,height=66,symbol='folder',accent='#ffd443',subtitle='Select specific music files',font=self.button_font).grid(row=0,column=1,sticky='ew',padx=(0,12))
+        Button(toolbar,'Add Folders',self.add_folder,width=174,height=66,symbol='folder',accent='#ffd443',subtitle='Select or drop music folders',font=self.button_font).grid(row=0,column=0,sticky='ew',padx=(0,12))
+        Button(toolbar,'Add Files',self.add_files,width=174,height=66,symbol='music',accent='#b52bf4',subtitle='Select specific music files',font=self.button_font).grid(row=0,column=1,sticky='ew',padx=(0,12))
         Button(toolbar,'Clear List',self.clear,width=158,height=66,symbol='cross',accent='#ff464e',subtitle='Remove all items',font=self.button_font).grid(row=0,column=2,sticky='ew',padx=(0,25))
         self.btn_scan=Button(toolbar,'Start Scan',self.scan,width=200,height=66,symbol='play',primary=True,subtitle='Analyze and find metadata',font=self.button_font)
         self.btn_scan.grid(row=0,column=3,sticky='ew')
@@ -206,7 +206,7 @@ def install_layout(cls):
         opts=tk.Frame(self.tab_editor,bg=BG)
         opts.grid(row=0,column=0,sticky='ew',pady=(8,9))
         tk.Label(opts,text='Rename Options',bg=BG,fg=GREEN,font=(self.ui_font,10,'bold')).pack(anchor='w',pady=(0,5))
-        self.filename_check=Check(opts,'Rename music files',self.opt_filenames,self.refresh_preview,width=320,font=(self.ui_font,9))
+        self.filename_check=Check(opts,'Rename files: ## - Artist - Title',self.opt_filenames,self.refresh_preview,width=320,font=(self.ui_font,9))
         self.filename_check.pack(anchor='w')
         Check(opts,'Rename album folders',self.opt_folders,self.refresh_preview,width=320,font=(self.ui_font,9)).pack(anchor='w')
         naming=tk.Frame(opts,bg=BG);naming.pack(fill='x',pady=2)
@@ -366,12 +366,13 @@ def install_layout(cls):
                     tags+=1;rows.append(('TAGS',track['old_path'],f'{action["album"]} ({action["year"]})',action['artist'],{**common,'files':1}))
                 if track['old_name']!=track['new_name']:
                     filenames+=1;rows.append(('FILENAME',track['old_path'],track['new_name'],action['artist'],{**common,'files':1}))
-        skipped=[a for a in self.matched if not a.enabled or a.status!='READY']
+        planned={action['album_uid'] for action in self.actions}
+        skipped=[a for a in self.matched if not a.enabled or a.uid not in planned]
         chosen={'Folders':'FOLDER','Tags':'TAGS','Filenames':'FILENAME'}.get(self.preview_filter.get())
         if self.preview_filter.get()=='Skipped':
             for album in skipped:
                 if self.preview_view.get()=='Selected' and album.uid!=self.selected_id:continue
-                self.preview_tree.insert('','end',values=('SKIP',album.folder,'Skipped' if not album.enabled else 'Awaiting approval',album.match_source),album_uid=album.uid,files=album.file_count,enabled=album.enabled)
+                self.preview_tree.insert('','end',values=('SKIP',album.folder,'Skipped' if not album.enabled else ('Awaiting approval' if album.status!='READY' else 'Review naming / metadata'),album.match_source),album_uid=album.uid,files=album.file_count,enabled=album.enabled)
         else:
             for kind,old,new,detail,extra in rows:
                 if chosen and kind!=chosen:continue

@@ -179,9 +179,13 @@ def scan_folders(roots,callback=None,cancel=None,*,recursive=True):
 def album_destination(album):
     return str(Path(album.folder).with_name(safe_name(f'{album.artist} - {album.album} ({year4(album.year)})')))
 
-def filename_destination(track):
-    prefix=f'{track.number:02d} - ' if track.number is not None else ''
-    return safe_name(prefix+track.title)+track.fmt
+def filename_destination(track,artist_fallback=''):
+    if track.number is None or track.number <= 0:
+        raise ValueError('missing or invalid track number; add a track-number tag before renaming files')
+    artist=track.artist.strip() or track.albumartist.strip() or artist_fallback.strip()
+    if not artist or not track.title.strip():
+        raise ValueError('missing artist or title; add those tags before renaming files')
+    return safe_name(f'{track.number:02d} - {artist} - {track.title.strip()}')+track.fmt
 
 def plan_actions(albums,options):
     opts={'tags':True,'folders':True,'filenames':False,**options}
@@ -202,14 +206,22 @@ def plan_actions(albums,options):
             problems.append(f'Duplicate folder destination: {target_folder}');continue
         dest_map[target_folder.casefold()]=a.folder
         tracks=[];names=set();bad=False
+        try:
+            occupied={p.name.casefold():p for p in Path(a.folder).iterdir()} if opts['filenames'] else {}
+        except OSError as error:
+            problems.append(f'{a.folder}: cannot read source folder: {error}');continue
         for t in a.tracks:
             old_name=Path(t.path).name
-            new_name=filename_destination(t) if opts['filenames'] else old_name
+            try:
+                new_name=filename_destination(t,a.artist) if opts['filenames'] else old_name
+            except ValueError as error:
+                problems.append(f'{t.path}: {error}');bad=True;break
             if new_name.casefold() in names:
                 problems.append(f'{a.folder}: duplicate output filename: {new_name}');bad=True;break
             names.add(new_name.casefold())
             newpath=Path(a.folder)/new_name
-            if opts['filenames'] and newpath.exists() and newpath.resolve()!=Path(t.path).resolve():
+            existing=occupied.get(new_name.casefold())
+            if opts['filenames'] and existing is not None and existing.resolve()!=Path(t.path).resolve():
                 # A destination may be another track's original filename; simultaneous rename is unsafe.
                 problems.append(f'{a.folder}: output filename already exists: {newpath}');bad=True;break
             needs_tags=opts['tags'] and (norm(t.album)!=norm(a.album) or year4(t.year)!=year4(a.year) or t.album!=a.album)
@@ -284,10 +296,18 @@ def preflight(actions):
         src=Path(a['folder']);dest=Path(a['dest_folder'])
         if not src.is_dir():problems.append('Source folder no longer exists: '+str(src))
         if dest!=src and dest.exists():problems.append('Destination folder now exists: '+str(dest))
+        try:
+            occupied={p.name.casefold():p for p in src.iterdir()} if src.is_dir() else {}
+        except OSError as error:
+            problems.append(f'Cannot read source folder: {src}: {error}');occupied={}
         for t in a['tracks']:
             p=Path(t['old_path'])
             if not p.is_file():problems.append('File missing: '+str(p))
             elif file_signature(p)!=t['signature']:problems.append('File changed since scan: '+str(p))
+            if t['new_name']!=t['old_name']:
+                existing=occupied.get(t['new_name'].casefold())
+                if existing is not None and existing.resolve()!=p.resolve():
+                    problems.append('Output filename now exists: '+str(existing))
     return problems
 
 def apply_actions(actions,app_base,options,callback=None):

@@ -60,7 +60,7 @@ class GrooveTests(unittest.TestCase):
   albums,_=scan_folders([self.root]);a=albums[0];a.album='Purple Era';a.year='1989';a.approved=True
   actions,problems=plan_actions(albums,{'tags':True,'folders':False,'filenames':True});self.assertFalse(problems)
   journal=apply_actions(actions,self.root/'program',{'tags':True,'folders':False,'filenames':True})
-  q=p.with_name('01 - Purple Song.mp3');self.assertTrue(q.exists());self.assertFalse(p.exists())
+  q=p.with_name('01 - Purple Person - Purple Song.mp3');self.assertTrue(q.exists());self.assertFalse(p.exists())
   self.assertFalse(undo_journal(journal));self.assertTrue(p.exists())
  def test_manual_search_mock(self):
   mb=MusicBrainz()

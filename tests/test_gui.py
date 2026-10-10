@@ -59,6 +59,29 @@ class LayoutTests(unittest.TestCase):
                 a.add_folder()
             self.assertEqual(len(a.roots),2)
 
+    def test_filename_checkbox_preview_and_missing_number_review(self):
+        from test_groove import GrooveTests
+        from groove_core import scan_folders
+        f=GrooveTests();f.setUp();self.addCleanup(f.tearDown)
+        path=f.add_mp3('Album','old.mp3','Jump',artist='Van Halen')
+        before=hashlib.sha256(path.read_bytes()).digest()
+        a=self.app
+        a.matched,errors=scan_folders([path.parent]);self.assertFalse(errors)
+        album=a.matched[0];album.approved=True
+        a.album_map={album.uid:album};a.opt_folders.set(False);a.opt_tags.set(False)
+        a.populate_albums();a.refresh_preview()
+        self.assertFalse(a.opt_filenames.get())
+        a.filename_check.invoke()
+        a.preview_tabs['Filenames'].invoke()
+        rows=a.preview_tree.get_children();self.assertEqual(len(rows),1)
+        self.assertEqual(a.preview_tree.item(rows[0],'values')[2],'01 - Van Halen - Jump.mp3')
+        self.assertEqual(hashlib.sha256(path.read_bytes()).digest(),before)
+        album.tracks[0].number=None
+        a.refresh_preview();a.preview_tabs['Skipped'].invoke()
+        self.assertEqual(len(a.preview_tree.get_children()),1)
+        self.assertIn('track number',a.problems[0])
+        self.assertIn('disabled',a.btn_apply.state())
+
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app
         self.assertFalse(hasattr(a, 'workspace_canvas'))

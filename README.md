@@ -54,7 +54,12 @@ Missing artwork or internet access leaves a disc placeholder.
 
 - FLAC and MP3 editing only. Other formats from the reference image are planned.
 - Album folder names use `Artist - Album Title (Year)`.
-- Track filename renaming defaults off and uses `01 - Song Title.ext`.
+- Track filename renaming defaults off and uses `## - Artist - Title`
+  (for example, `01 - Van Halen - Jump.mp3`). Turn on Rename files and open
+  the File Names preview before applying. Numbers come from track-number tags,
+  padded to at least two digits; extensions are preserved. Each track uses its
+  own artist, falling back to album artist or the approved album artist. Missing
+  track numbers block renaming for that album and appear under Skipped.
 - Add Files processes only selected tracks. If a selection omits other audio in
   its folder, folder renaming is blocked; disable that option or scan the whole
   folder. This prevents moving unselected music as part of a folder rename.
@@ -88,13 +93,16 @@ Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-18 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
+24 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
 existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
 GUI scanning/approval/filtering, row and bulk inclusion, result selection,
 window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
 recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
 cover lookup/redirect checks, read-only folder drops, and native message
-dispatch/handle cleanup with a simulated Windows API.
+dispatch/handle cleanup with a simulated Windows API. Filename checks cover
+FLAC/MP3 rename-and-undo with folder moves, byte preservation, artist fallbacks,
+missing track numbers, duplicate names, removed source folders and destinations
+created after preview.
 
 The real Windows PowerShell launcher test is skipped on Linux. Actual Windows
 launcher, Explorer drag-and-drop, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
