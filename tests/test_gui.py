@@ -52,7 +52,7 @@ class LayoutTests(unittest.TestCase):
                 self.assertFalse(a.drop_folder_paths([str(root)]))
                 self.assertEqual(len(a.roots),2)
                 a.worker_busy=False
-                scan.assert_not_called();worker.assert_not_called()
+                scan.assert_called_once();worker.assert_not_called()
             self.assertEqual(hashlib.sha256(media.read_bytes()).digest(),before)
             self.assertFalse(a.matched)
             with patch.object(self.module.filedialog,'askdirectory',return_value=str(first)):
@@ -82,7 +82,7 @@ class LayoutTests(unittest.TestCase):
         self.assertIn('track number',a.problems[0])
         self.assertIn('disabled',a.btn_apply.state())
 
-    def test_drop_files_and_folders_adds_only_supported_items_without_scanning(self):
+    def test_drop_files_and_folders_starts_one_scan_for_new_supported_items(self):
         import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);folder=root/'Album {Live}';folder.mkdir()
@@ -101,8 +101,28 @@ class LayoutTests(unittest.TestCase):
                 self.assertFalse(a.drop_paths([str(root)]))
                 self.assertEqual(len(a.roots),3)
                 a.worker_busy=False
-                scan.assert_not_called();worker.assert_not_called()
+                scan.assert_called_once();worker.assert_not_called()
             for p,data in before.items():self.assertEqual(p.read_bytes(),data)
+
+    def test_drop_auto_scan_uses_settings_and_keeps_music_unchanged(self):
+        from test_groove import GrooveTests
+        f=GrooveTests();f.setUp();self.addCleanup(f.tearDown)
+        included=f.add_mp3('Album','track.mp3','Song',artist='Artist',album='Album')
+        nested=f.add_mp3('Album/Nested','other.mp3','Other Song',artist='Artist',album='Other Album')
+        before={p:hashlib.sha256(p.read_bytes()).digest() for p in (included,nested)}
+        a=self.app;a.auto_lookup.set(False);a.scan_subfolders.set(False)
+        with patch.object(a.mb,'suggest') as lookup,patch.object(a,'apply') as apply:
+            self.assertTrue(a.drop_paths([str(included.parent)]))
+            self.assertTrue(a.worker_busy)
+            deadline=time.monotonic()+5
+            while a.worker_busy and time.monotonic()<deadline:
+                a.update();time.sleep(.02)
+            self.assertFalse(a.worker_busy)
+            self.assertEqual(len(a.matched),1)
+            self.assertEqual(a.matched[0].tracks[0].path,str(included))
+            lookup.assert_not_called();apply.assert_not_called()
+        for path,digest in before.items():
+            self.assertEqual(hashlib.sha256(path.read_bytes()).digest(),digest)
 
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app

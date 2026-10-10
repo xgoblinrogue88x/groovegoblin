@@ -66,9 +66,11 @@ class FolderDropMixin:
             self.status.set('Drop folders or FLAC/MP3 files here to add them.')
             return False
         noun='folder(s)' if folders_only else 'item(s)'
-        message = (f'Added {added} {noun}. Click Start Scan when ready.' if added
+        message = (f'Added {added} {noun}. Starting scan…' if added
                    else 'Those folders / files are already in the list.')
         if ignored:
             message += f' Ignored {ignored} item(s) that were unavailable or unsupported.'
         self.status.set(message)
+        if added:
+            self.scan()
         return True

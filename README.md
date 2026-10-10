@@ -30,8 +30,10 @@ See `LAUNCH_HELP.txt` for diagnostics. In Command Prompt inside the app folder:
 ## Workflow
 
 1. Add Folders or Add Files, or drag folders or FLAC/MP3 files from Windows Explorer
-   onto the main window. Drops add items without starting a scan; duplicates
-   are ignored. Click Start Scan when ready. Scan subfolders controls folder recursion.
+   onto the main window. A drop that adds new items automatically scans the selected list. Duplicate-only
+   and unsupported drops do not restart scanning; busy operations reject drops.
+   Scan subfolders controls folder recursion, and Search online after scan
+   controls MusicBrainz lookup. Add Folders / Add Files still wait for Start Scan.
 2. Start Scan. Local scanning and preview are read-only.
 3. Select an album to see its local artwork and editable artist, album and year.
 4. Search Online for MusicBrainz suggestions, then use a result's Select button,
@@ -93,7 +95,7 @@ Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-26 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
+27 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
 existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
 GUI scanning/approval/filtering, row and bulk inclusion, result selection,
 window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
@@ -101,18 +103,22 @@ recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
 cover lookup/redirect checks, read-only folder drops, and native message
 dispatch/handle cleanup with a simulated Windows API. Native callback checks
 verify that drops, failed drops and peeked messages never invoke Tk; the Tk timer
-processes queued paths later. Filename checks cover
+processes queued paths later. Drop scanning checks cover one scan per new batch,
+duplicate/unsupported/busy drops, recursion and lookup settings, and unchanged
+music bytes. Filename checks cover
 FLAC/MP3 rename-and-undo with folder moves, byte preservation, artist fallbacks,
 missing track numbers, duplicate names, removed source folders and destinations
 created after preview.
 
 The Windows PowerShell launcher and native Windows message-loop subprocess
 tests are skipped on Linux. The latter posts a real drop with temporary paths
-and checks that the Tk main loop survives and adds files/folders without scanning. Actual Windows
+and checks that the Tk main loop survives and adds files/folders and requests a scan from the Tk event loop. Actual Windows
 launcher, Explorer drag-and-drop, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
 The previous window-procedure-based drop implementation caused a fatal thread-state
 error on the user’s Python 3.15 and has been removed. Actual Windows execution
-of the replacement remains unverified in this Linux environment.
+of the native replacement remains unverified in this Linux environment; the
+user confirmed Explorer drops work on their Python 3.15 installation before
+the automatic-scan change.
 
 No live MusicBrainz requests or real user media are used in these tests.
 

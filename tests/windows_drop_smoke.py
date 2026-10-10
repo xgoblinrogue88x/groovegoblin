@@ -16,6 +16,8 @@ with tempfile.TemporaryDirectory() as temporary:
     media=Path(temporary)/'Song.MP3';media.write_bytes(b'read-only drop fixture')
     app=module.GrooveGoblin()
     failures=[]
+    scans=[]
+    app.scan=lambda:scans.append(list(app.roots))
     def send_drop():
         try:
             assert app._folder_drop is not None
@@ -44,6 +46,7 @@ with tempfile.TemporaryDirectory() as temporary:
         try:
             assert app.roots==[str(folder.resolve()),str(media.resolve())],app.roots
             assert media.read_bytes()==b'read-only drop fixture'
+            assert scans==[app.roots],scans
             assert not app.worker_busy
             assert not app.matched
         except Exception as error:
