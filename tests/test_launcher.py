@@ -20,7 +20,9 @@ class LauncherTests(unittest.TestCase):
             with self.subTest(probe=probe):
                 result = subprocess.run([sys.executable, '-c', probe.replace('"', '')],
                                         capture_output=True, text=True, timeout=15)
-                self.assertEqual(result.returncode, 0, result.stderr)
+                # The virtual-environment probe intentionally returns 1 in a venv.
+                expected = int(sys.prefix != sys.base_prefix) if 'sys.prefix == sys.base_prefix' in probe else 0
+                self.assertEqual(result.returncode, expected, result.stderr)
 
     @unittest.skipUnless(os.name == 'nt' and shutil.which('powershell.exe'),
                          'Windows PowerShell is required for the native launch check')
