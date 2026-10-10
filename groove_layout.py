@@ -305,9 +305,7 @@ def install_layout(cls):
     def add_files(self):
         if self.worker_busy:return
         files=filedialog.askopenfilenames(title='Select music files',filetypes=[('Supported music','*.flac *.mp3'),('FLAC','*.flac'),('MP3','*.mp3')])
-        for path in files:
-            if path not in self.roots:self.roots.append(path)
-        self.update_roots()
+        self.add_paths(files)
 
     def populate_albums(self):
         if not hasattr(self,'albums_tree'):return

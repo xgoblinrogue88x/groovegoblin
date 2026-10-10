@@ -29,8 +29,8 @@ See `LAUNCH_HELP.txt` for diagnostics. In Command Prompt inside the app folder:
 
 ## Workflow
 
-1. Add Folders or Add Files, or drag one or more folders from Windows Explorer
-   onto the main window. Drops add folders without starting a scan; duplicates
+1. Add Folders or Add Files, or drag folders or FLAC/MP3 files from Windows Explorer
+   onto the main window. Drops add items without starting a scan; duplicates
    are ignored. Click Start Scan when ready. Scan subfolders controls folder recursion.
 2. Start Scan. Local scanning and preview are read-only.
 3. Select an album to see its local artwork and editable artist, album and year.
@@ -93,19 +93,27 @@ Install requirements and have ffmpeg on PATH; tests generate disposable audio:
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-24 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
+26 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
 existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
 GUI scanning/approval/filtering, row and bulk inclusion, result selection,
 window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
 recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
 cover lookup/redirect checks, read-only folder drops, and native message
-dispatch/handle cleanup with a simulated Windows API. Filename checks cover
+dispatch/handle cleanup with a simulated Windows API. Native callback checks
+verify that drops, failed drops and peeked messages never invoke Tk; the Tk timer
+processes queued paths later. Filename checks cover
 FLAC/MP3 rename-and-undo with folder moves, byte preservation, artist fallbacks,
 missing track numbers, duplicate names, removed source folders and destinations
 created after preview.
 
-The real Windows PowerShell launcher test is skipped on Linux. Actual Windows
+The Windows PowerShell launcher and native Windows message-loop subprocess
+tests are skipped on Linux. The latter posts a real drop with temporary paths
+and checks that the Tk main loop survives and adds files/folders without scanning. Actual Windows
 launcher, Explorer drag-and-drop, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
+The previous window-procedure-based drop implementation caused a fatal thread-state
+error on the user’s Python 3.15 and has been removed. Actual Windows execution
+of the replacement remains unverified in this Linux environment.
+
 No live MusicBrainz requests or real user media are used in these tests.
 
 ## Source
@@ -113,7 +121,8 @@ No live MusicBrainz requests or real user media are used in these tests.
 - `GrooveGoblin.pyw`: existing controller and background-task queue.
 - `groove_layout.py`: reference layout and preview display.
 - `groove_drop.py`: read-only folder adding and drop feedback.
-- `groove_windows_drop.py`: native Windows folder drops; no extra dependency.
+- `groove_windows_drop.py`: queued native Windows drops; no window-procedure replacement
+  or Tk calls inside native callbacks, and no extra dependency.
 - `groove_responsive.py`: live window sizing and compact layouts.
 - `groove_widgets.py`: small Tk canvas widgets, vector icons and virtual tables.
 - `groove_artwork.py`: background local and public cover-preview loading.

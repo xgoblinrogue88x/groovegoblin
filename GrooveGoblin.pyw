@@ -268,7 +268,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.roots=[];self.matched=[];self.album_map={};self.selected_id=None
         self.update_roots();self.populate_albums();self.refresh_preview()
     def update_roots(self):
-        self.root_text.configure(text=(f'{len(self.roots)} selected: '+', '.join(Path(x).name[:25] for x in self.roots[:2])+(' ...' if len(self.roots)>2 else '')) if self.roots else 'Add or drop folders here.')
+        self.root_text.configure(text=(f'{len(self.roots)} selected: '+', '.join(Path(x).name[:25] for x in self.roots[:2])+(' ...' if len(self.roots)>2 else '')) if self.roots else 'Add or drop folders / files here.')
     def scan(self):
         if not self.roots:messagebox.showinfo('Add folders first','Choose one or more music folders to scan.');return
         self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview()

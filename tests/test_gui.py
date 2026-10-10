@@ -82,6 +82,28 @@ class LayoutTests(unittest.TestCase):
         self.assertIn('track number',a.problems[0])
         self.assertIn('disabled',a.btn_apply.state())
 
+    def test_drop_files_and_folders_adds_only_supported_items_without_scanning(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);folder=root/'Album {Live}';folder.mkdir()
+            mp=root/'Björk - Song.MP3';mp.write_bytes(b'disposable test bytes')
+            fl=root/'Other song.flac';fl.write_bytes(b'disposable test bytes')
+            unsupported=root/'Notes.txt';unsupported.write_text('leave this alone')
+            before={p:p.read_bytes() for p in (mp,fl,unsupported)}
+            a=self.app
+            with patch.object(a,'scan') as scan,patch.object(a,'run_background') as worker:
+                self.assertTrue(a.drop_paths([str(mp),str(folder),str(fl),str(unsupported)]))
+                self.assertEqual(a.roots,[str(mp.resolve()),str(folder.resolve()),str(fl.resolve())])
+                self.assertIn('Ignored 1',a.status.get())
+                self.assertTrue(a.drop_paths([str(mp),str(folder)]))
+                self.assertEqual(len(a.roots),3)
+                a.worker_busy=True
+                self.assertFalse(a.drop_paths([str(root)]))
+                self.assertEqual(len(a.roots),3)
+                a.worker_busy=False
+                scan.assert_not_called();worker.assert_not_called()
+            for p,data in before.items():self.assertEqual(p.read_bytes(),data)
+
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app
         self.assertFalse(hasattr(a, 'workspace_canvas'))
@@ -179,6 +201,11 @@ class LayoutTests(unittest.TestCase):
 
     def test_add_files_uses_explicit_picker_paths(self):
         a=self.app
-        with patch.object(self.module.filedialog, 'askopenfilenames', return_value=('one.mp3','two.flac','one.mp3')):
-            a.add_files()
-        self.assertEqual(a.roots,['one.mp3','two.flac'])
+        import tempfile
+        with tempfile.TemporaryDirectory() as temporary:
+            first=Path(temporary)/'one.mp3';second=Path(temporary)/'two.flac'
+            first.write_bytes(b'first fixture');second.write_bytes(b'second fixture')
+            paths=(str(first),str(second),str(first))
+            with patch.object(self.module.filedialog,'askopenfilenames',return_value=paths):
+                a.add_files()
+            self.assertEqual(a.roots,[str(first.resolve()),str(second.resolve())])
