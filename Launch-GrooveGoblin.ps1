@@ -57,9 +57,12 @@ try {
     }
     Write-Host "Using Python: $runtime"
     & $runtime --version
-    & $runtime -c 'import tkinter; t=tkinter.Tk(); t.withdraw(); t.update(); t.destroy(); print("Tk window check passed")'
+    # Windows PowerShell 5.1 strips embedded double quotes in native arguments.
+    # Keep Python probes free of string literals; print status in PowerShell.
+    & $runtime -c 'import tkinter; t=tkinter.Tk(); t.withdraw(); t.update(); t.destroy()'
     if ($LASTEXITCODE -ne 0) { throw 'Python could not create a Tk window. Modify/repair this Python installation and enable Tcl/Tk and IDLE.' }
-    & $runtime -c 'import mutagen; print("Mutagen import passed")'
+    Write-Host 'Tk window check passed'
+    & $runtime -c 'import mutagen'
     if ($LASTEXITCODE -ne 0) {
         if ($CheckOnly) { throw 'Mutagen is missing. Run START_GROOVE_GOBLIN.bat to install the dependency.' }
         Write-Host 'Installing the music-tagging dependency for this exact Python...'

@@ -68,9 +68,11 @@ Requires Mutagen and ffmpeg (tests generate disposable FLAC/MP3 files).
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-Seven tests passed under Python 3.12 on Linux with a virtual Tk display:
+Eight tests passed under Python 3.12 on Linux with a virtual Tk display:
 five existing core tests plus GUI workflow and 800x600/1024x768/1920x1080 layout
-checks. GUI tests skip when no display is available. No live online requests or
+checks, plus launcher probes tested with legacy quote removal. The actual
+Windows PowerShell launch test is skipped on Linux; it still needs a Windows
+run. GUI tests skip when no display is available. No live online requests or
 real user music are used by these tests. Windows launcher and DPI are unverified.
 
 ## Source
