@@ -232,6 +232,10 @@ class LayoutTests(unittest.TestCase):
         self.module = importlib.util.module_from_spec(spec)
         loader.exec_module(self.module)
         self.app = self.module.GrooveGoblin()
+        # Tk on Windows defaults to the CI desktop's maximum track size.
+        # Permit the requested client sizes even on a smaller CI display;
+        # these tests measure layout coordinates rather than screenshots.
+        self.app.maxsize(4096,2160)
         self.app.update()
 
     def tearDown(self):
