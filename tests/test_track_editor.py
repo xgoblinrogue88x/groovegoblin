@@ -49,6 +49,9 @@ class TrackEditorTests(unittest.TestCase):
         from test_groove import GrooveTests
         self.gui=LayoutTests();self.gui.setUp()
         self.app=self.gui.app;self.editor=self.app.track_editor
+        # CI deliberately uses SDL's dummy output. Production must continue
+        # rejecting that silent driver; opt in only on this test player.
+        self.editor.player.allow_test_output=True
         self.f=GrooveTests();self.f.setUp();self.addCleanup(self.f.tearDown);self.addCleanup(self.gui.tearDown)
         self.paths=[self.f.add_mp3('Album','first.mp3','First'),self.f.add_flac('Album','second.flac','Second')]
         self.editor.storage_base=self.f.root/'program'
@@ -206,7 +209,7 @@ class TrackEditorTests(unittest.TestCase):
         album=a.matched[0];album.album='Corrected Album';album.year='2001';album.approved=True
         a.album_map={album.uid:album};a.opt_folders.set(False);a.opt_filenames.set(False)
         e.pending[path]={'title':'Still staged'}
-        with patch.object(self.gui.module,'BASE',e.storage_base),patch('tkinter.messagebox.askyesno',return_value=True),patch('tkinter.messagebox.showinfo'):
+        with patch.object(self.gui.module,'DATA',e.storage_base),patch('tkinter.messagebox.askyesno',return_value=True),patch('tkinter.messagebox.showinfo'):
             a.apply();self.wait()
             self.assertEqual(e.records[path]['album'],'Corrected Album')
             self.assertEqual(e.records[path]['signature'],read_track(path)['signature'])
@@ -222,7 +225,7 @@ class TrackEditorTests(unittest.TestCase):
         album=a.matched[0];album.album='Organized';album.year='2001';album.approved=True
         a.album_map={album.uid:album};a.opt_filenames.set(True);a.opt_tags.set(False)
         a.roots=[str(self.paths[0].parent)];e.pending[old]={'title':'Staged title'}
-        with patch.object(self.gui.module,'BASE',e.storage_base),patch('tkinter.messagebox.askyesno',return_value=True),patch('tkinter.messagebox.showinfo'):
+        with patch.object(self.gui.module,'DATA',e.storage_base),patch('tkinter.messagebox.askyesno',return_value=True),patch('tkinter.messagebox.showinfo'):
             a.apply();self.wait()
             moved=[p for p in e.records if Path(p).suffix=='.mp3'][0]
             self.assertNotEqual(old,moved);self.assertTrue(Path(moved).is_file())

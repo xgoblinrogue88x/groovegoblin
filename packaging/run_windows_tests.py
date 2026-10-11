@@ -15,7 +15,7 @@ def main():
                      'faulthandler.dump_traceback_later(120); '
                      'unittest.main(module=None)')
             process = subprocess.Popen([sys.executable, '-u', '-c', probe,
-                'discover', '-s', 'tests', '-p', module.name, '-v'], stdout=stream,
+                'discover', '-s', 'tests', '-p', module.name, '-v', '-f'], stdout=stream,
                 stderr=subprocess.STDOUT, text=True)
             try:
                 code = process.wait(timeout=180)

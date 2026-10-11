@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import traceback
 import urllib.request
 import zipfile
 
@@ -140,7 +141,8 @@ def main():
     report = ROOT / 'build/frozen-smoke.json'
     result = subprocess.run([str(app / 'GrooveGoblin.exe'), '--self-test', str(report)], timeout=90)
     if result.returncode or not report.is_file() or not json.loads(report.read_text())['ok']:
-        raise RuntimeError('Frozen application smoke test failed; no installer published.')
+        detail = report.read_text() if report.is_file() else 'No startup report was produced.'
+        raise RuntimeError('Frozen application smoke test failed; no installer published.\n' + detail)
     # Never include test-generated undo/data in the portable ZIP.
     shutil.rmtree(app / 'Data', ignore_errors=True)
     shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-1.3.3-Windows-x64-Portable'), 'zip',
@@ -148,4 +150,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception:
+        detail=traceback.format_exc()[-8000:]
+        print('::error::'+detail.replace('%','%25').replace('\r','%0D').replace('\n','%0A'),flush=True)
+        raise
