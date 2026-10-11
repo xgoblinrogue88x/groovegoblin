@@ -166,5 +166,5 @@ class ResponsiveLayout:
         for button in w['controls'].winfo_children():
             button.configure(height=40 if compact else (44 if medium else 50))
         w['footer_spacer'].configure(width=sidebar_width+12)
-        a.status_label.configure(height=1 if a._active_page=='tracks' else (2 if compact else 1))
+        a.status_label.configure(height=1 if a._active_page in ('tracks','lookup') else (2 if compact else 1))
         a.preview_errors.configure(height=1)

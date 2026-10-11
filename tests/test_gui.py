@@ -135,6 +135,96 @@ class LayoutTests(unittest.TestCase):
             listing.event_generate('<TouchpadScroll>',delta=(-height*5)&0xffff);a.update()
             self.assertAlmostEqual(listing.yview()[0],1/80,places=5)
 
+    def lookup_fixture(self,count=3):
+        from test_groove import GrooveTests
+        from groove_core import scan_folders
+        f=GrooveTests();f.setUp();self.addCleanup(f.tearDown)
+        paths=[f.add_mp3(f'Lookup/Album {i}','song.mp3',f'Song {i}',artist='Test Artist',album=f'Album {i}',year='2000') for i in range(count)]
+        a=self.app;a.matched,_=scan_folders([f.root/'Lookup']);a.album_map={album.uid:album for album in a.matched}
+        a.populate_albums();a.refresh_preview();a.update()
+        return paths
+
+    def wait_lookup(self):
+        deadline=time.monotonic()+5
+        while self.app.worker_busy and time.monotonic()<deadline:self.app.update();time.sleep(.01)
+        self.app.update();self.assertFalse(self.app.worker_busy)
+
+    def test_verify_popup_search_all_including_approved_and_bulk_approve_without_writes(self):
+        from groove_widgets import Button
+        paths=self.lookup_fixture(4);a=self.app
+        before={p:hashlib.sha256(p.read_bytes()).digest() for p in paths}
+        a.matched[0].approved=True
+        for album in a.matched[1:]:album.approved=False
+        a.matched[2].year='';a.matched[3].enabled=False
+        a.btn_verify.invoke();a.update();dialog=a.verify_dialog
+        buttons={child.text:child for child in dialog.winfo_children() if isinstance(child,Button)}
+        self.assertEqual(set(buttons),{'Search MusicBrainz','Approve Current Suggestions'})
+        with patch.object(a.mb,'suggest',return_value=(None,[])) as suggest:
+            buttons['Search MusicBrainz'].invoke();self.wait_lookup()
+            self.assertEqual(suggest.call_count,4)
+        self.assertFalse(a.matched[1].approved)
+        a.btn_verify.invoke();a.update()
+        buttons={child.text:child for child in a.verify_dialog.winfo_children() if isinstance(child,Button)}
+        with patch.object(a,'apply') as apply:
+            buttons['Approve Current Suggestions'].invoke();a.update();apply.assert_not_called()
+        self.assertTrue(a.matched[1].approved);self.assertFalse(a.matched[2].approved);self.assertFalse(a.matched[3].approved)
+        self.assertIn('Bulk approved',a.matched[1].match_source)
+        self.assertTrue(a.actions)
+        self.assertEqual({p:hashlib.sha256(p.read_bytes()).digest() for p in paths},before)
+        a.worker_busy=True
+        with patch.object(a.mb,'suggest') as suggest:
+            a.approve_all();a.verify_all();suggest.assert_not_called()
+        a.worker_busy=False
+
+    def test_album_lookup_browse_empty_error_and_loaded_target_choose_are_read_only(self):
+        a=self.app;a.nav_buttons['lookup'].invoke();a.update();page=a.lookup_page
+        self.assertEqual(a._active_page,'lookup');self.assertTrue(page.winfo_ismapped());self.assertFalse(a.dashboard.winfo_ismapped())
+        page.artist.set('Test Artist');page.title.set('Album')
+        hit={'title':'Chosen Album','artist':'Test Artist','year':'1998','type':'Album','score':99,'id':'mock'}
+        with patch.object(a.mb,'search_albums',return_value=[hit]) as search:
+            page.search_button.invoke();self.wait_lookup();search.assert_called_once_with('Test Artist','Album',limit=35)
+        self.assertEqual(page.hits,[hit]);self.assertTrue(page.choose_button.disabled)
+        with patch.object(a.mb,'search_albums',return_value=[]):page.search();self.wait_lookup()
+        self.assertIn('No matches',page.info.get())
+        with patch.object(a.mb,'search_albums',side_effect=OSError('Test connection unavailable')),patch.object(self.module.messagebox,'showerror'):
+            page.search();self.wait_lookup()
+        self.assertIn('Search failed',page.info.get());self.assertFalse(page.search_button.disabled)
+        import threading
+        entered=threading.Event();release=threading.Event()
+        def delayed_search(*args,**kwargs):
+            entered.set();release.wait(2);return [hit]
+        with patch.object(a.mb,'search_albums',side_effect=delayed_search):
+            page.search();self.assertTrue(entered.wait(1))
+            self.assertFalse(page.cancel_button.disabled)
+            page.cancel_button.invoke();release.set();self.wait_lookup()
+        self.assertIn('canceled',page.info.get());self.assertFalse(page.hits)
+        paths=self.lookup_fixture(1);before={p:p.read_bytes() for p in paths};album=a.matched[0];album.approved=False
+        page.refresh_albums();page.target.current(1);page.target.event_generate('<<ComboboxSelected>>');a.update()
+        self.assertEqual(page.uid,album.uid)
+        with patch.object(a.mb,'search_albums',return_value=[hit]):page.search_button.invoke();self.wait_lookup()
+        page.results.selection_set('0');page.choose_button.invoke();a.update()
+        self.assertTrue(album.approved);self.assertEqual(album.album,'Chosen Album');self.assertEqual(album.year,'1998')
+        self.assertTrue(a.actions);self.assertEqual({p:p.read_bytes() for p in paths},before)
+        a.tabs.select(a.tab_albums);a.update();self.assertTrue(a.dashboard.winfo_ismapped())
+        self.assertFalse(page.winfo_ismapped())
+
+    def test_lookup_resize_stale_results_and_verify_failures_are_actionable(self):
+        self.lookup_fixture(2);a=self.app;page=a.lookup_page
+        a.selected_id=a.matched[0].uid;a.go_editor();a.update();old=page.uid
+        page.select_target(a.matched[1].uid);page.receive(old,[{'title':'Wrong album'}]);self.assertFalse(page.hits)
+        for width,height in [(800,600),(1024,768),(1920,1080),(850,620)]:
+            a.geometry(f'{width}x{height}');a.update();a._responsive.apply();page.resize();a.update()
+            for widget in (page.target,*page.entries,page.search_button,page.cancel_button,page.results,page.choose_button,page.scan_button,a.track_editor.player_panel):
+                self.assertTrue(widget.winfo_ismapped())
+                x=widget.winfo_rootx()-a.winfo_rootx();y=widget.winfo_rooty()-a.winfo_rooty()
+                self.assertGreaterEqual(x,0);self.assertGreaterEqual(y,0)
+                self.assertLessEqual(x+widget.winfo_width(),width);self.assertLessEqual(y+widget.winfo_height(),height)
+            for name,button in a.nav_buttons.items():self.assertEqual(button.text,a._responsive.nav_text[name])
+        with patch.object(a.mb,'suggest',side_effect=OSError('Test offline')):
+            a.lookup_all();self.wait_lookup()
+        self.assertIn('2 failed',a.status.get());self.assertIn('View Logs',a.status.get())
+        self.assertFalse(a.worker_busy);self.assertFalse(a.btn_verify.disabled)
+
     def setUp(self):
         loader = importlib.machinery.SourceFileLoader('groove_gui', str(ROOT / 'GrooveGoblin.pyw'))
         spec = importlib.util.spec_from_loader(loader.name, loader)
@@ -256,7 +346,7 @@ class LayoutTests(unittest.TestCase):
             a.update()
             a._responsive.apply()
             a.update()
-            for widget in (a.btn_apply,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,a._responsive.version,a.track_editor.player_cover,a.track_editor.now,a.track_editor.time,a.track_editor.progress,a.track_editor.volume,a.track_editor.audio_output_button,*a.track_editor.play_buttons,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
+            for widget in (a.btn_apply,a.btn_verify,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,a._responsive.version,a.track_editor.player_cover,a.track_editor.now,a.track_editor.time,a.track_editor.progress,a.track_editor.volume,a.track_editor.audio_output_button,*a.track_editor.play_buttons,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
                 self.assertTrue(widget.winfo_ismapped())
                 if widget is a.remove_albums_button:
                     for item in widget.find_all():

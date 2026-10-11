@@ -1,4 +1,4 @@
-# Groove Goblin 1.3.2
+# Groove Goblin 1.3.3
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -42,6 +42,21 @@ If detection fails, drag your installed `python.exe` onto the launcher.
 MusicBrainz receives artist/album search text, never audio files. Public Cover
 Art Archive previews are held in memory; viewing one does not embed it in music.
 Missing internet or artwork leaves a placeholder and does not block local work.
+
+## Verify All and Album Lookup
+
+Verify All in Scan & Rename opens a choice popup. Search MusicBrainz checks every
+loaded album, including already approved albums, and stores suggestions for review.
+Approve Current Suggestions approves valid suggestions for included albums; entries
+missing an artist, album name or valid year stay unapproved. Both actions are
+read-only. Apply Selected Changes still requires the normal preview/confirmation.
+
+Album Lookup now has its own page. Enter an artist and album to browse MusicBrainz,
+or select a scanned album in the Loaded album dropdown to search for its match.
+Use Selected Result approves that album and prepares the Scan & Rename preview;
+it does not write music. Search supports Enter and Cancel, shows empty results
+and connection errors, and retains the shared sidebar player across navigation.
+See [Album Lookup](docs/album-lookup-linux.png) and [Verify All](docs/verify-all-linux.png).
 
 ## Track Editor
 
@@ -142,7 +157,7 @@ Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still work
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.3.2.
+sidebar display version 1.3.3.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -161,12 +176,15 @@ Tests cover FLAC/MP3 scan → preview → apply → Undo; filename/folder preset
 case-insensitive collisions and stale files; individual and batch manual edits;
 front-art replacement/removal with other art and tags preserved; byte-for-byte
 manual Undo; partial failures and external-edit protection; live GUI workflows,
-resize bounds, staging without writes, drop auto-scanning, and editor paths after
+resize bounds, staging without writes, Verify All choices, browsing/choosing
+lookup results and failed searches, drop auto-scanning, and editor paths after
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume,
 sidebar artwork/metadata and playback continuity across sections.
 
-68 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+71 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+A live MusicBrainz smoke request was blocked by the cloud proxy (HTTP 403);
+online workflow checks use mocked responses and test connection-error handling.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

@@ -220,6 +220,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         if self.worker_busy:
             messagebox.showinfo('Please wait','Another scan, lookup, or file operation is already running.');return
         self.worker_busy=True;self.cancel.clear()
+        self.btn_verify.state(['disabled']);self.lookup_page.set_busy(True)
         self.btn_scan.state(['disabled']);self.btn_auto.state(['disabled']);self.btn_cancel.state(['!disabled']);self.btn_apply.state(['disabled'])
         def runner():
             try:work()
@@ -250,11 +251,23 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                             a.match_source='MusicBrainz suggested (review)';a.confidence=suggestion.get('score',0)/100
                         self.populate_albums();self.refresh_preview()
                         if uid==self.selected_id:self.show_editor()
+                        self.lookup_page.receive(uid,results)
+                elif typ=='lookup_canceled':
+                    if args[0]==self.lookup_page.uid:self.lookup_page.info.set('Search canceled. You can search again.')
+                    self.status.set('Album Lookup canceled.')
+                elif typ=='lookup_hits':
+                    uid,hits=args
+                    if uid in self.album_map:
+                        self.album_map[uid].lookup_results=hits
+                        if self.selected_id==uid:self.populate_results(self.album_map[uid])
+                    self.lookup_page.receive(uid,hits)
+                    self.status.set(f'Album Lookup: {len(hits)} results found.')
                 elif typ=='results':
                     uid,results=args
                     if uid in self.album_map:
                         a=self.album_map[uid];a.lookup_results=results
                         if self.selected_id==uid:self.populate_results(a)
+                        self.lookup_page.receive(uid,results)
                 elif typ=='apply_done':
                     self.log('APPLY COMPLETE. Undo journal: '+str(args[0]));self.status.set('Applied changes. Undo is available in Logs & Undo.')
                     self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview();self.tabs.select(self.tab_history)
@@ -265,9 +278,10 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                     else:messagebox.showinfo('Undo complete','Original folder names, file names, and edited tags have been restored.');self.log('Undo completed.')
                     self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview()
                 elif typ=='error':
+                    if self.lookup_page.searching:self.lookup_page.info.set('Search failed. Check your connection and try again; details are in View Logs.')
                     self.log('ERROR:\n'+args[0]);messagebox.showerror('Groove Goblin',args[0].split('\n\n')[0]);self.status.set('An error occurred. Details are in Logs & Undo.')
                 elif typ=='idle':
-                    self.worker_busy=False;self.btn_scan.state(['!disabled']);self.btn_auto.state(['!disabled']);self.btn_cancel.state(['disabled']);self.refresh_preview()
+                    self.worker_busy=False;self.btn_verify.state(['!disabled']);self.lookup_page.set_busy(False);self.btn_scan.state(['!disabled']);self.btn_auto.state(['!disabled']);self.btn_cancel.state(['disabled']);self.refresh_preview()
                     if getattr(self,'_import_tracks_after_scan',False):
                         self._import_tracks_after_scan=False;self.track_editor.import_scan()
         except queue.Empty:pass
@@ -296,22 +310,26 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             self.queue.put(('scan_done',albums,errors))
             if auto_lookup and not self.cancel.is_set():self.worker_match_albums(albums)
         self.run_background(work)
-    def worker_match_albums(self,albums):
+    def worker_match_albums(self,albums,*,include_approved=False):
+        searched=failed=missing=0
         for i,a in enumerate(albums,1):
             if self.cancel.is_set():break
-            if a.approved:continue
+            if a.approved and not include_approved:continue
             if not a.artist:
-                self.queue.put(('log','No artist for: '+a.folder));continue
+                missing+=1;self.queue.put(('log','No artist for: '+a.folder));continue
             self.queue.put(('status',f'Online matching {i}/{len(albums)}: {a.artist} / {a.old_album or Path(a.folder).name}'))
             try:
-                result,results=self.mb.suggest(a)
+                result,results=self.mb.suggest(a);searched+=1
                 self.queue.put(('suggest',a.uid,result,results))
-            except Exception as e:self.queue.put(('log',f'Online lookup failed for {a.folder}: {e}'))
-        self.queue.put(('status','Online lookup finished. Review and approve the proposed matches.'))
+            except Exception as e:
+                failed+=1;self.queue.put(('log',f'Online lookup failed for {a.folder}: {e}'))
+        summary=f'Online lookup: {searched} searched, {failed} failed, {missing} missing artist. '
+        summary+='Canceled.' if self.cancel.is_set() else ('Check your connection and View Logs; you can retry.' if failed else 'Review suggestions before approving.')
+        self.queue.put(('status',summary))
     def lookup_all(self):
         if not self.matched:messagebox.showinfo('Scan first','Scan music folders before searching online.');return
         albums=list(self.matched)
-        self.run_background(lambda:self.worker_match_albums(albums))
+        self.run_background(lambda:self.worker_match_albums(albums,include_approved=True))
     def cancel_search(self):
         self.cancel.set();self.status.set('Stopping after current file or online request...')
 
@@ -329,8 +347,42 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         if sel:self.selected_id=sel[0];self.show_editor()
     def selected_album(self):return self.album_map.get(self.selected_id)
     def go_editor(self):
-        if not self.selected_album():messagebox.showinfo('Choose an album','Select an album row first.');return
-        self.tabs.select(self.tab_editor);self.show_editor()
+        uid=self.selected_id
+        self.tabs.select(self.lookup_page)
+        self.lookup_page.select_target(uid)
+
+    def verify_all(self):
+        if self.worker_busy:return
+        if not self.matched:
+            messagebox.showinfo('Scan first','Scan music folders before verifying albums.');return
+        existing=getattr(self,'verify_dialog',None)
+        if existing is not None and existing.winfo_exists():existing.lift();return
+        from groove_widgets import Button, BG, PANEL, GREEN, FG, MUTED
+        dialog=tk.Toplevel(self,bg=BG);self.verify_dialog=dialog
+        dialog.title('Verify All');dialog.transient(self);dialog.geometry('520x310');dialog.resizable(False,False)
+        tk.Label(dialog,text='Verify All',bg=BG,fg=GREEN,font=(self.ui_font,15,'bold')).pack(anchor='w',padx=18,pady=(16,8))
+        tk.Label(dialog,text=f'{len(self.matched)} loaded albums. Choose what you want to do.',bg=BG,fg=FG,font=(self.ui_font,10)).pack(anchor='w',padx=18)
+        tk.Label(dialog,text='Search every loaded album on MusicBrainz and review its suggestions.',bg=BG,fg=MUTED,font=(self.ui_font,9),wraplength=480,justify='left').pack(anchor='w',padx=18,pady=(14,4))
+        def search():dialog.destroy();self.lookup_all()
+        Button(dialog,'Search MusicBrainz',search,width=235,height=36,symbol='search',primary=True,font=(self.ui_font,10)).pack(anchor='w',padx=18)
+        tk.Label(dialog,text='Approve valid suggestions for included albums. Missing artist, album\nor year stays unapproved. Review the preview before Apply.',bg=BG,fg=MUTED,font=(self.ui_font,9),justify='left').pack(anchor='w',padx=18,pady=(12,4))
+        def approve():dialog.destroy();self.approve_all()
+        Button(dialog,'Approve Current Suggestions',approve,width=285,height=36,symbol='check',accent=GREEN,font=(self.ui_font,10)).pack(anchor='w',padx=18)
+        dialog.bind('<Escape>',lambda event:dialog.destroy())
+
+    def approve_all(self):
+        if self.worker_busy:return
+        approved=skipped=0
+        for album in self.matched:
+            if not album.enabled:continue
+            artist=album.artist.strip();title=album.album.strip();year=year4(album.year)
+            if not (artist and title and year):skipped+=1;continue
+            if not album.approved:
+                album.artist=artist;album.album=title;album.year=year;album.approved=True
+                album.match_source='Bulk approved by user';album.confidence=1.0;approved+=1
+        self.populate_albums();self.refresh_preview();self.show_editor()
+        self.status.set(f'Approved {approved} album suggestions; {skipped} need artist, album or year. Review the preview before applying.')
+
     def show_editor(self):
         a=self.selected_album()
         if not a:return

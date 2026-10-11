@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.3
+
+- Added Verify All to Scan & Rename, with Search MusicBrainz and Approve Current Suggestions choices.
+- Included already approved albums in explicit online searches; bulk approval skips excluded or incomplete entries and never applies changes.
+- Replaced the no-op Album Lookup navigation with a dedicated search/browse page, loaded-album selection and result approval for preview.
+- Added clear empty-result/error feedback, cancellation and stale-target protection, preserving the shared sidebar player.
+- Added read-only search/bulk-approval and compact-layout regression coverage.
+
 ## 1.3.2
 
 - Added Clear Selected and Clear List above the Track Editor table, sized for compact windows.

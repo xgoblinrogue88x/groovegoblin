@@ -17,16 +17,18 @@ class PageNavigation:
         a=self.app
         tracks=hasattr(a,'track_editor') and page is a.track_editor
         history=page is a.tab_history
-        target=a.track_editor if tracks else (a.tab_history if history else a.dashboard)
-        for frame in (a.dashboard,a.tab_history,getattr(a,'track_editor',a.dashboard)):
+        lookup=hasattr(a,'lookup_page') and page is a.lookup_page
+        target=a.lookup_page if lookup else (a.track_editor if tracks else (a.tab_history if history else a.dashboard))
+        for frame in (a.dashboard,a.tab_history,getattr(a,'track_editor',a.dashboard),getattr(a,'lookup_page',a.dashboard)):
             frame.grid_remove()
         target.grid(row=0,column=0,sticky='nsew')
-        a._active_page='tracks' if tracks else ('logs' if history else 'scan')
+        a._active_page='lookup' if lookup else ('tracks' if tracks else ('logs' if history else 'scan'))
         for name,button in a.nav_buttons.items():
             button.active=name==a._active_page;button.draw()
         from types import SimpleNamespace
         a._footer_resize(SimpleNamespace(width=a._footer.winfo_width()))
         if tracks and not a.track_editor.records and not a.track_editor.list_cleared and a.matched and not a.worker_busy:a.track_editor.import_scan()
+        if lookup:a.lookup_page.refresh_albums()
         if page is a.tab_editor:a.album_entry.focus_set()
 
 
@@ -160,7 +162,7 @@ def install_layout(cls):
         self.status_label=tk.Label(footer,textvariable=self.status,bg=BG,fg=GREEN,font=(self.ui_font,9),anchor='w',justify='left',wraplength=420)
         self.status_label.pack(side='left',fill='x',expand=True,padx=(0,8))
         def footer_resize(event):
-            if self._active_page=='tracks':
+            if self._active_page in ('tracks','lookup'):
                 controls.pack_forget();footer_spacer.pack_forget()
                 self.status_label.pack_configure(side='top',fill='x',expand=False)
                 self.status_label.configure(height=1,wraplength=max(300,event.width-20))
@@ -260,6 +262,8 @@ def install_layout(cls):
         self.remove_albums_button.pack(side='right')
         self.albums_heading=tk.Label(album_header,text='Albums Found   (0)',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold'))
         self.albums_heading.pack(side='left')
+        self.btn_verify=Button(albums.body,'Verify All',self.verify_all,width=140,height=28,symbol='check',accent=GREEN,font=(self.ui_font,9))
+        self.btn_verify.pack(anchor='w',pady=(0,5))
         self.albums_tree=Table(albums.body,mode='albums',font=(self.ui_font,10),on_toggle=self.toggle_album_id)
         self.albums_tree.on_toggle_all=self.toggle_all_albums
         self.albums_tree.cover_provider=lambda uid,size:self._art.request(uid,size)
@@ -352,6 +356,8 @@ def install_layout(cls):
         self.refresh_preview()
         from groove_track_editor import TrackEditor
         self.track_editor=TrackEditor(self)
+        from groove_album_lookup import AlbumLookup
+        self.lookup_page=AlbumLookup(self)
         from groove_responsive import ResponsiveLayout
         self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,player=self.sidebar_player_panel,
             center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,
@@ -416,6 +422,7 @@ def install_layout(cls):
         selection=[uid for uid in selection if uid in tree.data]
         if selection:tree.selection_set(selection)
         elif self.selected_id in tree.data:tree.selection_set(self.selected_id)
+        if hasattr(self,"lookup_page"):self.lookup_page.refresh_albums()
 
     def remove_selected_albums(self,event=None):
         if self.worker_busy:
