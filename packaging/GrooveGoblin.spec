@@ -16,8 +16,8 @@ a = Analysis([str(root / 'packaging/windows_entry.py')], pathex=[str(root)],
     hookspath=[], runtime_hooks=[], excludes=['tkinterdnd2'], noarchive=False)
 # imageio's stock executable is deliberately replaced by our reproducible,
 # LGPL FFmpeg build without external codecs. Keep only its Python wrapper.
-a.datas = [item for item in a.datas if not item[0].startswith('imageio_ffmpeg/binaries/')]
-a.binaries = [item for item in a.binaries if not item[0].startswith('imageio_ffmpeg/binaries/')]
+a.datas = [item for item in a.datas if not item[0].replace('\\', '/').startswith('imageio_ffmpeg/binaries/')]
+a.binaries = [item for item in a.binaries if not item[0].replace('\\', '/').startswith('imageio_ffmpeg/binaries/')]
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='GrooveGoblin',
     debug=False, bootloader_ignore_signals=False, strip=False, upx=False,

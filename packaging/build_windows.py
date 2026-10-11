@@ -27,6 +27,11 @@ def main():
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--clean', '--noconfirm',
                     'packaging/GrooveGoblin.spec'], cwd=ROOT, check=True)
     app = ROOT / 'dist/GrooveGoblin'
+    bundled_decoders = [file.relative_to(app).as_posix() for file in app.rglob('*.exe')
+                        if 'ffmpeg' in file.name.lower()]
+    if bundled_decoders != ['_internal/ffmpeg/ffmpeg.exe']:
+        raise RuntimeError('Unexpected FFmpeg payload; exclude the wheel binary before distribution: '
+                           + repr(bundled_decoders))
     sources = app / 'Sources'; sources.mkdir()
     notices = app / 'ThirdParty'; notices.mkdir()
     shutil.copy2(ROOT / 'LICENSE', app / 'LICENSE')
