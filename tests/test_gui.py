@@ -90,6 +90,51 @@ class LayoutTests(unittest.TestCase):
         a.log_box.event_generate('<MouseWheel>',delta=-120);a.update()
         self.assertGreater(a.log_box.yview()[0],0)
 
+    def test_wheel_large_and_fractional_deltas_scroll_one_row_without_class_acceleration(self):
+        from groove_widgets import Scrollbar
+        a=self.app;a.geometry('1024x768');a.update()
+        table=a.albums_tree
+        for i in range(80):table.insert('','end',values=('✓','Artist','Old','New','2000',1,'READY','100%'))
+        a.tabs.select(a.track_editor);tree=a.track_editor.tree
+        for i in range(80):tree.insert('','end',iid=f'fine-wheel-{i}',values=('track',)*9)
+        a.update()
+        for listing,view,targets,page in [
+            (table.body,table.body.yview,(table.body,table.head,next(c for c in table.winfo_children() if isinstance(c,Scrollbar))),a.tab_albums),
+            (tree,tree.yview,(tree,*[c for c in tree.master.winfo_children() if isinstance(c,Scrollbar)]),a.track_editor)]:
+            a.tabs.select(page);a.update()
+            for target in targets:
+                listing.yview_moveto(0);a.update()
+                target.event_generate('<MouseWheel>',delta=-480);a.update()
+                self.assertAlmostEqual(view()[0],1/80,places=5)
+                target.event_generate('<MouseWheel>',delta=480);a.update()
+                self.assertEqual(view()[0],0)
+                for _ in range(3):target.event_generate('<MouseWheel>',delta=-30);a.update()
+                self.assertEqual(view()[0],0)
+                target.event_generate('<MouseWheel>',delta=-30);a.update()
+                self.assertAlmostEqual(view()[0],1/80,places=5)
+                # Reversing a partial gesture must not consume the new direction.
+                target.event_generate('<MouseWheel>',delta=-30)
+                target.event_generate('<MouseWheel>',delta=120);a.update()
+                self.assertEqual(view()[0],0)
+
+    def test_tk9_touchpad_scroll_is_row_sized_in_canvas_and_editor(self):
+        if int(str(self.app.tk.call('package','provide','Tk')).split('.')[0])<9:
+            self.skipTest('TouchpadScroll requires Tk 9')
+        a=self.app;a.geometry('1024x768');a.update()
+        table=a.albums_tree
+        for i in range(80):table.insert('','end',values=('✓','Artist','Old','New','2000',1,'READY','100%'))
+        tree=a.track_editor.tree
+        for i in range(80):tree.insert('','end',iid=f'pad-{i}',values=('track',)*9)
+        for listing,height,page in [(table.body,table.rowheight,a.tab_albums),(tree,28,a.track_editor)]:
+            a.tabs.select(page);a.update();listing.yview_moveto(0)
+            # Tk packs signed X/Y pixel deltas into the event's delta field.
+            listing.event_generate('<TouchpadScroll>',delta=(-height)&0xffff);a.update()
+            self.assertAlmostEqual(listing.yview()[0],1/80,places=5)
+            listing.event_generate('<TouchpadScroll>',delta=height);a.update()
+            self.assertEqual(listing.yview()[0],0)
+            listing.event_generate('<TouchpadScroll>',delta=(-height*5)&0xffff);a.update()
+            self.assertAlmostEqual(listing.yview()[0],1/80,places=5)
+
     def setUp(self):
         loader = importlib.machinery.SourceFileLoader('groove_gui', str(ROOT / 'GrooveGoblin.pyw'))
         spec = importlib.util.spec_from_loader(loader.name, loader)
@@ -211,12 +256,13 @@ class LayoutTests(unittest.TestCase):
             a.update()
             a._responsive.apply()
             a.update()
-            for widget in (a.btn_apply,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
+            for widget in (a.btn_apply,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,a._responsive.version,a.track_editor.player_cover,a.track_editor.now,a.track_editor.time,a.track_editor.progress,a.track_editor.volume,a.track_editor.audio_output_button,*a.track_editor.play_buttons,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
                 self.assertTrue(widget.winfo_ismapped())
                 if widget is a.remove_albums_button:
                     for item in widget.find_all():
                         if widget.type(item)=='text':self.assertLessEqual(widget.bbox(item)[2],widget.winfo_width())
-                if widget is a.nav_buttons['scan'] and widget.text:
+                if widget in a.nav_buttons.values():
+                    self.assertEqual(widget.text,a._responsive.nav_text[next(name for name,b in a.nav_buttons.items() if b is widget)])
                     for item in widget.find_all():
                         if widget.type(item)=='text':self.assertLessEqual(widget.bbox(item)[2],widget.winfo_width())
                 x=widget.winfo_rootx()-a.winfo_rootx();y=widget.winfo_rooty()-a.winfo_rooty()

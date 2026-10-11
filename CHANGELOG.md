@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+- Kept sidebar navigation labels and version visible at every supported window size; compact mode adjusts fonts/spacing instead of hiding text.
+- Limited large wheel events to one row and accumulated fractional wheel deltas to prevent over-scrolling.
+- Added Tk 9 TouchpadScroll handling with row-sized pixel accumulation, including horizontal gestures.
+- Added resize label visibility/clipping and large/fractional wheel/touchpad regression checks.
+
 ## 1.3.0
 
 - Removed redundant Manual Edit navigation; Track Editor and Album Lookup remain.

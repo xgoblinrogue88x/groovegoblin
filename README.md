@@ -1,4 +1,4 @@
-# Groove Goblin 1.3.0
+# Groove Goblin 1.3.1
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -113,8 +113,8 @@ alternating dark rows and green selection/staging accents.
 Tables use slim rounded scrollbars; player sliders have green handles.
 
 The app fits windows down to 800×600 without an outer scrollbar. Lists scroll
-internally when needed. Resizing reduces artwork and spacing and uses sidebar
-icons with hover labels on compact screens. The logo fills the available sidebar
+internally when needed. Resizing reduces artwork, font size and spacing while
+keeping every sidebar navigation label visible. The logo fills the available sidebar
 space. [About](docs/about-linux.png) groups supported formats and Undo
 information in styled panels. The compact sidebar player replaces Supported
 Formats and remains visible across sections. It shows embedded artwork, track
@@ -128,13 +128,15 @@ Select album rows with Ctrl-click / Shift-click (Ctrl+A selects all visible rows
 then use Remove Selected or Delete. Remaining matches stay intact; removal does
 not delete music. A new scan reads the selected source folders again.
 
-Each mouse-wheel notch scrolls one album/track row (one line in text panels),
-including over table headers and scrollbar gutters.
+Wheel events scroll at most one album/track row (one line in text panels),
+including over table headers and scrollbar gutters. Fine wheel deltas accumulate
+to one notch instead of each causing a full-row jump. Tk 9 touchpad pixel deltas
+accumulate to a row-sized step, with the same one-row limit.
 Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still works.
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.3.0.
+sidebar display version 1.3.1.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -158,7 +160,7 @@ organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume,
 sidebar artwork/metadata and playback continuity across sections.
 
-63 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+65 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

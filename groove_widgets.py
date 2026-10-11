@@ -173,7 +173,9 @@ class Button(tk.Canvas):
                 group_width=text_width+(36 if self.symbol else 0)
                 icon_x=max(8,(w-group_width)/2)
                 x=icon_x+(36 if self.symbol else 0)
-            if self.symbol:icon(self,self.symbol,icon_x,h/2-13,26 if self.subtitle else 22,col)
+            if self.symbol:
+                size=26 if self.subtitle else 22
+                icon(self,self.symbol,icon_x,(h-size)/2,size,col)
             if self.navigation:x=58
             self.create_text(x,h/2-(9 if self.subtitle else 0),anchor='w',text=text,font=(*self.font, 'bold') if purple or self.subtitle else self.font,fill=fg)
             if self.subtitle:self.create_text(w/2 if self.primary else x,h/2+13,anchor='center' if self.primary else 'w',text=self.subtitle,font=(self.font[0],8),fill=MUTED,width=w-16 if self.primary else w-x-9)
@@ -224,22 +226,65 @@ class Radio(Check):
 
 
 def bind_mousewheel(widget, *, yview=None, xview=None, targets=()):
-    """Scroll the hovered section, including its header/gutters, once per event."""
+    """One row per wheel event; accumulate fine deltas instead of amplifying them.
+
+    Header and scrollbar bindings share the same accumulator. Returning break
+    also prevents ttk's class binding from scrolling the same event again.
+    Tk 9 precise touchpad deltas are pixels, not conventional wheel notches.
+    """
     vertical=yview or widget.yview
     horizontal=xview or getattr(widget,'xview',None)
+    aqua=widget.tk.call('tk','windowingsystem')=='aqua'
+    tk9=int(str(widget.tk.call('package','provide','Tk')).split('.')[0])>=9
+    remainder={'wheel_y':0,'wheel_x':0,'pad_y':0,'pad_x':0}
+
+    def scroll(axis,delta,unit,source):
+        if not delta:return
+        key=source+'_'+axis
+        # A reversed gesture should respond without paying back an old remainder.
+        if remainder[key]*delta<0:remainder[key]=0
+        amount=remainder[key]+delta
+        steps=math.trunc(amount/unit)
+        remainder[key]=amount-steps*unit
+        view=horizontal if axis=='x' else vertical
+        if steps and view:view('scroll',1 if steps>0 else -1,'units')
+
     def wheel(event,steps=None):
-        if steps is None:
-            delta=event.delta
-            if not delta:return 'break'
-            steps=-(int(delta/120) if abs(delta)>=120 else (1 if delta>0 else -1))
-        view=horizontal if event.state & 0x1 else vertical
-        if view:view('scroll',steps,'units')
+        axis='x' if event.state & 0x1 else 'y'
+        if steps is not None:
+            view=horizontal if axis=='x' else vertical
+            if view:view('scroll',steps,'units')
+        else:
+            # Tk 8 on macOS reports notch units; Tk 9 uses 120 everywhere.
+            scroll(axis,-event.delta,1 if aqua and not tk9 else 120,'wheel')
         return 'break'
+
+    def touchpad(event):
+        packed=int(event.delta)
+        dx=(packed>>16)&0xffff;dy=packed&0xffff
+        if dx>=0x8000:dx-=0x10000
+        if dy>=0x8000:dy-=0x10000
+        if event.state & 0x1 and not dx:dx,dy=dy,0
+        if isinstance(widget,ttk.Treeview):
+            rowheight=int(ttk.Style(widget).lookup(widget.cget('style') or 'Treeview','rowheight') or 20)
+        elif isinstance(widget,tk.Canvas):
+            rowheight=int(widget.cget('yscrollincrement')) or 24
+        else:
+            from tkinter import font
+            rowheight=font.Font(master=widget,font=widget.cget('font')).metrics('linespace')
+        scroll('y',-dy,max(1,rowheight),'pad')
+        scroll('x',-dx,max(1,rowheight),'pad')
+        return 'break'
+
     for target in (widget,*targets):
         for sequence in ('<MouseWheel>','<Shift-MouseWheel>'):
             target.bind(sequence,wheel)
         for sequence,steps in (('<Button-4>',-1),('<Button-5>',1),('<Shift-Button-4>',-1),('<Shift-Button-5>',1)):
             target.bind(sequence,lambda event,direction=steps:wheel(event,direction))
+        if tk9:
+            # Older Tk versions do not recognize this event type.
+            for sequence in ('<TouchpadScroll>','<Shift-TouchpadScroll>'):
+                target.bind(sequence,touchpad)
 
 
 class Scrollbar(ttk.Scrollbar):

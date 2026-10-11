@@ -64,8 +64,8 @@ class ResponsiveLayout:
         if width<100 or height<100:return
         compact=width<1000 or height<650
         medium=not compact and (width<1350 or height<850)
-        self.icon_nav=width<1100 or height<650
-        sidebar_width=180 if self.icon_nav else (210 if medium else 260)
+        self.icon_nav=False
+        sidebar_width=180 if compact else (210 if medium else 260)
         rail_width=244 if compact else (294 if medium else 342)
         center_width=max(300,width-sidebar_width-rail_width-32)
         scale=.82 if compact else (.92 if medium else 1)
@@ -94,25 +94,22 @@ class ResponsiveLayout:
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
         player_height=226 if compact else (242 if medium else 252)
-        nav_height=(26 if compact else (36 if medium else 44))+2
+        nav_height=(24 if compact else (36 if medium else 44))+2
         logo_budget=max(48,height-len(a.nav_buttons)*nav_height-player_height-54)
-        logo_width=min(52 if compact else (120 if self.icon_nav else (174 if medium else 238)),int(logo_budget*self.logo_source.width/self.logo_source.height))
+        logo_width=min(40 if compact else (174 if medium else 238),int(logo_budget*self.logo_source.width/self.logo_source.height))
         if logo_width!=self.logo_size:
             img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
             a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
-        if self.icon_nav:
-            self.version.grid_remove()
-        else:
-            self.version.grid()
+        self.version.grid()
         for name,button in a.nav_buttons.items():
-            button.text='' if self.icon_nav else self.nav_text[name]
+            button.text=self.nav_text[name]
             # Keep the full navigation titles readable in the narrower sidebar.
             font=button.font
             available=sidebar_width-w['sidebar'].padding*2-66
             while button.text and font[1]>8 and tkfont.Font(master=a,font=(*font,'bold')).measure(button.text)>available:
                 font=(font[0],font[1]-1,*font[2:])
             button.font=font
-            button.configure(width=sidebar_width-20,height=26 if compact else (36 if medium else 44));button.draw()
+            button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 44));button.draw()
         w['player'].configure(height=player_height)
         w['player'].grid_configure(pady=(3,3))
         a.track_editor.resize_player(compact)
