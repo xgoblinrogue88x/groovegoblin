@@ -173,3 +173,4 @@ class ResponsiveLayout:
         w['footer_spacer'].configure(width=sidebar_width+12)
         a.status_label.configure(height=1 if a._active_page in ('tracks','lookup') else (2 if compact else 1))
         a.preview_errors.configure(height=1)
+        if a.is_lite and hasattr(a,'_lite_apply'):a._lite_apply()

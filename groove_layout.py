@@ -43,12 +43,12 @@ def install_layout(cls):
             existing.lift();existing.focus_set();return
         window=tk.Toplevel(self,bg=BG)
         self._about_window=window
-        window.title('About Groove Goblin');window.transient(self)
+        window.title('About Groove Goblin'+(' LITE' if self.is_lite else ''));window.transient(self)
         window.geometry('620x540');window.minsize(560,520)
         body=tk.Frame(window,bg=BG);body.pack(fill='both',expand=True,padx=16,pady=14)
         Button(body,'Close',window.destroy,width=110,height=36,primary=True,font=(self.ui_font,10)).pack(side='bottom',anchor='e',pady=(4,0))
         heading=tk.Frame(body,bg=BG);heading.pack(fill='x',pady=(0,8))
-        tk.Label(heading,text='GROOVE GOBLIN',bg=BG,fg=GREEN,font=(self.ui_font,18,'bold')).pack(anchor='w')
+        tk.Label(heading,text='GROOVE GOBLIN'+(' LITE' if self.is_lite else ''),bg=BG,fg=GREEN,font=(self.ui_font,18,'bold')).pack(anchor='w')
         tk.Label(heading,text=f'Version {__version__}',bg=BG,fg=MUTED,font=(self.ui_font,9)).pack(anchor='w',pady=(2,4))
         description=tk.Label(heading,text='Match albums, edit tags and artwork, organize files and folders,\nand listen to your music.',bg=BG,fg=FG,font=(self.ui_font,9),justify='left',anchor='w')
         description.pack(fill='x')
@@ -173,6 +173,10 @@ def install_layout(cls):
         self.status_label=tk.Label(footer,textvariable=self.status,bg=BG,fg=GREEN,font=(self.ui_font,9),anchor='w',justify='left',wraplength=420)
         self.status_label.pack(side='left',fill='x',expand=True,padx=(0,8))
         def footer_resize(event):
+            if self.is_lite:
+                controls.pack_forget();footer_spacer.pack_forget()
+                self.status_label.pack_configure(side='top',fill='x',expand=False)
+                self.status_label.configure(height=1,wraplength=max(300,event.width-20));return
             if self._active_page in ('tracks','lookup'):
                 controls.pack_forget();footer_spacer.pack_forget()
                 self.status_label.pack_configure(side='top',fill='x',expand=False)
@@ -374,6 +378,9 @@ def install_layout(cls):
             center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,
             opts=opts,details=details,results=results,form=form,yearrow=yearrow,actions=actions,
             footer=footer,footer_spacer=footer_spacer,controls=controls))
+        if self.is_lite:
+            from groove_lite import install_lite
+            install_lite(self)
 
     def update_cover(self):
         if not hasattr(self,'cover_box'):return
@@ -522,8 +529,11 @@ def install_layout(cls):
         for issue in self.problems:self.preview_errors.insert('end',issue.rsplit(': ',1)[-1]+'\n')
         self.preview_errors.configure(state='disabled')
         changes=sum(a['changed'] for a in self.actions)
-        self.btn_apply.configure(text=f'Apply Selected Changes ({changes})')
-        self.btn_apply.state(['!disabled'] if changes and not self.problems and not self.worker_busy else ['disabled'])
+        self.btn_apply.configure(text=('Apply Changes' if self.is_lite else f'Apply Selected Changes ({changes})'))
+        can_review=self.is_lite and self.problems and self.matched
+        self.btn_apply.state(['!disabled'] if (changes and not self.problems or can_review) and not self.worker_busy else ['disabled'])
+        if self.is_lite and self.matched and not self.worker_busy:
+            self.status.set(f'{len(self.problems)} items need review. Click Apply for details.' if self.problems else f'Ready to apply changes to {changes} albums.')
 
     def clear(self):
         if self.worker_busy:return

@@ -10,7 +10,7 @@ a = Analysis([str(root / 'packaging/windows_entry.py')], pathex=[str(root)],
     datas=[(str(root / 'assets'), 'assets'), (str(root / 'GrooveGoblin.pyw'), '.')],
     hiddenimports=collect_submodules('mutagen') + ['groove_layout', 'groove_core',
         'groove_drop', 'groove_widgets', 'groove_version', 'groove_naming',
-        'groove_track_editor', 'groove_album_lookup', 'groove_responsive',
+        'groove_track_editor', 'groove_lite', 'groove_album_lookup', 'groove_responsive',
         'groove_artwork', 'groove_manual', 'groove_formats', 'groove_decode',
         'groove_player', 'musicbrainz_client', 'legacy_collections', 'PIL.ImageTk'],
     hookspath=[], runtime_hooks=[], excludes=['tkinterdnd2'], noarchive=False)
@@ -19,9 +19,9 @@ a = Analysis([str(root / 'packaging/windows_entry.py')], pathex=[str(root)],
 a.datas = [item for item in a.datas if not item[0].replace('\\', '/').startswith('imageio_ffmpeg/binaries/')]
 a.binaries = [item for item in a.binaries if not item[0].replace('\\', '/').startswith('imageio_ffmpeg/binaries/')]
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='GrooveGoblin',
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='GrooveGoblinLite',
     debug=False, bootloader_ignore_signals=False, strip=False, upx=False,
     console=False, disable_windowed_traceback=False,
     icon=str(root / 'assets/GrooveGoblin.ico'),
     version=str(root / 'packaging/version_info.txt'))
-coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='GrooveGoblin')
+coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='GrooveGoblinLite')

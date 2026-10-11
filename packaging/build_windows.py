@@ -27,7 +27,7 @@ def main():
         raise SystemExit('Build with 64-bit CPython 3.12 on Windows.')
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--clean', '--noconfirm',
                     'packaging/GrooveGoblin.spec'], cwd=ROOT, check=True)
-    app = ROOT / 'dist/GrooveGoblin'
+    app = ROOT / 'dist/GrooveGoblinLite'
     bundled_decoders = [file.relative_to(app).as_posix() for file in app.rglob('*.exe')
                         if 'ffmpeg' in file.name.lower()]
     if bundled_decoders != ['_internal/ffmpeg/ffmpeg.exe']:
@@ -139,14 +139,14 @@ def main():
     (app / 'runtime-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     (app / 'portable.flag').write_text('Portable data belongs in Data next to the executable.\n')
     report = ROOT / 'build/frozen-smoke.json'
-    result = subprocess.run([str(app / 'GrooveGoblin.exe'), '--self-test', str(report)], timeout=90)
+    result = subprocess.run([str(app / 'GrooveGoblinLite.exe'), '--self-test', str(report)], timeout=90)
     if result.returncode or not report.is_file() or not json.loads(report.read_text())['ok']:
         detail = report.read_text() if report.is_file() else 'No startup report was produced.'
         raise RuntimeError('Frozen application smoke test failed; no installer published.\n' + detail)
     # Never include test-generated undo/data in the portable ZIP.
     shutil.rmtree(app / 'Data', ignore_errors=True)
-    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-1.3.3-Windows-x64-Portable'), 'zip',
-                        root_dir=ROOT / 'dist', base_dir='GrooveGoblin')
+    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-LITE-1.3.4-Windows-x64-Portable'), 'zip',
+                        root_dir=ROOT / 'dist', base_dir='GrooveGoblinLite')
 
 
 if __name__ == '__main__':

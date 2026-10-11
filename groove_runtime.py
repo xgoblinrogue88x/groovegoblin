@@ -17,7 +17,8 @@ def data_dir():
     if (executable_dir / 'portable.flag').is_file():
         target = executable_dir / 'Data'
     else:
-        target = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'GrooveGoblin'
+        from groove_version import is_lite
+        target = Path(os.environ.get('LOCALAPPDATA', Path.home())) / ('GrooveGoblinLite' if is_lite() else 'GrooveGoblin')
     target.mkdir(parents=True, exist_ok=True)
     # Fail visibly if a portable folder is read-only; never silently relocate undo.
     import tempfile

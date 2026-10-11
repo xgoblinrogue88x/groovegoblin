@@ -28,6 +28,7 @@ def check_runtime():
 
 def main():
     try:
+        if getattr(sys,'frozen',False):os.environ['GROOVE_GOBLIN_EDITION']='LITE'
         check_runtime()
         module = runpy.run_path(str(resource_dir() / 'GrooveGoblin.pyw'), run_name='groove_frozen_app')
         app = module['GrooveGoblin']()

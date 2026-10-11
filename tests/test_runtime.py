@@ -32,7 +32,7 @@ class RuntimeTests(unittest.TestCase):
                  patch.object(runtime.sys, 'executable', str(root / 'GrooveGoblin.exe')), \
                  patch.object(runtime.sys, '_MEIPASS', str(root / '_internal'), create=True), \
                  patch.dict(os.environ, {'LOCALAPPDATA': str(root / 'user')}):
-                self.assertEqual(runtime.data_dir(), root / 'user/GrooveGoblin')
+                self.assertEqual(runtime.data_dir(), root / 'user/GrooveGoblinLite')
                 self.assertEqual(runtime.configure_ffmpeg(), binary)
                 self.assertEqual(os.environ['IMAGEIO_FFMPEG_EXE'], str(binary))
                 binary.unlink()

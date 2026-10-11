@@ -1,10 +1,25 @@
-# Groove Goblin 1.3.3
+# Groove Goblin LITE 1.3.4
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
 local cover-art replacement, playback, previews and Undo. Supports multiple audio containers; [see the format matrix and limits](docs/formats.md).
 
 ![Running Scan & Rename with generated test music](docs/interface-linux.png)
+
+## LITE layout
+
+LITE uses one row for Add Folders, Add Files, Clear List, Start Scan, Apply Changes
+and Undo Changes. Albums fill the center; Selected Album Details and an expanded
+MusicBrainz results list fill the right rail. Preview Changes, Now Playing,
+Rename Options and Save Report are omitted from the interface.
+
+File renaming (`## - Artist - Title`), album-folder renaming
+(`Artist - Album (Year)`), album/year tag replacement and undo journals are ON.
+Applying still requires approved matches, collision/stale-file checks and a
+confirmation listing the naming formats and folder changes. Unresolved items
+remain visible through the Apply button's review message. Scan and lookup never
+write music. The LITE installer uses a separate app/data folder from the original
+1.3.3 release; that full release remains downloadable under GitHub Releases.
 
 ## Run on Windows
 
@@ -13,12 +28,12 @@ Only builds that pass the Windows EXE and installer checks are published there.
 
 - **Installer:** run the Setup EXE, then open Groove Goblin from the Start menu.
 - **Portable:** extract the complete portable ZIP into a writable folder, then
-  open **GrooveGoblin.exe** with the Groove Goblin icon. Keep its companion files
+  open **GrooveGoblinLite.exe** with the Groove Goblin icon. Keep its companion files
   and `Data` folder together.
 
 Python, Tcl/Tk, tagging and audio libraries, and FFmpeg are bundled. No separate
 Python/FFmpeg installation or BAT launcher is needed for these downloads.
-Installed undo records live under `%LOCALAPPDATA%\GrooveGoblin`; portable undo
+Installed undo records live under `%LOCALAPPDATA%\GrooveGoblinLite`; portable undo
 records live beside the executable in `Data`. Keep those records when updating.
 See [packaging instructions](packaging/README.md) to reproduce the Windows build.
 

@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from groove_drop import FolderDropMixin
 from groove_widgets import Scrollbar, bind_mousewheel
-from groove_version import __version__
+from groove_version import __version__, is_lite
 from groove_naming import DEFAULT_FILE_FORMAT, DEFAULT_FOLDER_FORMAT
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
                          newest_journal, export_preview, backup_dir, year4)
@@ -22,7 +22,8 @@ FG='#e9f2f4'; MUTED='#9eb0bd'; GREEN='#71f28b'; PURPLE='#cc75ff'; ORANGE='#ffc77
 class GrooveGoblin(FolderDropMixin, tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(f'Groove Goblin {__version__} - Music Tagger & Organizer')
+        self.is_lite=is_lite()
+        self.title(f'Groove Goblin {"LITE " if self.is_lite else ""}{__version__} - Music Tagger & Organizer')
         self.geometry('1220x790');self.minsize(740,520)
         self.configure(bg=BG)
         try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_icon.png')))
@@ -33,7 +34,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.auto_lookup=tk.BooleanVar(value=True)
         self.opt_tags=tk.BooleanVar(value=True)
         self.opt_folders=tk.BooleanVar(value=True)
-        self.opt_filenames=tk.BooleanVar(value=False)
+        self.opt_filenames=tk.BooleanVar(value=self.is_lite)
         self.file_format=tk.StringVar(value=DEFAULT_FILE_FORMAT)
         self.folder_format=tk.StringVar(value=DEFAULT_FOLDER_FORMAT)
         self.var_artist=tk.StringVar();self.var_album=tk.StringVar();self.var_year=tk.StringVar()
@@ -469,12 +470,20 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.refresh_preview()
         tochange=[a for a in self.actions if a['changed']]
         if self.problems:
+            if self.is_lite:
+                messagebox.showwarning('Resolve review items','Approve or exclude unresolved albums before applying.\n\n'+'\n'.join(self.problems[:10]));return
             self.tabs.select(self.tab_preview)
             messagebox.showwarning('Resolve review items','Some enabled albums have no approved match or conflict with existing folders. Review the Preview Changes tab, or disable those albums.');return
         if not tochange:messagebox.showinfo('Nothing to change','All selected albums already match your requested naming format.');return
-        if not messagebox.askyesno('Apply changes?',f'Apply changes to {len(tochange)} album folders?\n\n'
-                  'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'
-                  'An undo journal will be stored in the application Logs folder.\n\nProceed?',icon='warning'):return
+        if self.is_lite:
+            summary='\n'.join(f'{Path(a["folder"]).name} → {Path(a["dest_folder"]).name}' for a in tochange[:8])
+            confirmation=(f'Apply changes to {len(tochange)} albums?\n\nRename files: {self.file_format.get()}\n'
+                f'Rename folders: {self.folder_format.get()}\nReplace album / year tags and keep an undo journal.\n\n'
+                +summary+('\n…' if len(tochange)>8 else '')+'\n\nProceed?')
+        else:confirmation=f'Apply changes to {len(tochange)} album folders?\n\n'+\
+                  'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'+\
+                  'An undo journal will be stored in the application Logs folder.\n\nProceed?'
+        if not messagebox.askyesno('Apply changes?',confirmation,icon='warning'):return
         self.track_editor.player.stop()
         actions=list(tochange);options=self.option_dict();loaded=list(self.track_editor.records)
         def work():

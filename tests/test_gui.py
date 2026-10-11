@@ -227,6 +227,8 @@ class LayoutTests(unittest.TestCase):
         self.assertFalse(a.worker_busy);self.assertFalse(a.btn_verify.disabled)
 
     def setUp(self):
+        edition=patch.dict(os.environ,{'GROOVE_GOBLIN_EDITION':'FULL'})
+        edition.start();self.addCleanup(edition.stop)
         loader = importlib.machinery.SourceFileLoader('groove_gui', str(ROOT / 'GrooveGoblin.pyw'))
         spec = importlib.util.spec_from_loader(loader.name, loader)
         self.module = importlib.util.module_from_spec(spec)
