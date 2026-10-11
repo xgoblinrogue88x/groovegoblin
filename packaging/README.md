@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.3.4 Windows packaging
+# Groove Goblin LITE 1.3.5 Windows packaging
 
 The Windows workflow builds **GrooveGoblinLite.exe**, a portable ZIP and a per-user
 Inno Setup installer. CPython 3.12.10, Tcl/Tk, Pillow, Mutagen, pygame-ce/SDL and

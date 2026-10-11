@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.3.4
+# Groove Goblin LITE 1.3.5
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -239,3 +239,7 @@ Original branding stays in `assets/`; `GUI_Preview.png` is the original mockup.
 See `CHANGELOG.md`, `LICENSE` (GPLv3), and `LICENSE_NOTES.txt`. Source-mode dependencies are installed separately;
 no generated audio, runtime binaries or user media are distributed in source.
 Handoff documents describe the broader roadmap, not completed features.
+
+Verify All and Remove Selected share a compact row above the track and album
+rename-format dropdowns. Changing a preset updates the read-only plan and Apply
+confirmation; renaming and undo remain enabled.

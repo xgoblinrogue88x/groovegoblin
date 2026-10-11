@@ -42,6 +42,13 @@ class LiteTests(unittest.TestCase):
                 self.assertFalse(w[key].winfo_ismapped(),key)
             self.assertGreater(a.albums_tree.winfo_height(),a._desktop.winfo_height()*.5)
             self.assertGreater(a.results_tree.winfo_height(),100)
+            self.assertEqual(a.btn_verify.winfo_rooty(),a.remove_albums_button.winfo_rooty())
+            self.assertLessEqual(a.remove_albums_button.winfo_rootx()-(a.btn_verify.winfo_rootx()+a.btn_verify.winfo_width()),6)
+            self.assertGreaterEqual(a.lite_formats.winfo_rooty(),a.btn_verify.winfo_rooty()+a.btn_verify.winfo_height())
+            for combo in (a.lite_file_format_box,a.lite_folder_format_box):
+                self.assertTrue(combo.winfo_ismapped())
+                self.assertLess(combo.winfo_rooty()+combo.winfo_height(),a.albums_tree.winfo_rooty())
+            self.assertGreaterEqual(a.btn_verify.winfo_rootx(),a.albums_heading.winfo_rootx()+a.albums_heading.winfo_reqwidth())
             for button in w['actions'].winfo_children():
                 self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),w['details'].body.winfo_rooty()+w['details'].body.winfo_height())
             self.assertLess(w['details'].winfo_rooty()-a.lite_toolbar.winfo_rooty(),55)
@@ -79,6 +86,22 @@ class LiteTests(unittest.TestCase):
         deadline=time.monotonic()+10
         while self.app.worker_busy and time.monotonic()<deadline:self.app.update();time.sleep(.02)
         self.app.update();self.assertFalse(self.app.worker_busy)
+
+    def test_naming_dropdowns_replan_without_writing_and_confirm_selected_formats(self):
+        a=self.app;paths=self.load();before={p:p.read_bytes() for p in paths}
+        for combo,value in ((a.lite_file_format_box,'## - Title'),(a.lite_folder_format_box,'Artist - Year - Album')):
+            self.assertEqual(str(combo.cget('state')),'readonly')
+            combo.set(value);combo.event_generate('<<ComboboxSelected>>');a.update()
+        self.assertFalse(a.problems)
+        for action in a.actions:
+            self.assertEqual(Path(action['dest_folder']).name,f"{action['artist']} - 2001 - Correct Album")
+            for track in action['tracks']:
+                self.assertEqual(track['new_name'],'01 - Song'+Path(track['old_path']).suffix)
+        with patch('tkinter.messagebox.askyesno',return_value=False) as confirm,patch.object(a,'run_background') as work:
+            a.apply();work.assert_not_called()
+        self.assertIn('## - Title',confirm.call_args.args[1])
+        self.assertIn('Artist - Year - Album',confirm.call_args.args[1])
+        self.assertEqual(before,{p:p.read_bytes() for p in paths})
 
     def test_lite_file_folder_tag_apply_and_undo_preserves_tags_and_audio(self):
         from groove_core import newest_journal

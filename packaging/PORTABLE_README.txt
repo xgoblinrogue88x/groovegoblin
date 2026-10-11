@@ -1,4 +1,4 @@
-Groove Goblin LITE 1.3.4 — Windows 10/11 x64
+Groove Goblin LITE 1.3.5 — Windows 10/11 x64
 
 PORTABLE: Extract the entire ZIP into a writable folder. Open GrooveGoblinLite.exe
 (the goblin icon). Keep _internal, runtime-manifest.json and portable.flag

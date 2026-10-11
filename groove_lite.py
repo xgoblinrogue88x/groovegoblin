@@ -11,6 +11,28 @@ def install_lite(app):
     toolbar.grid_forget()
     # Recreate the small actions in a single row across the entire workspace.
     import tkinter as tk
+    from tkinter import ttk
+    from groove_naming import FILE_FORMATS, FOLDER_FORMATS
+    from groove_widgets import PANEL, FG
+    # Keep the album actions together, with naming presets immediately below.
+    header=app.remove_albums_button.master
+    app.btn_verify.pack_forget()
+    app.btn_verify.pack(in_=header,side='right',padx=(0,5))
+    formats=tk.Frame(app.tab_albums,bg=PANEL)
+    formats.pack(fill='x',before=app.albums_tree,pady=(0,7))
+    for column,(label,var,presets,attribute) in enumerate([
+        ('Track rename format',app.file_format,FILE_FORMATS,'lite_file_format_box'),
+        ('Album rename format',app.folder_format,FOLDER_FORMATS,'lite_folder_format_box'),
+    ]):
+        formats.columnconfigure(column,weight=1,uniform='formats')
+        field=tk.Frame(formats,bg=PANEL)
+        field.grid(row=0,column=column,sticky='ew',padx=(0,6 if column==0 else 0))
+        tk.Label(field,text=label,bg=PANEL,fg=FG,font=(app.ui_font,8),anchor='w').pack(fill='x')
+        combo=ttk.Combobox(field,textvariable=var,values=list(presets),state='readonly',width=1,font=(app.ui_font,9))
+        combo.pack(fill='x',pady=(2,0))
+        combo.bind('<<ComboboxSelected>>',lambda event:app.refresh_preview())
+        setattr(app,attribute,combo)
+    app.lite_formats=formats
     top=tk.Frame(app.dashboard,bg=app.cget('bg'))
     top.grid(row=0,column=0,columnspan=2,sticky='ew',pady=(0,5))
     app.dashboard.rowconfigure(0,weight=0)
@@ -44,6 +66,9 @@ def install_lite(app):
 
     def apply_layout():
         compact=app._desktop.winfo_width()<1200 or app._desktop.winfo_height()<750
+        for button,width in ((app.btn_verify,104 if compact else 140),(app.remove_albums_button,140 if compact else 170)):
+            button.configure(width=width,height=27)
+            button.font=(app.ui_font,8 if compact else 9);button.draw()
         w['toolbar'].grid_remove();w['preview'].grid_remove();w['opts'].grid_remove();w['player'].grid_remove()
         app._footer_controls.pack_forget();w['footer_spacer'].pack_forget()
         app.status_label.configure(height=1)
