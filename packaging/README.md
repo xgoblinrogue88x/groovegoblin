@@ -37,8 +37,8 @@ python packaging/build_windows.py
 
 `dist` contains the installer and portable ZIP. The workflow also tests silent
 installation, the installed EXE and uninstall before publishing build artifacts.
-Download those from the successful **Windows portable and installer** Actions
-run. An unsuccessful run deliberately provides no installer download.
+Successful runs also publish both downloads to GitHub Releases, with a tag
+containing the source commit. An unsuccessful run provides no installer release.
 
 ## Runtime and data
 
@@ -60,8 +60,11 @@ before declaring the release fully validated. Native drop tests are included.
 Do not commit binaries. Preserve `ThirdParty`, `Sources` and all licenses when
 redistributing. The package collects wheel license/notice files, exact PyPI
 source distributions, CPython/Tcl/Tk notices and matching FFmpeg source. Review
-the pygame wheel's bundled SDL/codec notices and corresponding-source
-requirements before a public release; retain any additional notices/source
-required for that exact wheel. Builds are unsigned unless a separate signing
+the pygame wheel's bundled SDL/codec notices when updating dependencies. The
+pinned wheel was audited against its upstream development packages: FreeType
+2.11.1 and PortMidi DLLs match the pinned fallback package, libpng identifies
+1.6.58, and the corresponding license texts and FreeType attribution are
+collected explicitly. Repeat that audit when changing the pinned wheel.
+Builds are unsigned unless a separate signing
 process is configured. No signing identity or completed Windows test is implied
 by the existence of these scripts.

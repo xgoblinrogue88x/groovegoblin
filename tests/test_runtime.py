@@ -12,7 +12,7 @@ import groove_runtime as runtime
 class RuntimeTests(unittest.TestCase):
     def test_frozen_portable_undo_survives_resource_replacement(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); exe = root / 'GrooveGoblin.exe'
+            root = Path(temporary).resolve(); exe = root / 'GrooveGoblin.exe'
             (root / 'portable.flag').touch()
             with patch.object(runtime.sys, 'frozen', True, create=True), \
                  patch.object(runtime.sys, 'executable', str(exe)), \
@@ -25,7 +25,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_installed_runtime_uses_local_appdata_and_bundled_decoder(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             binary = root / '_internal/ffmpeg/ffmpeg.exe'
             binary.parent.mkdir(parents=True); binary.write_bytes(b'test')
             with patch.object(runtime.sys, 'frozen', True, create=True), \
@@ -41,7 +41,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_integrity_check_rejects_changed_missing_and_escaping_components(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); file = root / 'runtime.dll'; file.write_bytes(b'original')
+            root = Path(temporary).resolve(); file = root / 'runtime.dll'; file.write_bytes(b'original')
             manifest = root / 'runtime-manifest.json'
             manifest.write_text(json.dumps({'runtime.dll': hashlib.sha256(b'original').hexdigest()}))
             with patch.object(runtime.sys, 'frozen', True, create=True), \

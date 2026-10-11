@@ -8,7 +8,7 @@ from musicbrainz_client import MusicBrainz
 
 class GrooveTests(unittest.TestCase):
  def setUp(self):
-  self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
+  self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name).resolve()
   (self.root/'.fixtures').mkdir();self.masterflac=self.root/'.fixtures/master.flac';self.mastermp3=self.root/'.fixtures/master.mp3'
   for dest,codec in [(self.masterflac,'flac'),(self.mastermp3,'libmp3lame')]:
    cmd=['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=500:duration=0.2','-ac','2','-c:a',codec,'-y',str(dest)]
