@@ -7,6 +7,12 @@ on:
       - 'packaging/**'
       - 'groove_runtime.py'
       - '.github/workflows/windows-package.yml'
+      - '*.py'
+      - '*.pyw'
+      - 'tests/**'
+      - 'assets/**'
+      - 'requirements.txt'
+      - 'LICENSE*'
 permissions:
   contents: read
 concurrency:
@@ -35,10 +41,25 @@ jobs:
           msystem: UCRT64
           update: true
           install: mingw-w64-ucrt-x86_64-gcc make curl tar diffutils
+      - uses: actions/cache/restore@v4
+        id: decoder-cache
+        with:
+          path: |
+            build/ffmpeg
+            build/sources
+          key: windows-audio-decoder-${{ hashFiles('packaging/build_ffmpeg.sh') }}
       - name: Compile bundled FFmpeg from checked source
+        if: steps.decoder-cache.outputs.cache-hit != 'true'
         timeout-minutes: 20
         shell: msys2 {0}
         run: bash packaging/build_ffmpeg.sh
+      - uses: actions/cache/save@v4
+        if: steps.decoder-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            build/ffmpeg
+            build/sources
+          key: windows-audio-decoder-${{ hashFiles('packaging/build_ffmpeg.sh') }}
       - name: Test all application workflows on Windows
         timeout-minutes: 15
         shell: pwsh

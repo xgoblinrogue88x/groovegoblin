@@ -41,7 +41,15 @@ def tag_first(tags,key):
     return str(v[0]) if v else ''
 
 def file_signature(p):
-    s=Path(p).stat();return [s.st_size,s.st_mtime_ns]
+    # NTFS can report the same last-write timestamp for rapid, same-size tag
+    # edits. Compare content as well; neither a padded tag nor restored mtime
+    # should allow a stale preview to overwrite a later edit.
+    import hashlib
+    path=Path(p);s=path.stat();digest=hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda:stream.read(1024*1024),b''):
+            digest.update(chunk)
+    return [s.st_size,s.st_mtime_ns,digest.hexdigest()]
 
 @dataclass
 class Track:

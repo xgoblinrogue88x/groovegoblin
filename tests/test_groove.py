@@ -55,6 +55,18 @@ class GrooveTests(unittest.TestCase):
   actions,problems=plan_actions(albums,{'tags':True,'folders':False,'filenames':False});self.assertFalse(problems)
   f=FLAC(p);f['album']='Someone Edited This';f.save()
   self.assertTrue(preflight(actions))
+ def test_same_size_edit_with_original_timestamp_is_still_stale(self):
+  import os
+  from groove_core import file_signature
+  p=self.add_flac('Album','track.flac','Track')
+  albums,_=scan_folders([self.root]);a=albums[0];a.album='Correct Album';a.year='1981';a.approved=True
+  actions,problems=plan_actions(albums,{'tags':True,'folders':False,'filenames':False});self.assertFalse(problems)
+  before=p.stat();original=file_signature(p)
+  raw=bytearray(p.read_bytes());raw[-1]^=1;p.write_bytes(raw)
+  os.utime(p,ns=(before.st_atime_ns,before.st_mtime_ns))
+  self.assertEqual(file_signature(p)[:2],original[:2])
+  self.assertNotEqual(file_signature(p),original)
+  self.assertTrue(preflight(actions))
  def test_filename_apply_undo(self):
   p=self.add_mp3('Music','dirty filename.mp3','Purple Song',artist='Purple Person',album='Purple Era')
   albums,_=scan_folders([self.root]);a=albums[0];a.album='Purple Era';a.year='1989';a.approved=True
