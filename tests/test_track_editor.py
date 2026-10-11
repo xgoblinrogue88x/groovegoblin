@@ -61,6 +61,65 @@ class TrackEditorTests(unittest.TestCase):
             self.app.update();time.sleep(.02)
         self.app.update();self.assertFalse(self.app.worker_busy)
 
+    def test_clear_selected_across_albums_preserves_other_tracks_edits_and_playback(self):
+        e=self.editor;a=self.app
+        extra=self.f.add_mp3('Other Album','third.mp3','Third')
+        e.records[str(extra)]=read_track(extra);e.refresh()
+        first,second=map(str,self.paths);third=str(extra)
+        before={p:hashlib.sha256(p.read_bytes()).digest() for p in (*self.paths,extra)}
+        e.pending[second]={'title':'Keep this edit'}
+        e.player.playlist=list(e.records.values());e.player.index=1
+        current=e.player.current
+        e.tree.selection_set([first,third]);a.update()
+        with patch.object(e.player,'stop') as stop:
+            e.clear_selected_button.invoke();stop.assert_not_called()
+        self.assertEqual(list(e.records),[second]);self.assertEqual(e.pending,{second:{'title':'Keep this edit'}})
+        self.assertIs(e.player.current,current);self.assertEqual(e.player.index,0)
+        self.assertEqual(e.tree.get_children(),(second,))
+        self.assertTrue(e.clear_selected_button.disabled)
+        for path,hashed in before.items():self.assertEqual(hashlib.sha256(path.read_bytes()).digest(),hashed)
+
+    def test_clear_list_cancel_busy_and_navigation_do_not_reload_cleared_tracks(self):
+        from groove_core import scan_folders
+        e=self.editor;a=self.app
+        a.matched,_=scan_folders([self.paths[0].parent]);a.album_map={album.uid:album for album in a.matched}
+        a.roots=[str(self.paths[0].parent)];matches=list(a.matched);roots=list(a.roots)
+        before={p:hashlib.sha256(p.read_bytes()).digest() for p in self.paths}
+        e.pending[str(self.paths[0])]={'title':'Unsaved'}
+        with patch('groove_track_editor.messagebox.askyesno',return_value=False):
+            e.clear_list_button.invoke()
+        self.assertEqual(len(e.records),2);self.assertTrue(e.pending)
+        a.worker_busy=True
+        with patch('groove_track_editor.messagebox.showinfo') as info:
+            e.clear_list();info.assert_called_once()
+        a.worker_busy=False;self.assertEqual(len(e.records),2)
+        e.player.playlist=list(e.records.values());e.player.index=0
+        with patch('groove_track_editor.messagebox.askyesno',return_value=True),patch.object(e.player,'stop') as stop:
+            e.clear_list_button.invoke();stop.assert_called_once()
+        self.assertFalse(e.records);self.assertFalse(e.pending);self.assertFalse(e.tree.get_children())
+        self.assertIsNone(e.player.current);self.assertFalse(e.player.playlist)
+        self.assertTrue(e.clear_list_button.disabled)
+        self.assertEqual(a.matched,matches);self.assertEqual(a.roots,roots)
+        with patch.object(e,'import_scan') as importing:
+            a.tabs.select(a.tab_albums);a.tabs.select(e);a.update();importing.assert_not_called()
+        self.assertFalse(e.records)
+        e.add_paths([str(self.paths[0])]);self.wait()
+        self.assertEqual(set(e.records),{str(self.paths[0])});self.assertFalse(e.list_cleared)
+        for path,hashed in before.items():self.assertEqual(hashlib.sha256(path.read_bytes()).digest(),hashed)
+
+    def test_clear_current_track_stops_playback_and_cancels_inline_editor(self):
+        e=self.editor;a=self.app;first,second=map(str,self.paths)
+        e.player.playlist=list(e.records.values());e.player.index=0
+        e.tree.selection_set(first);a.update()
+        bounds=e.tree.bbox(first,'#2');self.assertTrue(bounds)
+        from types import SimpleNamespace
+        e.begin_inline(SimpleNamespace(x=bounds[0]+4,y=bounds[1]+4))
+        self.assertIsNotNone(e.inline)
+        with patch('groove_track_editor.messagebox.askyesno',return_value=True),patch.object(e.player,'stop') as stop:
+            e.clear_selected_button.invoke();stop.assert_called_once()
+        self.assertIsNone(e.inline);self.assertIsNone(e.player.current)
+        self.assertEqual(list(e.records),[second]);self.assertEqual([r['path'] for r in e.player.playlist],[second])
+
     def test_batch_and_individual_edits_artwork_save_and_undo(self):
         e=self.editor;before={p:hashlib.sha256(p.read_bytes()).digest() for p in self.paths}
         e.tree.selection_set([str(p) for p in self.paths]);e.selection_changed()
@@ -270,7 +329,7 @@ class TrackEditorTests(unittest.TestCase):
         a=self.app;e=self.editor
         for width,height in [(800,600),(1024,768),(1536,1000),(1920,1080),(850,620)]:
             a.geometry(f'{width}x{height}');a.update();a._responsive.apply();e.resize();a.update()
-            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.progress,e.volume,e.audio_output_button,e.player_cover,e.now,e.player_artist,e.player_album,*e.play_buttons,*e.top_buttons):
+            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.clear_selected_button,e.clear_list_button,e.progress,e.volume,e.audio_output_button,e.player_cover,e.now,e.player_artist,e.player_album,*e.play_buttons,*e.top_buttons):
                 self.assertTrue(widget.winfo_ismapped(),str(widget))
                 parent=widget.master
                 x=widget.winfo_rootx();y=widget.winfo_rooty()

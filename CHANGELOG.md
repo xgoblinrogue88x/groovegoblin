@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2
+
+- Added Clear Selected and Clear List above the Track Editor table, sized for compact windows.
+- Removed only editor rows, their staged changes and playlist entries; source music and organizer matches remain intact.
+- Asked before discarding staged/inline edits and blocked clearing during active file operations.
+- Kept unaffected playback running, stopped playback when clearing the current track, and prevented automatic scan imports from refilling an explicitly cleared list.
+- Added no-write, multi-album selection, cancellation, playback and navigation regression checks.
+
 ## 1.3.1
 
 - Kept sidebar navigation labels and version visible at every supported window size; compact mode adjusts fonts/spacing instead of hiding text.

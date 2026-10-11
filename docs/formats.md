@@ -1,4 +1,4 @@
-# Audio formats in Groove Goblin 1.3.1
+# Audio formats in Groove Goblin 1.3.2
 
 Add Files, folder scans, Explorer drops, Track Editor and cover previews share
 one format list. A filename extension is checked against the actual container;

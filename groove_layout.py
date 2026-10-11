@@ -26,7 +26,7 @@ class PageNavigation:
             button.active=name==a._active_page;button.draw()
         from types import SimpleNamespace
         a._footer_resize(SimpleNamespace(width=a._footer.winfo_width()))
-        if tracks and not a.track_editor.records and a.matched and not a.worker_busy:a.track_editor.import_scan()
+        if tracks and not a.track_editor.records and not a.track_editor.list_cleared and a.matched and not a.worker_busy:a.track_editor.import_scan()
         if page is a.tab_editor:a.album_entry.focus_set()
 
 

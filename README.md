@@ -1,4 +1,4 @@
-# Groove Goblin 1.3.1
+# Groove Goblin 1.3.2
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -60,6 +60,12 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
   and click Stage Edits to apply those values to the selection. Only checked
   fields change. Mixed values are blank and unchecked; checking a blank field
   explicitly clears that tag. Other fields remain untouched.
+- Clear Selected removes the selected rows from Track Editor; Ctrl/Shift selects
+  tracks across albums. Clear List removes every loaded editor row. Neither
+  deletes music or clears Scan & Rename matches. Clearing tracks with staged
+  edits asks before discarding them; other tracks and their staged edits remain.
+  Removing the playing track stops playback; removing other rows keeps it playing.
+  A cleared editor stays empty across navigation until you add/import tracks again.
 - Choose Artwork selects an image from your PC for all selected tracks. Remove
   Front removes the front cover. Other embedded pictures remain untouched.
 - Staging is read-only and marked with an asterisk. Review & Save shows each
@@ -136,7 +142,7 @@ Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still work
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.3.1.
+sidebar display version 1.3.2.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -160,7 +166,7 @@ organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume,
 sidebar artwork/metadata and playback continuity across sections.
 
-65 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+68 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

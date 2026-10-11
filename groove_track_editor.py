@@ -23,7 +23,7 @@ LABELS={'filename':'Filename','title':'Track title','artist':'Artist','albumarti
 class TrackEditor(tk.Frame):
     def __init__(self,app):
         super().__init__(app.content,bg=BG)
-        self.app=app;self.storage_base=Path(__file__).parent;self.records={};self.pending={};self.loading=False;self.photo=None;self.cover_cache={}
+        self.app=app;self.storage_base=Path(__file__).parent;self.records={};self.pending={};self.loading=False;self.photo=None;self.cover_cache={};self.list_cleared=False
         self.player=MusicPlayer();self.seeking=False;self.timer=None;self.inline=None
         self.columnconfigure(0,weight=1);self.rowconfigure(1,weight=1)
         toolbar=tk.Frame(self,bg=BG);toolbar.grid(row=0,column=0,sticky='ew',pady=(0,6))
@@ -38,10 +38,17 @@ class TrackEditor(tk.Frame):
         listing=self.list_panel.body
         listing.rowconfigure(1,weight=1);listing.columnconfigure(0,weight=1)
         header=tk.Frame(listing,bg=PANEL);header.grid(row=0,column=0,columnspan=2,sticky='ew',pady=(0,7))
-        tk.Label(header,text='Tracks',bg=PANEL,fg=FG,font=(app.ui_font,11,'bold')).pack(side='left')
-        self.track_hint=tk.Label(header,text='Double-click to edit',bg=PANEL,fg=MUTED,font=(app.ui_font,8))
+        title_row=tk.Frame(header,bg=PANEL);title_row.pack(fill='x')
+        tk.Label(title_row,text='Tracks',bg=PANEL,fg=FG,font=(app.ui_font,11,'bold')).pack(side='left')
+        self.track_hint=tk.Label(title_row,text='Double-click to edit',bg=PANEL,fg=MUTED,font=(app.ui_font,8))
         self.track_hint.pack(side='left',padx=12)
-        self.track_count=tk.Label(header,text='0 tracks',bg=PANEL,fg=GREEN,font=(app.ui_font,9));self.track_count.pack(side='right')
+        self.track_count=tk.Label(title_row,text='0 tracks',bg=PANEL,fg=GREEN,font=(app.ui_font,9));self.track_count.pack(side='right')
+        clear_row=tk.Frame(header,bg=PANEL);clear_row.pack(fill='x',pady=(4,0))
+        self.clear_selected_button=Button(clear_row,'Clear Selected',self.clear_selected,width=142,height=30,symbol='cross',accent='#ff6068',font=(app.ui_font,9))
+        self.clear_selected_button.pack(side='left',padx=(0,5))
+        self.clear_list_button=Button(clear_row,'Clear List',self.clear_list,width=110,height=30,symbol='cross',accent='#ff6068',font=(app.ui_font,9))
+        self.clear_list_button.pack(side='left')
+        self.clear_selected_button.state(['disabled']);self.clear_list_button.state(['disabled'])
         self.tree=ttk.Treeview(listing,columns=FIELDS,show='headings',selectmode='extended',style='Editor.Treeview')
         for field in FIELDS:
             self.tree.heading(field,text=LABELS[field],command=lambda f=field:self.sort(f))
@@ -116,6 +123,9 @@ class TrackEditor(tk.Frame):
             button.configure(width=130 if compact else 180,height=42 if compact else 58)
             button.subtitle='' if compact else ['Select tracks to edit','Add a music folder','Import scanned tracks'][index]
             button.font=(self.app.ui_font,8 if compact else 10);button.draw()
+        for button in (self.clear_selected_button,self.clear_list_button):
+            button.font=(self.app.ui_font,8 if compact else 9)
+            button.configure(height=28 if compact else 30);button.draw()
         ttk.Style(self).configure('Editor.Treeview',rowheight=28 if compact else 34)
         for field in FIELDS:
             self.checks[field].configure(width=93 if compact else 105,height=20 if compact else 24)
@@ -158,7 +168,10 @@ class TrackEditor(tk.Frame):
         self.selection_changed()
 
     def selection_changed(self,event=None):
-        selected=self.selected();self.selection_label.configure(text=f'Track Tags · {len(selected)} selected' if selected else 'Track Tags')
+        selected=self.selected()
+        self.clear_selected_button.state(['!disabled'] if selected else ['disabled'])
+        self.clear_list_button.state(['!disabled'] if self.records else ['disabled'])
+        self.selection_label.configure(text=f'Track Tags · {len(selected)} selected' if selected else 'Track Tags')
         self.loading=True
         try:
             for field in FIELDS:
@@ -254,6 +267,36 @@ class TrackEditor(tk.Frame):
         for path in self.selected():self.pending.pop(path,None)
         self.refresh()
 
+    def clear_selected(self):
+        self.remove_tracks(self.selected())
+
+    def clear_list(self):
+        self.remove_tracks(list(self.records),clear_all=True)
+
+    def remove_tracks(self,paths,*,clear_all=False):
+        """Remove editor rows only; source files and the organizer stay intact."""
+        if not self.check_idle():return
+        removed=set(paths)&self.records.keys()
+        if not removed:return
+        if any(path in self.pending for path in removed) or self.inline:
+            prompt=f'Remove {len(removed)} tracks from the editor and discard their staged edits?'
+            if self.inline:prompt+=' Any open unsaved cell edit will also be discarded.'
+            prompt+=' Your music files will stay unchanged.'
+            if not messagebox.askyesno('Clear tracks',prompt,parent=self.app):return
+        if self.inline:self.inline.destroy();self.inline=None
+        current=self.player.current
+        stop=clear_all or (current is not None and current['path'] in removed)
+        if stop:self.player.stop()
+        self.player.playlist=[] if clear_all else [record for record in self.player.playlist if record['path'] not in removed]
+        self.player.index=next((i for i,record in enumerate(self.player.playlist) if record is current),-1) if not stop else -1
+        for path in removed:self.records.pop(path,None);self.pending.pop(path,None)
+        self.cover_cache={key:art for key,art in self.cover_cache.items() if key[0] not in removed}
+        if not self.records:self.list_cleared=True
+        self.refresh();self.update_player_details();self.update_player_art()
+        if stop:
+            self.progress.set(0);self.time.configure(text='0:00 / 0:00')
+        self.app.status.set(f'Track Editor: cleared {len(removed)} tracks · {len(self.records)} remaining')
+
     def add_files(self):
         if not self.check_idle():return
         paths=filedialog.askopenfilenames(title='Add tracks to Track Editor',filetypes=[('Music',FILE_PATTERN)])
@@ -314,6 +357,7 @@ class TrackEditor(tk.Frame):
 
     def handle_event(self,kind,*args):
         if kind=='manual_loaded':
+            if args[0]:self.list_cleared=False
             for path,record in args[0].items():
                 if path not in self.pending:self.records[path]=record
             for error in args[1]:self.app.log('TRACK EDITOR: '+error)
