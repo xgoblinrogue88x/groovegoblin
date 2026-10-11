@@ -93,7 +93,13 @@ class ResponsiveLayout:
             panel.padding=6 if compact else (9 if medium else 11)
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
-        player_height=226 if compact else (242 if medium else 252)
+        a.track_editor.resize_player(compact)
+        # Native Segoe UI metrics can need a few pixels more than Helvetica.
+        # Measure the grid after updating fonts so Audio Output remains inside
+        # its panel instead of being clipped on Windows.
+        a.update_idletasks()
+        player_height=max(226 if compact else (242 if medium else 252),
+                          w['player'].body.winfo_reqheight()+w['player'].padding*2+2)
         nav_height=(24 if compact else (36 if medium else 44))+2
         logo_budget=max(48,height-len(a.nav_buttons)*nav_height-player_height-54)
         logo_width=min(40 if compact else (174 if medium else 238),int(logo_budget*self.logo_source.width/self.logo_source.height))
@@ -112,7 +118,6 @@ class ResponsiveLayout:
             button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 44));button.draw()
         w['player'].configure(height=player_height)
         w['player'].grid_configure(pady=(3,3))
-        a.track_editor.resize_player(compact)
 
         columns=2 if center_width<660 else 4
         for col in range(4):w['toolbar'].columnconfigure(col,weight=1 if col<columns else 0,minsize=0)
