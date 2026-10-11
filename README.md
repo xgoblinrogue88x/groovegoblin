@@ -8,6 +8,22 @@ local cover-art replacement, playback, previews and Undo. Supports multiple audi
 
 ## Run on Windows
 
+Get the installer or portable ZIP from [Windows downloads](https://github.com/xgoblinrogue88x/groovegoblin/releases).
+Only builds that pass the Windows EXE and installer checks are published there.
+
+- **Installer:** run the Setup EXE, then open Groove Goblin from the Start menu.
+- **Portable:** extract the complete portable ZIP into a writable folder, then
+  open **GrooveGoblin.exe** with the Groove Goblin icon. Keep its companion files
+  and `Data` folder together.
+
+Python, Tcl/Tk, tagging and audio libraries, and FFmpeg are bundled. No separate
+Python/FFmpeg installation or BAT launcher is needed for these downloads.
+Installed undo records live under `%LOCALAPPDATA%\GrooveGoblin`; portable undo
+records live beside the executable in `Data`. Keep those records when updating.
+See [packaging instructions](packaging/README.md) to reproduce the Windows build.
+
+### Running the development source
+
 Extract the entire project into a new writable folder. Double-click
 `START_GROOVE_GOBLIN.bat` and leave its console open for diagnostics. The launcher
 finds Python 3.10+, checks Tk, installs missing Mutagen, Pillow, pygame-ce and imageio-ffmpeg
