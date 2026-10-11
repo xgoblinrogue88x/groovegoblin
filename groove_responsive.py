@@ -108,6 +108,12 @@ class ResponsiveLayout:
             self.version.grid()
         for name,button in a.nav_buttons.items():
             button.text='' if self.icon_nav else self.nav_text[name]
+            # Keep the full navigation titles readable in the narrower sidebar.
+            font=button.font
+            available=sidebar_width-w['sidebar'].padding*2-66
+            while button.text and font[1]>8 and tkfont.Font(master=a,font=(*font,'bold')).measure(button.text)>available:
+                font=(font[0],font[1]-1,*font[2:])
+            button.font=font
             button.configure(width=sidebar_width-20,height=36 if compact else (40 if medium else 49));button.draw()
         formats=w['formats'];formats.configure(height=74 if self.icon_nav else (128 if medium else 170))
         formats.grid_configure(pady=(3,4) if compact else (8,12))

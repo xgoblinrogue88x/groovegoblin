@@ -204,7 +204,7 @@ def install_layout(cls):
         nav=tk.Frame(side,bg=PANEL)
         nav.grid(row=1,column=0,sticky='ew')
         for name,label,symbol,action in [
-            ('scan','Scan & Fix','search',lambda:self.tabs.select(self.tab_albums)),
+            ('scan','Scan & Rename','search',lambda:self.tabs.select(self.tab_albums)),
             ('lookup','Album Lookup','disc',self.go_editor),
             ('manual','Manual Edit','edit',self.go_editor),
             ('tracks','Track Editor','music',lambda:self.tabs.select(self.track_editor)),

@@ -233,7 +233,7 @@ def bind_mousewheel(widget, *, yview=None, xview=None, targets=()):
             if not delta:return 'break'
             steps=-(int(delta/120) if abs(delta)>=120 else (1 if delta>0 else -1))
         view=horizontal if event.state & 0x1 else vertical
-        if view:view('scroll',steps*3,'units')
+        if view:view('scroll',steps,'units')
         return 'break'
     for target in (widget,*targets):
         for sequence in ('<MouseWheel>','<Shift-MouseWheel>'):

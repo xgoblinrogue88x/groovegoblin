@@ -9,7 +9,7 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 from groove_widgets import BG,PANEL,LINE,FG,MUTED,GREEN,PURPLE,Button,Check,Panel,Scrollbar,bind_mousewheel
 from groove_manual import FIELDS,read_track,load_artwork,validate_changes,plan_manual,apply_manual
-from groove_core import scan_folders,newest_journal,undo_journal
+from groove_core import scan_folders,newest_journal,undo_journal,EXTENSIONS
 from groove_player import MusicPlayer
 from groove_formats import FILE_PATTERN, can_tag, can_rename, format_note
 from groove_decode import PCM_FORMATS
@@ -255,18 +255,33 @@ class TrackEditor(tk.Frame):
     def add_files(self):
         if not self.check_idle():return
         paths=filedialog.askopenfilenames(title='Add tracks to Track Editor',filetypes=[('Music',FILE_PATTERN)])
-        if paths:self.load_paths(paths)
+        if paths:self.add_paths(paths)
 
     def add_folder(self):
         if not self.check_idle():return
         folder=filedialog.askdirectory(title='Add folder to Track Editor')
-        if not folder:return
+        if folder:self.add_paths([folder])
+
+    def add_paths(self,paths,*,folders_only=False):
+        """Add a batch directly to the editor, independently of organizer input."""
+        if not self.check_idle():return False
+        accepted=[];seen=set()
+        for value in paths:
+            try:
+                path=Path(value)
+                if not path.is_absolute() or not (path.is_dir() or (not folders_only and path.is_file() and path.suffix.lower() in EXTENSIONS)):continue
+                path=path.resolve();key=os.path.normcase(str(path))
+                if key not in seen:accepted.append(str(path));seen.add(key)
+            except (OSError,ValueError,RuntimeError):continue
+        if not accepted:
+            self.app.status.set('Track Editor: add folders or supported music files.');return False
+        recursive=self.app.scan_subfolders.get()
         def work():
-            albums,issues=scan_folders([folder],recursive=self._recursive)
-            paths=[track.path for album in albums for track in album.tracks]
-            self.read_paths_worker(paths,issues)
-        self._recursive=self.app.scan_subfolders.get()
+            albums,issues=scan_folders(accepted,cancel=self.app.cancel,recursive=recursive)
+            self.read_paths_worker([track.path for album in albums for track in album.tracks],issues)
+        self.app.status.set('Reading tracks into Track Editor…')
         self.app.run_background(work)
+        return True
 
     def import_scan(self):
         paths=[track.path for album in self.app.matched for track in album.tracks]

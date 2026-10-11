@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4
+
+- Changed wheel scrolling to one row per notch in organizer/editor lists and one line in text panels.
+- Renamed Scan & Fix to Scan & Rename, including its compact navigation tooltip.
+- Routed Track Editor file/folder drops directly into its own track list; Add Files and Add Folder share this read-only path.
+- Preserved organizer matches, editor tracks and staged edits during direct additions.
+
 ## 1.2.3
 
 - Added Audio Output selection, reconnect and a short test tone to Track Editor.

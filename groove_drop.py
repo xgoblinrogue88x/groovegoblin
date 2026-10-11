@@ -62,6 +62,8 @@ class FolderDropMixin:
         if self.worker_busy:
             self.status.set('Wait for the current operation to finish, then drop items again.')
             return False
+        if getattr(self,'_active_page',None)=='tracks' and hasattr(self,'track_editor'):
+            return self.track_editor.add_paths(paths,folders_only=folders_only)
         added, accepted, ignored = self.add_paths(paths, folders_only=folders_only)
         if not accepted:
             self.status.set('Drop folders or supported music files here to add them.')

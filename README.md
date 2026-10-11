@@ -1,10 +1,10 @@
-# Groove Goblin 1.2.3
+# Groove Goblin 1.2.4
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
 local cover-art replacement, playback, previews and Undo. Supports multiple audio containers; [see the format matrix and limits](docs/formats.md).
 
-![Running Scan & Fix with generated test music](docs/interface-linux.png)
+![Running Scan & Rename with generated test music](docs/interface-linux.png)
 
 ## Run on Windows
 
@@ -45,6 +45,11 @@ Missing internet or artwork leaves a placeholder and does not block local work.
 
 ## Track Editor
 
+Add Files, Add Folder and Explorer drops load tracks directly into this section.
+They append to the editor without rescanning or changing the organizer list,
+keep staged edits, and honor the Scan subfolders setting for folder additions.
+Use Scan List remains available to import albums from Scan & Rename.
+
 Select **Track Editor** in the left sidebar. Add files or folders, or use the
 scanned list. A drop while this screen is open scans and imports the new tracks.
 
@@ -73,7 +78,7 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
   If the timer moves but you hear nothing, choose the correct output and Test
   Sound. If the tone is silent too, check Windows Settings → System → Sound →
   Volume mixer and unmute/raise the Python or Groove Goblin app volume.
-- Undo Last Save restores the latest manual save. Scan & Fix renames also
+- Undo Last Save restores the latest manual save. Scan & Rename renames also
   update loaded editor paths while preserving staged edits.
 
 ![Running Track Editor with generated test tracks](docs/track-editor-linux.png)
@@ -103,7 +108,7 @@ with a launcher, not a standalone EXE.
 
 ## Window sizing and keyboard
 
-Track Editor uses the same rounded panels and icon buttons as Scan & Fix, with
+Track Editor uses the same rounded panels and icon buttons as Scan & Rename, with
 alternating dark rows, green selection/staging accents and a framed player.
 Tables use slim rounded scrollbars; player sliders have green handles.
 
@@ -112,18 +117,19 @@ internally when needed. Resizing reduces artwork and spacing and uses sidebar
 icons with hover labels on compact screens. The logo fills the available sidebar
 space. Format notes have a full-width footer, and [About](docs/about-linux.png)
 groups supported formats and Undo information in styled panels.
-[Compact Scan & Fix](docs/interface-compact-linux.png) and
+[Compact Scan & Rename](docs/interface-compact-linux.png) and
 [compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
 Select album rows with Ctrl-click / Shift-click (Ctrl+A selects all visible rows),
 then use Remove Selected or Delete. Remaining matches stay intact; removal does
 not delete music. A new scan reads the selected source folders again.
 
-Mouse-wheel scrolling works over lists, table headers and scrollbar gutters.
+Each mouse-wheel notch scrolls one album/track row (one line in text panels),
+including over table headers and scrollbar gutters.
 Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still works.
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.2.3.
+sidebar display version 1.2.4.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -146,7 +152,7 @@ resize bounds, staging without writes, drop auto-scanning, and editor paths afte
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume.
 
-61 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+62 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

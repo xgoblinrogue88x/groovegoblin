@@ -1,4 +1,4 @@
-# Audio formats in Groove Goblin 1.2.3
+# Audio formats in Groove Goblin 1.2.4
 
 Add Files, folder scans, Explorer drops, Track Editor and cover previews share
 one format list. A filename extension is checked against the actual container;
@@ -29,7 +29,7 @@ container. Arbitrary codec data cannot acquire tags just by changing an extensio
 
 Raw AAC and PCM are listed in Track Editor with a limitation notice. Tag and
 artwork controls are disabled for those rows; filename editing stays available.
-In Scan & Fix, turn off Replace album / year tags before renaming a folder that
+In Scan & Rename, turn off Replace album / year tags before renaming a folder that
 contains raw AAC/PCM. Numbered filename presets still require track-number tags;
 number-free formats can use the filename-derived title and approved artist.
 CDA rows explain that CD ripping is needed and cannot be edited or played as

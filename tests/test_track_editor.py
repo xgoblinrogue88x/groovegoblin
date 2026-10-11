@@ -174,14 +174,40 @@ class TrackEditorTests(unittest.TestCase):
         self.assertEqual(e.pending[old]['title'],'Staged title')
         self.assertEqual(self.paths[0].read_bytes(),original)
 
-    def test_drop_on_editor_auto_scans_and_loads_track_without_saving(self):
+    def test_drop_on_editor_loads_directly_without_organizer_scan_or_saving(self):
         a=self.app;e=self.editor;a.auto_lookup.set(False)
         path=self.f.add_mp3('New Album','new.mp3','New song')
         before=path.read_bytes()
-        self.assertTrue(a.drop_paths([str(path)]))
-        self.wait()
+        original_matched=list(a.matched);original_roots=list(a.roots)
+        old=str(self.paths[0]);e.pending[old]={'title':'Keep staged title'}
+        with patch.object(a,'scan',side_effect=AssertionError('Editor drops must not scan organizer input')):
+            self.assertTrue(a.drop_paths([str(path)]));self.wait()
         self.assertIn(str(path),e.records)
         self.assertEqual(path.read_bytes(),before)
+        self.assertEqual(a.matched,original_matched);self.assertEqual(a.roots,original_roots)
+        self.assertEqual(e.pending[old],{'title':'Keep staged title'})
+
+    def test_editor_add_buttons_and_folder_drops_append_tracks_independently(self):
+        a=self.app;e=self.editor
+        direct=self.f.add_mp3('Direct','one.mp3','Direct song')
+        album=self.f.add_flac('Dropped album','two.flac','Album song')
+        nested=self.f.add_mp3('Dropped album/Subfolder','three.mp3','Nested song')
+        before={p:p.read_bytes() for p in (direct,album,nested,*self.paths)}
+        a.auto_lookup.set(True)
+        with patch.object(a,'scan',side_effect=AssertionError('Direct additions must not change organizer scan')),patch.object(a,'worker_match_albums',side_effect=AssertionError('Direct additions must stay offline')):
+            with patch('groove_track_editor.filedialog.askopenfilenames',return_value=(str(direct),)):
+                e.top_buttons[0].invoke();self.wait()
+            self.assertIn(str(direct),e.records)
+            a.scan_subfolders.set(False)
+            with patch('groove_track_editor.filedialog.askdirectory',return_value=str(album.parent)):
+                e.top_buttons[1].invoke();self.wait()
+            self.assertIn(str(album),e.records);self.assertNotIn(str(nested),e.records)
+            a.scan_subfolders.set(True)
+            self.assertTrue(a.drop_paths([str(album.parent),str(album),str(direct)]));self.wait()
+            self.assertIn(str(nested),e.records)
+            self.assertEqual(len(e.records),5)
+        self.assertFalse(a.roots);self.assertFalse(a.matched)
+        self.assertEqual({p:p.read_bytes() for p in before},before)
 
     def test_wav_drop_scans_imports_and_pcm_editor_blocks_embedded_edits(self):
         import shutil,subprocess

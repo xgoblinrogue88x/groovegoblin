@@ -72,6 +72,7 @@ class LayoutTests(unittest.TestCase):
                 table.body.yview_moveto(0);a.update()
                 target.event_generate('<MouseWheel>',delta=-120);a.update()
                 self.assertGreater(table.body.yview()[0],0,(table.mode,str(target)))
+                self.assertAlmostEqual(table.body.yview()[0],1/60,places=5)
                 target.event_generate('<MouseWheel>',delta=120);a.update()
                 self.assertEqual(table.body.yview()[0],0)
             table.body.event_generate('<Button-5>');a.update()
@@ -81,6 +82,7 @@ class LayoutTests(unittest.TestCase):
         for i in range(60):tree.insert('','end',iid=f'wheel-{i}',values=('track',)*9)
         a.update();tree.yview_moveto(0)
         tree.event_generate('<MouseWheel>',delta=-120);a.update();self.assertGreater(tree.yview()[0],0)
+        self.assertAlmostEqual(tree.yview()[0],1/60,places=5)
         tree.xview_moveto(0);tree.event_generate('<Shift-MouseWheel>',delta=-120);a.update()
         self.assertGreater(tree.xview()[0],0)
         a.tabs.select(a.tab_history)
@@ -202,6 +204,7 @@ class LayoutTests(unittest.TestCase):
 
     def test_workspace_and_footer_at_supported_sizes(self):
         a = self.app
+        self.assertEqual(a._responsive.nav_text['scan'],'Scan & Rename')
         self.assertFalse(hasattr(a, 'workspace_canvas'))
         for width, height in [(800,600),(1024,768),(1213,813),(1536,1000),(1920,1080),(850,620),(800,600)]:
             a.geometry(f'{width}x{height}')
@@ -211,6 +214,9 @@ class LayoutTests(unittest.TestCase):
             for widget in (a.btn_apply,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
                 self.assertTrue(widget.winfo_ismapped())
                 if widget is a.remove_albums_button:
+                    for item in widget.find_all():
+                        if widget.type(item)=='text':self.assertLessEqual(widget.bbox(item)[2],widget.winfo_width())
+                if widget is a.nav_buttons['scan'] and widget.text:
                     for item in widget.find_all():
                         if widget.type(item)=='text':self.assertLessEqual(widget.bbox(item)[2],widget.winfo_width())
                 x=widget.winfo_rootx()-a.winfo_rootx();y=widget.winfo_rooty()-a.winfo_rooty()
