@@ -477,8 +477,10 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         if not tochange:messagebox.showinfo('Nothing to change','All selected albums already match your requested naming format.');return
         if self.is_lite:
             summary='\n'.join(f'{Path(a["folder"]).name} → {Path(a["dest_folder"]).name}' for a in tochange[:8])
-            confirmation=(f'Apply changes to {len(tochange)} albums?\n\nRename files: {self.file_format.get()}\n'
-                f'Rename folders: {self.folder_format.get()}\nReplace album / year tags and keep an undo journal.\n\n'
+            file_format=self.file_format.get() if self.opt_filenames.get() else 'Off'
+            folder_format=self.folder_format.get() if self.opt_folders.get() else 'Off'
+            confirmation=(f'Apply changes to {len(tochange)} albums?\n\nRename files: {file_format}\n'
+                f'Rename folders: {folder_format}\nReplace album / year tags and keep an undo journal.\n\n'
                 +summary+('\n…' if len(tochange)>8 else '')+'\n\nProceed?')
         else:confirmation=f'Apply changes to {len(tochange)} album folders?\n\n'+\
                   'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'+\

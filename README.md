@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.3.5
+# Groove Goblin LITE 1.3.6
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -14,7 +14,9 @@ MusicBrainz results list fill the right rail. Preview Changes, Now Playing,
 Rename Options and Save Report are omitted from the interface.
 
 File renaming (`## - Artist - Title`), album-folder renaming
-(`Artist - Album (Year)`), album/year tag replacement and undo journals are ON.
+(`Artist - Album (Year)`) start ON and can be toggled independently using the
+checkboxes beside their naming dropdowns. Album/year tag replacement and undo
+journals remain ON.
 Applying still requires approved matches, collision/stale-file checks and a
 confirmation listing the naming formats and folder changes. Unresolved items
 remain visible through the Apply button's review message. Scan and lookup never

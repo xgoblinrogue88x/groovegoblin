@@ -19,7 +19,7 @@ Primary user requirements:
 
 - **Scanning, searching, and previewing are read-only.** Write only after an explicit user action and confirmation.
 - Don't send music files, fingerprints, paths, or personally identifying data online without the user's explicit choice and clear explanation. Current MusicBrainz searches transmit artist/title lookup text, not the audio file.
-- Do not modify TITLE, TRACKNUMBER, ARTIST, album artwork, ReplayGain, comments, or arbitrary other tags when changing album/year. FULL defaults file renaming OFF. The user explicitly requested LITE with file/folder renaming and album/year replacement ON; preserve its apply confirmation and undo journal.
+- Do not modify TITLE, TRACKNUMBER, ARTIST, album artwork, ReplayGain, comments, or arbitrary other tags when changing album/year. FULL defaults file renaming OFF. The user explicitly requested LITE with file/folder renaming ON by default (independently switchable) and album/year replacement ON; preserve its apply confirmation and undo journal.
 - Keep the default folder naming `Artist - Album Title (Year)` and prefer original album release year; explicit user-selected presets may change the layout. Preserve legacy Van Halen mappings unless a test establishes a specific correction.
 - Do not overwrite or merge into occupied destination folders. Detect case-insensitive collisions, nested folder conflicts, and changed files since scan. If in doubt, skip with a clear error.
 - Manual Track Editor edits may change explicitly selected title/artist/track/disc/album/year fields, filenames and front artwork after review and confirmation. Preserve all other tags/pictures and support multi-selection.

@@ -13,25 +13,31 @@ def install_lite(app):
     import tkinter as tk
     from tkinter import ttk
     from groove_naming import FILE_FORMATS, FOLDER_FORMATS
-    from groove_widgets import PANEL, FG
+    from groove_widgets import PANEL, Check
     # Keep the album actions together, with naming presets immediately below.
     header=app.remove_albums_button.master
     app.btn_verify.pack_forget()
     app.btn_verify.pack(in_=header,side='right',padx=(0,5))
     formats=tk.Frame(app.tab_albums,bg=PANEL)
     formats.pack(fill='x',before=app.albums_tree,pady=(0,7))
-    for column,(label,var,presets,attribute) in enumerate([
-        ('Track rename format',app.file_format,FILE_FORMATS,'lite_file_format_box'),
-        ('Album rename format',app.folder_format,FOLDER_FORMATS,'lite_folder_format_box'),
+    for column,(label,var,enabled,presets,attribute,check_attribute) in enumerate([
+        ('Track rename format',app.file_format,app.opt_filenames,FILE_FORMATS,'lite_file_format_box','lite_file_rename_check'),
+        ('Album rename format',app.folder_format,app.opt_folders,FOLDER_FORMATS,'lite_folder_format_box','lite_folder_rename_check'),
     ]):
         formats.columnconfigure(column,weight=1,uniform='formats')
         field=tk.Frame(formats,bg=PANEL)
         field.grid(row=0,column=column,sticky='ew',padx=(0,6 if column==0 else 0))
-        tk.Label(field,text=label,bg=PANEL,fg=FG,font=(app.ui_font,8),anchor='w').pack(fill='x')
+        check=Check(field,label,enabled,width=1,font=(app.ui_font,8))
+        check.configure(height=21);check.pack(fill='x')
         combo=ttk.Combobox(field,textvariable=var,values=list(presets),state='readonly',width=1,font=(app.ui_font,9))
         combo.pack(fill='x',pady=(2,0))
         combo.bind('<<ComboboxSelected>>',lambda event:app.refresh_preview())
+        def toggle(combo=combo,enabled=enabled):
+            combo.configure(state='readonly' if enabled.get() else 'disabled')
+            app.refresh_preview()
+        check.command=toggle
         setattr(app,attribute,combo)
+        setattr(app,check_attribute,check)
     app.lite_formats=formats
     top=tk.Frame(app.dashboard,bg=app.cget('bg'))
     top.grid(row=0,column=0,columnspan=2,sticky='ew',pady=(0,5))
@@ -69,6 +75,11 @@ def install_lite(app):
         for button,width in ((app.btn_verify,104 if compact else 140),(app.remove_albums_button,140 if compact else 170)):
             button.configure(width=width,height=27)
             button.font=(app.ui_font,8 if compact else 9);button.draw()
+        # At the minimum width, give the two actions a full row instead of
+        # clipping their labels beside the album heading.
+        required=app.albums_heading.winfo_reqwidth()+int(app.btn_verify.cget('width'))+int(app.remove_albums_button.cget('width'))+5
+        app.albums_heading.pack_configure(side='top' if app.tab_albums.winfo_width()<required else 'left',
+                                          anchor='w',before=app.remove_albums_button)
         w['toolbar'].grid_remove();w['preview'].grid_remove();w['opts'].grid_remove();w['player'].grid_remove()
         app._footer_controls.pack_forget();w['footer_spacer'].pack_forget()
         app.status_label.configure(height=1)

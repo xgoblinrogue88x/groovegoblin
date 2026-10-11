@@ -48,7 +48,10 @@ class LiteTests(unittest.TestCase):
             for combo in (a.lite_file_format_box,a.lite_folder_format_box):
                 self.assertTrue(combo.winfo_ismapped())
                 self.assertLess(combo.winfo_rooty()+combo.winfo_height(),a.albums_tree.winfo_rooty())
-            self.assertGreaterEqual(a.btn_verify.winfo_rootx(),a.albums_heading.winfo_rootx()+a.albums_heading.winfo_reqwidth())
+            if a.btn_verify.winfo_rooty()==a.albums_heading.winfo_rooty():
+                self.assertGreaterEqual(a.btn_verify.winfo_rootx(),a.albums_heading.winfo_rootx()+a.albums_heading.winfo_reqwidth())
+            for button in (a.btn_verify,a.remove_albums_button):
+                self.assertGreaterEqual(button.winfo_width(),int(button.cget('width')))
             for button in w['actions'].winfo_children():
                 self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),w['details'].body.winfo_rooty()+w['details'].body.winfo_height())
             self.assertLess(w['details'].winfo_rooty()-a.lite_toolbar.winfo_rooty(),55)
@@ -102,6 +105,37 @@ class LiteTests(unittest.TestCase):
         self.assertIn('## - Title',confirm.call_args.args[1])
         self.assertIn('Artist - Year - Album',confirm.call_args.args[1])
         self.assertEqual(before,{p:p.read_bytes() for p in paths})
+
+    def test_rename_checkboxes_independent_and_tag_only_apply_keeps_paths(self):
+        from groove_manual import read_track
+        a=self.app;paths=self.load();before={p:p.read_bytes() for p in paths}
+        file_preset=a.file_format.get();folder_preset=a.folder_format.get()
+        a.lite_file_rename_check.invoke();a.update()
+        self.assertFalse(a.opt_filenames.get());self.assertTrue(a.opt_folders.get())
+        self.assertEqual(str(a.lite_file_format_box.cget('state')),'disabled')
+        for action in a.actions:
+            self.assertNotEqual(action['folder'],action['dest_folder'])
+            for track in action['tracks']:self.assertEqual(track['new_name'],Path(track['old_path']).name)
+        a.lite_file_rename_check.invoke();a.lite_folder_rename_check.invoke();a.update()
+        self.assertTrue(a.opt_filenames.get());self.assertFalse(a.opt_folders.get())
+        self.assertEqual(str(a.lite_file_format_box.cget('state')),'readonly')
+        self.assertEqual(str(a.lite_folder_format_box.cget('state')),'disabled')
+        for action in a.actions:
+            self.assertEqual(action['folder'],action['dest_folder'])
+            for track in action['tracks']:self.assertNotEqual(track['new_name'],Path(track['old_path']).name)
+        a.lite_file_rename_check.invoke();a.update()
+        self.assertEqual(a.file_format.get(),file_preset);self.assertEqual(a.folder_format.get(),folder_preset)
+        self.assertEqual(before,{p:p.read_bytes() for p in paths})
+        self.assertFalse(a.problems)
+        with patch('tkinter.messagebox.askyesno',return_value=True) as confirm,patch('tkinter.messagebox.showinfo'):
+            a.apply();self.wait()
+            self.assertIn('Rename files: Off',confirm.call_args.args[1])
+            self.assertIn('Rename folders: Off',confirm.call_args.args[1])
+            for path in paths:
+                self.assertTrue(path.is_file());self.assertEqual(read_track(path)['album'],'Correct Album')
+            a.undo();self.wait()
+        for path in paths:
+            self.assertTrue(path.is_file());self.assertNotEqual(read_track(path)['album'],'Correct Album')
 
     def test_lite_file_folder_tag_apply_and_undo_preserves_tags_and_audio(self):
         from groove_core import newest_journal

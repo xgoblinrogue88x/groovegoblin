@@ -145,7 +145,7 @@ def main():
         raise RuntimeError('Frozen application smoke test failed; no installer published.\n' + detail)
     # Never include test-generated undo/data in the portable ZIP.
     shutil.rmtree(app / 'Data', ignore_errors=True)
-    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-LITE-1.3.5-Windows-x64-Portable'), 'zip',
+    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-LITE-1.3.6-Windows-x64-Portable'), 'zip',
                         root_dir=ROOT / 'dist', base_dir='GrooveGoblinLite')
 
 

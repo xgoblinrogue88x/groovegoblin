@@ -1,4 +1,4 @@
-#define AppVersion "1.3.5"
+#define AppVersion "1.3.6"
 [Setup]
 AppId={{B87264A7-5236-4EA0-A416-EB0F8DE72468}
 AppName=Groove Goblin LITE
@@ -10,7 +10,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir=..\dist
-OutputBaseFilename=GrooveGoblin-LITE-1.3.5-Windows-x64-Setup
+OutputBaseFilename=GrooveGoblin-LITE-1.3.6-Windows-x64-Setup
 SetupIconFile=..\assets\GrooveGoblin.ico
 UninstallDisplayIcon={app}\GrooveGoblinLite.exe
 Compression=lzma2
