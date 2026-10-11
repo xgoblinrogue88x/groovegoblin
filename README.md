@@ -205,6 +205,6 @@ Artwork, MusicBrainz and native queued drops live in their corresponding
 `groove_artwork.py`, `musicbrainz_client.py` and `groove_windows_drop.py` modules.
 Original branding stays in `assets/`; `GUI_Preview.png` is the original mockup.
 
-See `CHANGELOG.md` and `LICENSE_NOTES.txt`. Dependencies are installed separately;
+See `CHANGELOG.md`, `LICENSE` (GPLv3), and `LICENSE_NOTES.txt`. Source-mode dependencies are installed separately;
 no generated audio, runtime binaries or user media are distributed in source.
 Handoff documents describe the broader roadmap, not completed features.

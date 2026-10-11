@@ -6,7 +6,8 @@ import sys
 
 def main():
     logs = Path('build/test-results'); logs.mkdir(parents=True, exist_ok=True)
-    for module in sorted(Path('tests').glob('test_*.py')):
+    pattern = sys.argv[1] if len(sys.argv) > 1 else 'test_*.py'
+    for module in sorted(Path('tests').glob(pattern)):
         log = logs / (module.stem + '.txt')
         print('Testing ' + module.name, flush=True)
         with log.open('w', encoding='utf-8') as stream:

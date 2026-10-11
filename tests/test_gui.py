@@ -49,6 +49,7 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(len(tree.selection()),2)
         a.worker_busy=True;a.remove_selected_albums();self.assertEqual(len(a.matched),2)
         a.worker_busy=False;tree.selection_set(originals[1].uid);a.update()
+        tree.body.focus_force();a.update()
         tree.body.event_generate('<Delete>');a.update()
         self.assertEqual(a.matched,[originals[3]])
         tree.body.event_generate('<Control-a>');a.update()
@@ -332,7 +333,7 @@ class LayoutTests(unittest.TestCase):
                 a.update();time.sleep(.02)
             self.assertFalse(a.worker_busy)
             self.assertEqual(len(a.matched),1)
-            self.assertEqual(a.matched[0].tracks[0].path,str(included))
+            self.assertEqual(Path(a.matched[0].tracks[0].path).resolve(),included.resolve())
             lookup.assert_not_called();apply.assert_not_called()
         for path,digest in before.items():
             self.assertEqual(hashlib.sha256(path.read_bytes()).digest(),digest)

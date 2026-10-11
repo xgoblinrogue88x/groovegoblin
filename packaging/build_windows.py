@@ -87,13 +87,38 @@ def main():
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             for member in archive.infolist():
                 if not member.is_dir() and any(word in member.filename.lower()
-                    for word in ('license', 'copying', 'notice', 'readme', 'copyright')):
+                    for word in ('license', 'copying', 'notice', 'readme', 'copyright', 'portmidi.h')):
                     relative = Path(member.filename)
                     if relative.is_absolute() or '..' in relative.parts:
                         raise RuntimeError('Unsafe upstream notice path.')
                     target = notices / 'pygame-dependencies' / relative
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(archive.read(member))
+    # Wheel audit: FreeType and PortMidi DLLs match the pinned x64 fallback.
+    # FreeType's header identifies 2.11.1; libpng's DLL identifies 1.6.58.
+    # The fallback omits the FreeType license, so retain the verified source
+    # license explicitly. PortMidi's complete MIT license is in its header.
+    supplemental = [
+        ('freetype-2.11.1.tar.gz',
+         'https://codeload.github.com/freetype/freetype/tar.gz/refs/tags/VER-2-11-1',
+         '754d60f086158ad374419d32c94d4b2ced6d3f22d4ed26896f62deee977da892'),
+        ('libpng-1.6.58.tar.gz',
+         'https://codeload.github.com/pnggroup/libpng/tar.gz/refs/tags/v1.6.58',
+         'a9d4df463d36a6e5f9c29bd6f4967312d17e996c1854f3511f833924eb1993cf')]
+    for filename, url, checksum in supplemental:
+        archive_path = sources / filename
+        fetch_checked(url, archive_path, checksum)
+        with tarfile.open(archive_path) as archive:
+            for member in archive.getmembers():
+                if member.isfile() and member.name.rsplit('/', 1)[-1].lower() in (
+                    'license', 'copying', 'ftl.txt'):
+                    target = notices / filename.removesuffix('.tar.gz') / member.name.rsplit('/', 1)[-1]
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(archive.extractfile(member).read())
+    (notices / 'FreeType-attribution.txt').write_text(
+        'Portions of this software are copyright (c) 2021 The FreeType Project '
+        '(www.freetype.org). All rights reserved. Used under the FreeType License (FTL).\n',
+        encoding='utf-8')
     python_license = Path(sys.base_prefix) / 'LICENSE.txt'
     shutil.copy2(python_license, notices / 'Python-LICENSE.txt')
     # Tcl/Tk notices alongside the interpreter's Tcl library.

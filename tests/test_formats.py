@@ -47,6 +47,24 @@ def fixtures(root):
 
 
 class FormatTests(unittest.TestCase):
+    def test_every_pcm_menu_preset_decodes_without_changing_source(self):
+        from groove_decode import PCM_FORMATS,PlaybackDecoder
+        import wave
+        decoder=PlaybackDecoder();self.addCleanup(decoder.close)
+        for sample_format in PCM_FORMATS.values():
+            with self.subTest(sample_format=sample_format):
+                path=self.root/(sample_format+'.pcm')
+                subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i',
+                    'sine=frequency=440:duration=0.1','-ac','1','-ar','44100',
+                    '-c:a','pcm_'+sample_format,'-f',sample_format,str(path)],check=True)
+                original=path.read_bytes()
+                output=decoder.request({'path':str(path),'pcm':{
+                    'format':sample_format,'rate':44100,'channels':1}},output_format='wav').result(timeout=20)
+                with wave.open(output,'rb') as audio:
+                    self.assertEqual((audio.getnchannels(),audio.getsampwidth(),audio.getframerate()),(2,2,48000))
+                    self.assertGreater(audio.getnframes(),0)
+                self.assertEqual(path.read_bytes(),original)
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name);self.paths=fixtures(self.root)
