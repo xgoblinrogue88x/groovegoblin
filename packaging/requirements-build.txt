@@ -1,0 +1,6 @@
+# Windows x64 / CPython 3.12; deliberately independent of the user's Python.
+mutagen==1.48.1
+Pillow==12.3.0
+pygame-ce==2.5.8
+imageio-ffmpeg==0.6.0
+pyinstaller==6.16.0

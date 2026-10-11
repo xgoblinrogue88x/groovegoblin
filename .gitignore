@@ -9,6 +9,7 @@ Logs/
 build/
 dist/
 *.spec
+!packaging/GrooveGoblin.spec
 *.exe
 *.msi
 *.flac

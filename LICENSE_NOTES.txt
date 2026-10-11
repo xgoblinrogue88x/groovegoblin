@@ -1,8 +1,14 @@
-Groove Goblin first-release application source is provided for the user's personal use.
+Groove Goblin application source and packaged distribution: GNU GPL version 3.
+The user authorized GPLv3 distribution for the bundled Windows application.
+See LICENSE for the complete terms. Third-party licenses retain their own terms.
 Third-party dependency: Mutagen (GPLv2 or later), separately installed from PyPI.
 Album lookup source: MusicBrainz, community-maintained metadata.
 Logo and icon created specifically for Groove Goblin.
 Image dependency: Pillow, separately installed from PyPI; current package license expression is MIT-CMU.
 Playback dependency: pygame-ce (LGPL v2.1), separately installed from PyPI; bundled SDL libraries retain their separate license notices.
 Playback decoding: imageio-ffmpeg (BSD-2-Clause wrapper), separately installed from PyPI.
-The bundled FFmpeg executable carries its own license; the tested Linux wheel reports GPLv3 or later. Retain the package notices and review the platform build before redistribution. No FFmpeg binary is included in this source repository.
+Source-mode imageio-ffmpeg wheels may carry GPL FFmpeg builds with their own terms.
+Windows packaging excludes that executable and compiles FFmpeg n8.0 without
+GPL/nonfree options or external codecs. Its LGPLv2.1 license, exact source and
+build configuration accompany the binary package. No FFmpeg binary is committed
+to this source repository. Review the exact Windows wheel notices before release.

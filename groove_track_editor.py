@@ -15,6 +15,7 @@ from groove_core import scan_folders,newest_journal,undo_journal,EXTENSIONS
 from groove_player import MusicPlayer
 from groove_formats import FILE_PATTERN, can_tag, can_rename, format_note
 from groove_decode import PCM_FORMATS
+from groove_runtime import data_dir
 
 LABELS={'filename':'Filename','title':'Track title','artist':'Artist','albumartist':'Album artist',
         'album':'Album','track':'Track','disc':'Disc number','year':'Year'}
@@ -23,7 +24,7 @@ LABELS={'filename':'Filename','title':'Track title','artist':'Artist','albumarti
 class TrackEditor(tk.Frame):
     def __init__(self,app):
         super().__init__(app.content,bg=BG)
-        self.app=app;self.storage_base=Path(__file__).parent;self.records={};self.pending={};self.loading=False;self.photo=None;self.cover_cache={};self.list_cleared=False
+        self.app=app;self.storage_base=data_dir();self.records={};self.pending={};self.loading=False;self.photo=None;self.cover_cache={};self.list_cleared=False
         self.player=MusicPlayer();self.seeking=False;self.timer=None;self.inline=None
         self.columnconfigure(0,weight=1);self.rowconfigure(1,weight=1)
         toolbar=tk.Frame(self,bg=BG);toolbar.grid(row=0,column=0,sticky='ew',pady=(0,6))

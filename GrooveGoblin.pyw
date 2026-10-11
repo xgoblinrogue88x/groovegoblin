@@ -13,7 +13,9 @@ from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal
                          newest_journal, export_preview, backup_dir, year4)
 from musicbrainz_client import MusicBrainz
 
-BASE=Path(__file__).resolve().parent
+from groove_runtime import resource_dir, data_dir
+BASE=resource_dir()
+DATA=data_dir()
 BG='#0a1117'; PANEL='#131d27'; PANEL2='#1a2530'; INPUT='#202c38'; LINE='#31404e'
 FG='#e9f2f4'; MUTED='#9eb0bd'; GREEN='#71f28b'; PURPLE='#cc75ff'; ORANGE='#ffc777'
 
@@ -476,14 +478,14 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.track_editor.player.stop()
         actions=list(tochange);options=self.option_dict();loaded=list(self.track_editor.records)
         def work():
-            path=apply_actions(actions,BASE,options,lambda x:self.queue.put(('status',x)))
+            path=apply_actions(actions,DATA,options,lambda x:self.queue.put(('status',x)))
             mappings={t['old_path']:str(Path(a['dest_folder'])/t['new_name']) for a in actions for t in a['tracks']}
             folders={a['folder']:a['dest_folder'] for a in actions}
             self.track_editor.relocate_worker(mappings,folders,loaded)
             self.queue.put(('apply_done',path))
         self.run_background(work)
     def undo(self):
-        path=newest_journal(BASE)
+        path=newest_journal(DATA)
         if not path:messagebox.showinfo('Nothing to undo','No previous apply journal has been found.');return
         if not messagebox.askyesno('Undo last apply?',f'Undo Groove Goblin changes recorded in:\n{path.name}\n\nThis will restore the saved tag values and names.'):return
         self.track_editor.player.stop()
@@ -513,11 +515,11 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             self.queue.put(('undo_done',errors))
         self.run_background(work)
     def open_logs(self):
-        folder=backup_dir(BASE)
+        folder=backup_dir(DATA)
         try:os.startfile(str(folder))
         except AttributeError:messagebox.showinfo('Logs location',str(folder))
     def view_journal(self):
-        p=newest_journal(BASE)
+        p=newest_journal(DATA)
         if not p:messagebox.showinfo('No journal','No undo journal was found.');return
         self.log('Last journal: '+str(p))
         self.log(p.read_text(encoding='utf-8')[:18000])
