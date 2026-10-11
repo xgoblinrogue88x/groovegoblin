@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2
+
+- Added multiple album-row selection with Ctrl-click, Shift-click and Ctrl+A.
+- Added Remove Selected and Delete to remove albums from the current list without rescanning or changing files.
+- Preserved remaining approvals, search results, selections and preview state after removal.
+- Added consistent mouse-wheel scrolling over tables, headers and scrollbar gutters; Shift+wheel scrolls horizontally in Track Editor.
+- Added a matching scrollbar and wheel support to Logs / Undo.
+
 ## 1.2.1
 
 - Removed the branding caption and enlarged the sidebar logo.

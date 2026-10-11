@@ -12,6 +12,82 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @unittest.skipUnless(os.name == 'nt' or os.environ.get('DISPLAY'), 'Tk display required')
 class LayoutTests(unittest.TestCase):
+    def test_remove_multiple_albums_keeps_other_matches_and_music(self):
+        from types import SimpleNamespace
+        from test_groove import GrooveTests
+        from groove_core import scan_folders
+        fixture=GrooveTests();fixture.setUp();self.addCleanup(fixture.tearDown)
+        paths=[fixture.add_mp3(f'Library/Album {i}','song.mp3',f'Song {i}') for i in range(4)]
+        before={p:p.read_bytes() for p in paths}
+        a=self.app;a.roots=[str(fixture.root/'Library')]
+        a.matched,issues=scan_folders(a.roots);self.assertFalse(issues)
+        a.album_map={album.uid:album for album in a.matched}
+        originals=list(a.matched)
+        originals[1].album='Keep this approved match';originals[1].approved=True
+        originals[1].lookup_results=[{'title':'Keep this search result'}]
+        a.populate_albums();a.refresh_preview();a.update()
+        tree=a.albums_tree
+        tree.click(SimpleNamespace(x=100,y=16,state=0))
+        tree.click(SimpleNamespace(x=100,y=80,state=4));a.update()
+        removed={originals[0].uid,originals[2].uid}
+        self.assertEqual(set(tree.selection()),removed)
+        a.toggle_album_id(originals[0].uid);a.update()
+        self.assertEqual(set(tree.selection()),removed)
+        with patch.object(a,'scan',side_effect=AssertionError('Removal must not rescan')):
+            a.remove_albums_button.invoke();a.update()
+        self.assertEqual(a.matched,[originals[1],originals[3]])
+        self.assertIs(a.matched[0],originals[1])
+        self.assertTrue(originals[1].approved)
+        self.assertEqual(originals[1].album,'Keep this approved match')
+        self.assertEqual(originals[1].lookup_results,[{'title':'Keep this search result'}])
+        self.assertFalse(removed & set(a.album_map))
+        self.assertFalse(any(row.get('album_uid') in removed for row in a.preview_tree.data.values()))
+        self.assertIsNone(a.selected_id);self.assertFalse(a.results_tree.get_children())
+        self.assertEqual({p:p.read_bytes() for p in paths},before)
+        tree.click(SimpleNamespace(x=100,y=16,state=0))
+        tree.click(SimpleNamespace(x=100,y=48,state=1));a.update()
+        self.assertEqual(len(tree.selection()),2)
+        a.worker_busy=True;a.remove_selected_albums();self.assertEqual(len(a.matched),2)
+        a.worker_busy=False;tree.selection_set(originals[1].uid);a.update()
+        tree.body.event_generate('<Delete>');a.update()
+        self.assertEqual(a.matched,[originals[3]])
+        tree.body.event_generate('<Control-a>');a.update()
+        self.assertEqual(tree.selection(),(originals[3].uid,))
+        a.remove_albums_button.invoke();a.update()
+        self.assertFalse(a.matched);self.assertFalse(a.albums_tree.get_children())
+        self.assertFalse(a.actions)
+
+    def test_mousewheel_scrolls_tables_headers_gutters_tracks_and_logs(self):
+        from groove_widgets import Scrollbar
+        a=self.app;a.geometry('1024x768');a.update();a._responsive.apply();a.update()
+        for table in (a.albums_tree,a.preview_tree,a.results_tree):
+            table.cover_provider=None
+            for i in range(60):
+                values=('✓','Artist','Old','New','2000',1,'READY','100%') if table.mode=='albums' else (('FOLDER','old','new','1') if table.mode=='preview' else ('Album','Artist','2000','Album',99))
+                table.insert('','end',values=values)
+            a.update()
+            scroll=next(child for child in table.winfo_children() if isinstance(child,Scrollbar))
+            targets=(table.body,scroll,table.head) if table.head.winfo_ismapped() else (table.body,scroll)
+            for target in targets:
+                table.body.yview_moveto(0);a.update()
+                target.event_generate('<MouseWheel>',delta=-120);a.update()
+                self.assertGreater(table.body.yview()[0],0,(table.mode,str(target)))
+                target.event_generate('<MouseWheel>',delta=120);a.update()
+                self.assertEqual(table.body.yview()[0],0)
+            table.body.event_generate('<Button-5>');a.update()
+            self.assertGreater(table.body.yview()[0],0)
+            table.yview('moveto',.5);a.update();self.assertGreater(table.body.yview()[0],.3)
+        a.tabs.select(a.track_editor);tree=a.track_editor.tree
+        for i in range(60):tree.insert('','end',iid=f'wheel-{i}',values=('track',)*9)
+        a.update();tree.yview_moveto(0)
+        tree.event_generate('<MouseWheel>',delta=-120);a.update();self.assertGreater(tree.yview()[0],0)
+        tree.xview_moveto(0);tree.event_generate('<Shift-MouseWheel>',delta=-120);a.update()
+        self.assertGreater(tree.xview()[0],0)
+        a.tabs.select(a.tab_history)
+        a.log_box.insert('end','Line\n'*100);a.log_box.yview_moveto(0);a.update()
+        a.log_box.event_generate('<MouseWheel>',delta=-120);a.update()
+        self.assertGreater(a.log_box.yview()[0],0)
+
     def setUp(self):
         loader = importlib.machinery.SourceFileLoader('groove_gui', str(ROOT / 'GrooveGoblin.pyw'))
         spec = importlib.util.spec_from_loader(loader.name, loader)
@@ -132,8 +208,11 @@ class LayoutTests(unittest.TestCase):
             a.update()
             a._responsive.apply()
             a.update()
-            for widget in (a.btn_apply,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
+            for widget in (a.btn_apply,a.remove_albums_button,a.album_entry,a.artist_entry,a.cover_box,a.preview_tree,a.results_tree,a.albums_tree,*a._responsive.toolbar,*a.nav_buttons.values(),*a._responsive.w['actions'].winfo_children()):
                 self.assertTrue(widget.winfo_ismapped())
+                if widget is a.remove_albums_button:
+                    for item in widget.find_all():
+                        if widget.type(item)=='text':self.assertLessEqual(widget.bbox(item)[2],widget.winfo_width())
                 x=widget.winfo_rootx()-a.winfo_rootx();y=widget.winfo_rooty()-a.winfo_rooty()
                 if widget in a._responsive.buttons:
                     self.assertGreaterEqual(widget.winfo_height(),int(widget.cget('height'))-2,(width,height,str(widget)))

@@ -263,14 +263,18 @@ def install_layout(cls):
         albums=Panel(center,padding=11)
         albums.grid(row=2,column=0,sticky='nsew',pady=(0,9))
         self.tab_albums=albums.body
-        self.albums_heading=tk.Label(albums.body,text='Albums Found   (0)',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold'))
-        self.albums_heading.pack(anchor='w',pady=(0,8))
+        album_header=tk.Frame(albums.body,bg=PANEL);album_header.pack(fill='x',pady=(0,8))
+        self.remove_albums_button=Button(album_header,'Remove Selected',self.remove_selected_albums,width=170,height=27,symbol='cross',accent='#ff5264',font=(self.ui_font,9))
+        self.remove_albums_button.pack(side='right')
+        self.albums_heading=tk.Label(album_header,text='Albums Found   (0)',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold'))
+        self.albums_heading.pack(side='left')
         self.albums_tree=Table(albums.body,mode='albums',font=(self.ui_font,10),on_toggle=self.toggle_album_id)
         self.albums_tree.on_toggle_all=self.toggle_all_albums
         self.albums_tree.cover_provider=lambda uid,size:self._art.request(uid,size)
         self.albums_tree.pack(fill='both',expand=True)
         self.albums_tree.bind('<<TreeviewSelect>>',self.on_album_select)
         self.albums_tree.bind('<Double-1>',lambda e:self.go_editor())
+        self.albums_tree.body.bind('<Delete>',self.remove_selected_albums)
 
         preview=Panel(center,padding=11)
         preview.grid(row=3,column=0,sticky='nsew')
@@ -409,6 +413,7 @@ def install_layout(cls):
     def populate_albums(self):
         if not hasattr(self,'albums_tree'):return
         tree=self.albums_tree
+        selection=tree.selection()
         tree.delete(*tree.get_children())
         for a in self.matched:
             if self.show_problems.get() and a.status=='READY' and a.enabled:continue
@@ -416,7 +421,30 @@ def install_layout(cls):
             tree.insert('','end',iid=a.uid,values=('✓' if a.enabled else '−',a.artist,a.old_album,a.album,a.year,a.file_count,a.status,f'{int(a.confidence*100)}%'),tags=(tag,))
         self.count.set(f'{len(self.matched)} albums | {sum(a.file_count for a in self.matched)} files')
         self.albums_heading.configure(text=f'Albums Found   ({len(tree.get_children())})')
-        if self.selected_id in tree.data:tree.selection_set(self.selected_id)
+        selection=[uid for uid in selection if uid in tree.data]
+        if selection:tree.selection_set(selection)
+        elif self.selected_id in tree.data:tree.selection_set(self.selected_id)
+
+    def remove_selected_albums(self,event=None):
+        if self.worker_busy:
+            self.status.set('Wait for the current operation to finish before removing albums.')
+            return 'break'
+        removed=set(self.albums_tree.selection())
+        if not removed:
+            self.status.set('Select album rows to remove. Use Ctrl-click or Shift-click for multiple albums.')
+            return 'break'
+        self.matched=[album for album in self.matched if album.uid not in removed]
+        self.album_map={album.uid:album for album in self.matched}
+        if self.selected_id in removed:
+            self.selected_id=None
+            self.results_tree.delete(*self.results_tree.get_children())
+            for var in (self.var_artist,self.var_album,self.var_year):var.set('')
+            self.current_label.configure(text='Select an album to inspect its match.')
+            self.old_album_label.configure(text='-');self.tracks_info.configure(text='Tracks: -')
+            self.update_cover()
+        self.populate_albums();self.refresh_preview()
+        self.status.set(f'Removed {len(removed)} album(s) from the list. Music files are unchanged.')
+        return 'break'
 
     def toggle_album_id(self,uid):
         if self.worker_busy:return
@@ -508,6 +536,7 @@ def install_layout(cls):
     cls.refresh_preview=refresh_preview;cls.clear=clear;cls.show_editor=show_editor
     cls.populate_albums=populate_albums;cls.update_cover=update_cover;cls.result_cover=result_cover;cls.choose_result=choose_result
     cls.show_settings=show_settings;cls.show_about=show_about;cls.add_files=add_files
+    cls.remove_selected_albums=remove_selected_albums
     cls.toggle_all_preview=toggle_all_preview
     cls.toggle_all_albums=toggle_all_albums
     cls.toggle_album_id=toggle_album_id;cls.toggle_preview_id=toggle_preview_id

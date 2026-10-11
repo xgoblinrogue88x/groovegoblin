@@ -6,7 +6,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from groove_drop import FolderDropMixin
-from groove_widgets import Scrollbar
+from groove_widgets import Scrollbar, bind_mousewheel
 from groove_version import __version__
 from groove_naming import DEFAULT_FILE_FORMAT, DEFAULT_FOLDER_FORMAT
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
@@ -136,6 +136,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         sy=Scrollbar(wrap,orient='vertical',command=t.yview,style='Vertical.Goblin.TScrollbar')
         sx=Scrollbar(wrap,orient='horizontal',command=t.xview,style='Horizontal.Goblin.TScrollbar')
         t.configure(yscrollcommand=sy.set,xscrollcommand=sx.set)
+        bind_mousewheel(t,targets=(sy,sx))
         wrap.grid_rowconfigure(0,weight=1);wrap.grid_columnconfigure(0,weight=1)
         t.grid(row=0,column=0,sticky='nsew');sy.grid(row=0,column=1,sticky='ns');sx.grid(row=1,column=0,sticky='ew')
         t.tag_configure('ready',foreground=GREEN)
@@ -192,7 +193,10 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         ttk.Button(row,text='Open backup/log folder',command=self.open_logs).pack(side='left',padx=(0,8))
         ttk.Button(row,text='View last journal',command=self.view_journal).pack(side='left')
         self.log_box=tk.Text(self.tab_history,bg=PANEL,fg=FG,insertbackground=GREEN,wrap='word',relief='flat',font=('Consolas',10))
-        self.log_box.pack(fill='both',expand=True)
+        scroll=Scrollbar(self.tab_history,orient='vertical',command=self.log_box.yview,style='Vertical.Goblin.TScrollbar')
+        scroll.pack(side='right',fill='y');self.log_box.configure(yscrollcommand=scroll.set)
+        self.log_box.pack(side='left',fill='both',expand=True)
+        bind_mousewheel(self.log_box,targets=(scroll,))
         self.log('Welcome to Groove Goblin. Multiple audio formats supported; see About for format limits. No files are changed by scanning.')
 
     def log(self,s):

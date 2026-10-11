@@ -223,6 +223,25 @@ class Radio(Check):
         self.create_text(28,mid,anchor='w',text=self.text,font=self.font,fill=FG)
 
 
+def bind_mousewheel(widget, *, yview=None, xview=None, targets=()):
+    """Scroll the hovered section, including its header/gutters, once per event."""
+    vertical=yview or widget.yview
+    horizontal=xview or getattr(widget,'xview',None)
+    def wheel(event,steps=None):
+        if steps is None:
+            delta=event.delta
+            if not delta:return 'break'
+            steps=-(int(delta/120) if abs(delta)>=120 else (1 if delta>0 else -1))
+        view=horizontal if event.state & 0x1 else vertical
+        if view:view('scroll',steps*3,'units')
+        return 'break'
+    for target in (widget,*targets):
+        for sequence in ('<MouseWheel>','<Shift-MouseWheel>'):
+            target.bind(sequence,wheel)
+        for sequence,steps in (('<Button-4>',-1),('<Button-5>',1),('<Shift-Button-4>',-1),('<Shift-Button-5>',1)):
+            target.bind(sequence,lambda event,direction=steps:wheel(event,direction))
+
+
 class Scrollbar(ttk.Scrollbar):
     """A themed scrollbar that leaves a quiet gutter when everything fits."""
     def set(self,first,last):
@@ -254,7 +273,7 @@ class Table(tk.Frame):
     def __init__(self,parent,*,mode='albums',font=('Segoe UI',10),on_toggle=None,on_choose=None):
         super().__init__(parent,bg=PANEL,highlightthickness=1,highlightbackground=LINE)
         self.mode=mode;self.font=font;self.on_toggle=on_toggle;self.on_choose=on_choose
-        self.data=OrderedDict();self.selected=None;self.serial=0;self.photos={};self.cover_provider=None
+        self.data=OrderedDict();self.selected=None;self.selected_keys=set();self.anchor=None;self.serial=0;self.photos={};self.cover_provider=None
         self.rowheight=32 if mode!='results' else 66
         self.redraw_id=None;self.on_toggle_all=None
         self.head=tk.Canvas(self,height=30,bg='#1a252e',highlightthickness=0)
@@ -268,10 +287,12 @@ class Table(tk.Frame):
         self.head.bind('<Configure>',lambda e:self.schedule())
         self.body.bind('<Button-1>',self.click)
         self.body.bind('<Double-1>',lambda e:self.double_click())
-        self.body.bind('<MouseWheel>',lambda e:self.yview('scroll',-int(e.delta/120) or (-1 if e.delta>0 else 1),'units'))
-        self.body.bind('<Button-4>',lambda e:self.yview('scroll',-1,'units'))
-        self.body.bind('<Button-5>',lambda e:self.yview('scroll',1,'units'))
+        bind_mousewheel(self.body,yview=self.yview,xview=None,targets=(self.head,scroll))
         self.body.bind('<Up>',lambda e:self.move(-1));self.body.bind('<Down>',lambda e:self.move(1))
+        if mode=='albums':
+            self.body.bind('<Control-a>',self.select_all)
+            self.body.bind('<Shift-Up>',lambda e:self.move(-1,extend=True))
+            self.body.bind('<Shift-Down>',lambda e:self.move(1,extend=True))
         self.body.bind('<space>',lambda e:self.toggle_current());self.body.bind('<Return>',lambda e:self.double_click())
         self.double_command=None
         self.bind('<Destroy>',self.cleanup)
@@ -290,38 +311,61 @@ class Table(tk.Frame):
         self.data[str(iid)]={'values':tuple(values),'tags':tuple(tags),**kw};self.schedule();return str(iid)
     def delete(self,*ids):
         for key in ids:self.data.pop(str(key),None)
+        self.selected_keys.intersection_update(self.data)
         if self.selected not in self.data:self.selected=None
         self.schedule()
     def item(self,key,option=None,**kw):
         if kw:self.data[str(key)].update(kw);self.schedule()
         row=self.data[str(key)]
         return row.get(option) if option else row
-    def selection(self):return (self.selected,) if self.selected in self.data else ()
+    def selection(self):
+        keys=[k for k in self.data if k in self.selected_keys]
+        if self.selected in keys:keys.remove(self.selected);keys.insert(0,self.selected)
+        return tuple(keys)
     def selection_set(self,key):
-        if isinstance(key,(list,tuple)):key=key[0] if key else None
-        key=str(key) if key is not None else None
-        changed=key!=self.selected
-        self.selected=key if key in self.data else None
+        keys=list(key) if isinstance(key,(list,tuple)) else ([] if key is None else [key])
+        keys=[str(k) for k in keys if str(k) in self.data]
+        if self.mode!='albums':keys=keys[:1]
+        selected=keys[0] if keys else None
+        changed=selected!=self.selected or set(keys)!=self.selected_keys
+        self.selected=selected;self.selected_keys=set(keys);self.anchor=selected
         self.schedule()
         if changed:self.event_generate('<<TreeviewSelect>>',when='tail')
+    def select_all(self,event=None):
+        self.selection_set(list(self.data));return 'break'
     def tag_configure(self,*args,**kw):pass
     def yview(self,*args):
         self.body.yview(*args);self.schedule()
-    def move(self,delta):
+    def move(self,delta,extend=False):
         keys=list(self.data)
         if not keys:return
         current=keys.index(self.selected) if self.selected in keys else -1
-        index=max(0,min(len(keys)-1,current+delta));self.selection_set(keys[index])
+        index=max(0,min(len(keys)-1,current+delta))
+        if extend:self.select_range(keys[index])
+        else:self.selection_set(keys[index])
         y=index*self.rowheight;top=self.body.canvasy(0);height=self.body.winfo_height()
         if y<top:self.body.yview_moveto(y/max(1,len(keys)*self.rowheight))
         elif y+self.rowheight>top+height:self.body.yview_moveto((y+self.rowheight-height)/max(1,len(keys)*self.rowheight))
+        return 'break'
+    def select_range(self,key):
+        keys=list(self.data);anchor=self.anchor if self.anchor in self.data else key
+        start,end=sorted((keys.index(anchor),keys.index(key)))
+        self.selection_set([key,*[k for k in keys[start:end+1] if k!=key]])
+        self.anchor=anchor
     def toggle_current(self):
         if self.selected and self.on_toggle:self.on_toggle(self.selected)
     def click(self,event):
         self.body.focus_set();index=int(self.body.canvasy(event.y)//self.rowheight)
         keys=list(self.data)
         if 0<=index<len(keys):
-            self.selection_set(keys[index])
+            key=keys[index]
+            if self.mode=='albums' and event.state & 0x1:
+                self.select_range(key)
+            elif self.mode=='albums' and event.state & 0x4:
+                selected=self.selection()
+                self.selection_set([k for k in selected if k!=key] if key in selected else [key,*selected])
+            elif not (self.mode=='albums' and event.x<35 and key in self.selected_keys):
+                self.selection_set(key)
             if self.mode=='results' and event.x>self.body.winfo_width()-88:
                 if self.on_choose:self.on_choose()
             elif event.x<35 and self.on_toggle:self.on_toggle(keys[index])
@@ -346,6 +390,7 @@ class Table(tk.Frame):
         self.redraw_id=None
         if not self.winfo_exists():return
         c=self.body;c.delete('all');self.head.delete('all');w=max(1,c.winfo_width())
+        if int(c.cget('yscrollincrement'))!=self.rowheight:c.configure(yscrollincrement=self.rowheight)
         count=len(self.data);region=(0,0,w,max(c.winfo_height(),count*self.rowheight))
         if getattr(self,'_region',None)!=region:
             self._region=region;c.configure(scrollregion=region)
@@ -370,7 +415,7 @@ class Table(tk.Frame):
         first=max(0,int(c.canvasy(0)//self.rowheight));last=min(count,first+int(c.winfo_height()/self.rowheight)+2)
         for index in range(first,last):
             key=keys[index];row=self.data[key];values=row['values'];y=index*self.rowheight;mid=y+self.rowheight/2
-            c.create_rectangle(0,y,w,y+self.rowheight,fill='#17242e' if key==self.selected else ('#101a21' if index%2==0 else '#0b141a'),outline='')
+            c.create_rectangle(0,y,w,y+self.rowheight,fill='#17242e' if key in self.selected_keys else ('#101a21' if index%2==0 else '#0b141a'),outline='')
             c.create_line(0,y+self.rowheight,w,y+self.rowheight,fill='#24313c')
             if self.mode=='albums':
                 use,artist,old,new,year,tracks,status,confidence=values

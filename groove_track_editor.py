@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
-from groove_widgets import BG,PANEL,LINE,FG,MUTED,GREEN,PURPLE,Button,Check,Panel,Scrollbar
+from groove_widgets import BG,PANEL,LINE,FG,MUTED,GREEN,PURPLE,Button,Check,Panel,Scrollbar,bind_mousewheel
 from groove_manual import FIELDS,read_track,load_artwork,validate_changes,plan_manual,apply_manual
 from groove_core import scan_folders,newest_journal,undo_journal
 from groove_player import MusicPlayer
@@ -47,10 +47,12 @@ class TrackEditor(tk.Frame):
         self.tree.tag_configure('odd',background=PANEL)
         self.tree.tag_configure('staged',foreground=GREEN)
         self.tree.grid(row=1,column=0,sticky='nsew')
-        Scrollbar(listing,orient='vertical',command=self.tree.yview,style='Vertical.Goblin.TScrollbar').grid(row=1,column=1,sticky='ns')
-        self.tree.configure(yscrollcommand=listing.winfo_children()[-1].set)
+        vertical=Scrollbar(listing,orient='vertical',command=self.tree.yview,style='Vertical.Goblin.TScrollbar')
+        vertical.grid(row=1,column=1,sticky='ns')
+        self.tree.configure(yscrollcommand=vertical.set)
         horizontal=Scrollbar(listing,orient='horizontal',command=self.tree.xview,style='Horizontal.Goblin.TScrollbar')
         horizontal.grid(row=2,column=0,sticky='ew');self.tree.configure(xscrollcommand=horizontal.set)
+        bind_mousewheel(self.tree,targets=(vertical,horizontal))
         self.tree.bind('<<TreeviewSelect>>',self.selection_changed)
         self.tree.bind('<Double-1>',self.begin_inline)
         self.tree.bind('<Control-a>',self.select_all)
@@ -355,6 +357,7 @@ class TrackEditor(tk.Frame):
         text=tk.Text(body,bg=PANEL,fg=FG,wrap='word',font=(self.app.ui_font,9),relief='flat')
         text.pack(side='left',fill='both',expand=True)
         scroll=Scrollbar(body,command=text.yview,style='Vertical.Goblin.TScrollbar');scroll.pack(side='right',fill='y');text.configure(yscrollcommand=scroll.set)
+        bind_mousewheel(text,targets=(scroll,))
         for plan in plans:
             text.insert('end',Path(plan['source']).name+'\n')
             original=self.records[plan['source']]
