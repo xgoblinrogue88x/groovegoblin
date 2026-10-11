@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.3.6
+# Groove Goblin LITE 1.3.7
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,

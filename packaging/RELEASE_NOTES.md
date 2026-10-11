@@ -1,4 +1,4 @@
-Groove Goblin LITE 1.3.6 for Windows 10/11 x64, launched with **GrooveGoblinLite.exe** and
+Groove Goblin LITE 1.3.7 for Windows 10/11 x64, launched with **GrooveGoblinLite.exe** and
 the Groove Goblin icon. Python, Tcl/Tk, tagging/image/audio libraries and FFmpeg
 are bundled. No BAT launcher or separate Python/FFmpeg installation is required.
 
@@ -35,3 +35,7 @@ confirmation; renaming and undo remain enabled.
 Track and album renaming now have independent checkboxes. Both start checked;
 unchecking one disables its dropdown and skips its rename operation. Apply
 shows disabled operations as Off. Tag replacement and undo remain available.
+
+EXE, installer and application window icons show the full goblin and GROOVE
+GOBLIN wordmark, proportionately fitted with transparent padding. Includes
+Windows icon sizes from 16 through 256 pixels.

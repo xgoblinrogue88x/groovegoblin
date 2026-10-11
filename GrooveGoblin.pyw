@@ -26,7 +26,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.title(f'Groove Goblin {"LITE " if self.is_lite else ""}{__version__} - Music Tagger & Organizer')
         self.geometry('1220x790');self.minsize(740,520)
         self.configure(bg=BG)
-        try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_icon.png')))
+        try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_app_icon.png')))
         except Exception:pass
         self.matched=[];self.roots=[];self.album_map={};self.selected_id=None
         self.queue=queue.Queue();self.worker_busy=False;self.cancel=threading.Event()
