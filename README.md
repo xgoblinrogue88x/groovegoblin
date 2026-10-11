@@ -1,143 +1,149 @@
-# Groove Goblin
+# Groove Goblin 1.1.0
 
-Windows desktop music tagger and organizer, using Python 3.10+, Tkinter, Mutagen
-and Pillow. The supplied design reference guides the layout and styling:
-large branded sidebar, icon toolbar, albums and preview together, and a compact
-right rail for options, cover artwork, album details and online results.
+Windows desktop music tagger and organizer with a responsive dark Tkinter
+interface, MusicBrainz album lookup, naming presets, manual track editing,
+local cover-art replacement, playback, previews and Undo. Supports FLAC and MP3.
 
-![Running application with generated test music and mocked lookup results](docs/interface-linux.png)
-
-This screenshot shows the actual application on a Linux virtual display, using
-12 disposable test files, generated test covers and mocked MusicBrainz results.
-It is not a mockup or a screenshot of the user's music. Windows fonts and DPI
-rendering still need to be checked on Windows.
+![Running Scan & Fix with generated test music](docs/interface-linux.png)
 
 ## Run on Windows
 
-Extract the whole project into a new writable folder. Double-click
-`START_GROOVE_GOBLIN.bat`. The launcher finds an installed Python, checks whether
-it can open a Tk window, installs Mutagen and Pillow if needed, and runs the app
-with the same exact interpreter. Leave its console open for error messages.
+Extract the entire project into a new writable folder. Double-click
+`START_GROOVE_GOBLIN.bat` and leave its console open for diagnostics. The launcher
+finds Python 3.10+, checks Tk, installs missing Mutagen, Pillow and pygame-ce
+packages, and runs the application with that same interpreter. Initial package
+installation requires internet; local editing and playback do not.
 
-If Python detection fails, drag your installed `python.exe` onto the launcher.
-See `LAUNCH_HELP.txt` for diagnostics. In Command Prompt inside the app folder:
+If detection fails, drag your installed `python.exe` onto the launcher.
+`VERIFY_PYTHON.bat` checks prerequisites without installing them. See
+`LAUNCH_HELP.txt`. From Command Prompt inside the extracted app folder:
 
 ```bat
 "C:\path\to\python.exe" -m pip install --user -r requirements.txt
 "C:\path\to\python.exe" GrooveGoblin.pyw
 ```
 
-## Workflow
+## Scan, match and organize
 
-1. Add Folders or Add Files, or drag folders or FLAC/MP3 files from Windows Explorer
-   onto the main window. A drop that adds new items automatically scans the selected list. Duplicate-only
-   and unsupported drops do not restart scanning; busy operations reject drops.
-   Scan subfolders controls folder recursion, and Search online after scan
-   controls MusicBrainz lookup. Add Folders / Add Files still wait for Start Scan.
-2. Start Scan. Local scanning and preview are read-only.
-3. Select an album to see its local artwork and editable artist, album and year.
-4. Search Online for MusicBrainz suggestions, then use a result's Select button,
-   or edit the fields and click Approve Edit. Suggestions require approval.
-5. Use row checkboxes to include or skip albums; the album header checkbox
-   changes the visible albums together. Show only problems filters the table.
-6. Inspect Folders, File Tags, File Names and Skipped preview tabs. Selected Only
-   narrows the preview to the album currently being inspected.
-7. Apply Selected Changes requires confirmation. Save Report exports the preview.
-   Undo Last Apply uses the saved undo journal; View Logs shows that journal.
+1. Add Folders or Add Files, or drop folders / FLAC / MP3 files from Explorer.
+   New drops automatically scan; duplicate-only, unsupported and busy drops do
+   not restart scanning. Add buttons wait for Start Scan.
+2. Scan is read-only. Search online after scan controls MusicBrainz lookup.
+   Review and approve suggested artist, album and original release year, or
+   correct the album fields yourself. Suggestions are never silently approved.
+3. Select naming formats in Rename Options: eight filename presets and seven
+   album-folder presets. [See formats and examples](docs/naming-formats.md).
+   Filename renaming defaults off; its default format is `## - Artist - Title`.
+4. Use album checkboxes to include or exclude albums. Review Folders, File Tags,
+   File Names and Skipped. Apply Selected Changes asks for confirmation.
+5. Save Report exports a read-only preview. Undo / Backups restores the last
+   operation from its journal; View Logs shows diagnostic information.
 
-The settings page controls online search after scanning and provides batch
-online lookup. MusicBrainz searches send artist/album lookup text, never audio.
-Artwork is read from embedded FLAC/MP3 pictures or local cover/folder images,
-loaded in background workers. Visible online results can load public Cover Art Archive previews over HTTPS,
-using release IDs only. Artwork is held in memory; it is not written into music.
-Missing artwork or internet access leaves a disc placeholder.
+MusicBrainz receives artist/album search text, never audio files. Public Cover
+Art Archive previews are held in memory; viewing one does not embed it in music.
+Missing internet or artwork leaves a placeholder and does not block local work.
 
-## Music safety and current limits
+## Track Editor
 
-- FLAC and MP3 editing only. Other formats from the reference image are planned.
-- Album folder names use `Artist - Album Title (Year)`.
-- Track filename renaming defaults off and uses `## - Artist - Title`
-  (for example, `01 - Van Halen - Jump.mp3`). Turn on Rename files and open
-  the File Names preview before applying. Numbers come from track-number tags,
-  padded to at least two digits; extensions are preserved. Each track uses its
-  own artist, falling back to album artist or the approved album artist. Missing
-  track numbers block renaming for that album and appear under Skipped.
-- Add Files processes only selected tracks. If a selection omits other audio in
-  its folder, folder renaming is blocked; disable that option or scan the whole
-  folder. This prevents moving unselected music as part of a folder rename.
-- Grouping is always by music-containing directory. Mixed-album directories
-  still need separation; the grouping control is read-only.
-- Create artist folders and Move to new folders are disabled and marked planned.
-- The checked undo-journal option is always on. It records targeted metadata and
-  paths, not complete audio-file backups. Keep separate music backups.
-- Existing destinations are not merged or overwritten. Unapproved albums block
-  Apply until approved or excluded. Review MusicBrainz suggestions yourself.
-- This is Python source, not a compiled EXE. Test on a copy of a small music
-  folder before applying changes to important music.
+Select **Track Editor** in the left sidebar. Add files or folders, or use the
+scanned list. A drop while this screen is open scans and imports the new tracks.
 
-## Small screens and keyboard
+- Edit filename, title, artist, album artist, album, track number, disc number
+  and year. Double-click a table cell and press Enter to stage an individual
+  value; Escape cancels the cell edit.
+- Select multiple rows with Ctrl / Shift. Edit the fields in the right panel
+  and click Stage Edits to apply those values to the selection. Only checked
+  fields change. Mixed values are blank and unchecked; checking a blank field
+  explicitly clears that tag. Other fields remain untouched.
+- Choose Artwork selects an image from your PC for all selected tracks. Remove
+  Front removes the front cover. Other embedded pictures remain untouched.
+- Staging is read-only and marked with an asterisk. Review & Save shows each
+  actual change and the full-file backup size. Save Changes commits the edits.
+  Discard Selected drops staged changes for the selected rows.
+- Play / Pause, Back, Skip and Stop operate on the selected tracks, or the full
+  table when a single track is selected. The player has volume, a seek bar and
+  elapsed / total time. Back restarts the current track after three seconds;
+  otherwise it goes to the previous track. MP3 seeking can be approximate.
+- Undo Last Save restores the latest manual save. Scan & Fix renames also
+  update loaded editor paths while preserving staged edits.
 
-The whole program fits the window without an outer scrollbar, down to the
-800×600 minimum window size. [See the compact view](docs/interface-compact-linux.png)
-(captured on Linux with generated test music). Resizing adjusts panel sizes, artwork and spacing;
-small windows use sidebar icons with hover labels and wrap the toolbar controls.
-Album, preview and search lists scroll internally when they contain more rows
-than fit. Apply, Undo and Report stay visible. Tab moves between controls, Space
-activates checkboxes, arrow keys select table rows, and Enter opens the selected
-album or chooses the selected online result. Ctrl +/- adjusts table text; F11
-enters fullscreen and Esc exits it.
+![Running Track Editor with generated test tracks](docs/track-editor-linux.png)
+
+## Music safety and limits
+
+Scanning, lookup and staging are read-only. Saves and organizer applies require
+confirmation. Manual edits touch only explicitly selected fields and front art;
+organizer tag updates touch album/year. Neither transcodes audio. Unrelated tags
+and other artwork remain intact. Filename edits stay in the same directory and
+preserve the audio extension. Existing output paths and stale-file conflicts
+are rejected.
+
+Manual saves make full-file backups in `Logs/ManualBackups` before modifying
+music and record an undo journal in `Logs`. Backups use roughly the original
+files' total size plus one temporary file during saving. Keep those backups and
+journals together to use Undo. Manual Undo refuses to overwrite files changed
+externally after saving. Organizer journals store targeted tag values and
+original paths, not full audio backups; keep separate music backups.
+
+Add Files scopes an organizer operation to the selected tracks. Renaming their
+folder is blocked when unselected audio would be moved with it. Folder presets
+rename within the current parent and do not create artist trees. Grouping is
+by music-containing directory; separate mixed-album folders before organizing.
+M4A, OGG, WAV and WMA editing are not implemented. This distribution is source
+with a launcher, not a standalone EXE.
+
+## Window sizing and keyboard
+
+The app fits windows down to 800×600 without an outer scrollbar. Lists scroll
+internally when needed. Resizing reduces artwork and spacing and uses sidebar
+icons with hover labels on compact screens. The branding caption uses two lines
+to fit. [Compact Scan & Fix](docs/interface-compact-linux.png) and
+[compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
+Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
+fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
+sidebar display version 1.1.0.
+
+Screenshots were captured on a Linux virtual display with disposable generated
+audio and covers; online results are mocked. They show the running application,
+not the original design mockup. Windows fonts and DPI rendering can differ.
 
 ## Validation
 
-Install requirements and have ffmpeg on PATH; tests generate disposable audio:
+Install requirements and ffmpeg (used only to generate disposable test audio).
+Run the suite with a Tk display available:
 
 ```bat
 "C:\path\to\python.exe" -m unittest discover -s tests -v
 ```
 
-27 tests passed on Linux/Python 3.12 with a virtual Tk display. They cover the
-existing scan/apply/undo engine, FLAC/MP3 batches, collisions and stale files,
-GUI scanning/approval/filtering, row and bulk inclusion, result selection,
-window resizing from 800x600 through 1920x1080, launcher quote removal, explicit-file scope,
-recursion, embedded artwork preservation through apply/undo, and mocked HTTPS
-cover lookup/redirect checks, read-only folder drops, and native message
-dispatch/handle cleanup with a simulated Windows API. Native callback checks
-verify that drops, failed drops and peeked messages never invoke Tk; the Tk timer
-processes queued paths later. Drop scanning checks cover one scan per new batch,
-duplicate/unsupported/busy drops, recursion and lookup settings, and unchanged
-music bytes. Filename checks cover
-FLAC/MP3 rename-and-undo with folder moves, byte preservation, artist fallbacks,
-missing track numbers, duplicate names, removed source folders and destinations
-created after preview.
+Tests cover FLAC/MP3 scan → preview → apply → Undo; filename/folder presets;
+case-insensitive collisions and stale files; individual and batch manual edits;
+front-art replacement/removal with other art and tags preserved; byte-for-byte
+manual Undo; partial failures and external-edit protection; live GUI workflows,
+resize bounds, staging without writes, drop auto-scanning, and editor paths after
+organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
+through SDL's test audio device and exercise transport, seeking and volume.
 
-The Windows PowerShell launcher and native Windows message-loop subprocess
-tests are skipped on Linux. The latter posts a real drop with temporary paths
-and checks that the Tk main loop survives and adds files/folders and requests a scan from the Tk event loop. Actual Windows
-launcher, Explorer drag-and-drop, Python 3.14/3.15 behavior and 125%/150% DPI appearance remain unverified.
-The previous window-procedure-based drop implementation caused a fatal thread-state
-error on the user’s Python 3.15 and has been removed. Actual Windows execution
-of the native replacement remains unverified in this Linux environment; the
-user confirmed Explorer drops work on their Python 3.15 installation before
-the automatic-scan change.
+46 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+Linux validation cannot establish actual Windows audio-device,
+Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
+Windows message-loop subprocess tests are skipped on Linux. The user confirmed
+Explorer drops work with the queued native implementation on Python 3.15.
+Native callbacks never invoke Tk; a Tk timer handles queued drop paths.
 
-No live MusicBrainz requests or real user media are used in these tests.
+No real user media or live MusicBrainz requests are used in the tests.
 
-## Source
+## Source and licensing
 
-- `GrooveGoblin.pyw`: existing controller and background-task queue.
-- `groove_layout.py`: reference layout and preview display.
-- `groove_drop.py`: read-only folder adding and drop feedback.
-- `groove_windows_drop.py`: queued native Windows drops; no window-procedure replacement
-  or Tk calls inside native callbacks, and no extra dependency.
-- `groove_responsive.py`: live window sizing and compact layouts.
-- `groove_widgets.py`: small Tk canvas widgets, vector icons and virtual tables.
-- `groove_artwork.py`: background local and public cover-preview loading.
-- `groove_core.py`: scanning, preview, tag edits, moves and undo engine.
-- `musicbrainz_client.py`: MusicBrainz lookup and rate limiting.
-- `legacy_collections.py`: existing Van Halen collection mappings.
-- `Launch-GrooveGoblin.ps1`: exact-interpreter Windows startup and diagnostics.
-- `assets/`: original branding.
+`GrooveGoblin.pyw` owns the controller/background queue. `groove_layout.py`,
+`groove_responsive.py` and `groove_widgets.py` build the UI. `groove_core.py` and
+`groove_naming.py` handle organization/presets. `groove_track_editor.py`,
+`groove_manual.py` and `groove_player.py` provide manual editing, full-file Undo
+and streamed playback. `groove_version.py` defines the application version.
+Artwork, MusicBrainz and native queued drops live in their corresponding
+`groove_artwork.py`, `musicbrainz_client.py` and `groove_windows_drop.py` modules.
+Original branding stays in `assets/`; `GUI_Preview.png` is the original mockup.
 
-`GUI_Preview.png` is the original mockup; the image above is the running app.
-The handoff documents describe a broader roadmap, not completed features.
-Read `LICENSE_NOTES.txt` before public redistribution.
+See `CHANGELOG.md` and `LICENSE_NOTES.txt`. Dependencies are installed separately;
+no generated audio, runtime binaries or user media are distributed in source.
+Handoff documents describe the broader roadmap, not completed features.

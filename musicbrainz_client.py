@@ -4,12 +4,13 @@ Online matching returns SUGGESTIONS and never writes files.
 import json,re,time,threading,urllib.parse,urllib.request,urllib.error
 from collections import Counter
 from groove_core import norm, year4
+from groove_version import __version__
 
 class MusicBrainz:
     def __init__(self):
         self.lock=threading.Lock();self.last_request=0
         self.cache={}
-        self.agent='GrooveGoblin/1.0 (desktop music tagger; https://musicbrainz.org/doc/MusicBrainz_API)'
+        self.agent=f'GrooveGoblin/{__version__} (desktop music tagger; https://musicbrainz.org/doc/MusicBrainz_API)'
 
     def get(self,endpoint,params):
         url='https://musicbrainz.org/ws/2/'+endpoint+'?'+urllib.parse.urlencode({**params,'fmt':'json'})

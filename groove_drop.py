@@ -19,6 +19,7 @@ class FolderDropMixin:
             self.log('Could not enable Windows folder drops: ' + str(error))
 
     def destroy(self):
+        if hasattr(self,'track_editor'):self.track_editor.player.close()
         if getattr(self, '_folder_drop', None):
             self._folder_drop.close()
             self._folder_drop = None

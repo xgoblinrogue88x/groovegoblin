@@ -6,17 +6,26 @@ from PIL import Image, ImageTk
 from groove_artwork import CoverCache
 from groove_widgets import BG, PANEL, LINE, FG, MUTED, GREEN, Button, Check, Radio, Panel, Table, icon
 from groove_core import plan_actions
+from groove_version import __version__
+from groove_naming import FILE_FORMATS, FOLDER_FORMATS
 
 
 class PageNavigation:
     def __init__(self, app):self.app=app
     def select(self, page):
         a=self.app
+        tracks=hasattr(a,'track_editor') and page is a.track_editor
         history=page is a.tab_history
-        a.dashboard.grid_remove() if history else a.tab_history.grid_remove()
-        (a.tab_history if history else a.dashboard).grid(row=0,column=0,sticky='nsew')
-        for name, button in a.nav_buttons.items():
-            button.active=name==('logs' if history else 'scan');button.draw()
+        target=a.track_editor if tracks else (a.tab_history if history else a.dashboard)
+        for frame in (a.dashboard,a.tab_history,getattr(a,'track_editor',a.dashboard)):
+            frame.grid_remove()
+        target.grid(row=0,column=0,sticky='nsew')
+        a._active_page='tracks' if tracks else ('logs' if history else 'scan')
+        for name,button in a.nav_buttons.items():
+            button.active=name==a._active_page;button.draw()
+        from types import SimpleNamespace
+        a._footer_resize(SimpleNamespace(width=a._footer.winfo_width()))
+        if tracks and not a.track_editor.records and a.matched and not a.worker_busy:a.track_editor.import_scan()
         if page is a.tab_editor:a.album_entry.focus_set()
 
 
@@ -37,6 +46,7 @@ def install_layout(cls):
         s.configure('TCombobox',fieldbackground='#172128',background='#172128',foreground=FG,arrowcolor=MUTED,bordercolor=LINE)
         s.map('TCombobox',fieldbackground=[('readonly','#172128')],foreground=[('readonly',FG)],selectbackground=[('readonly','#172128')],selectforeground=[('readonly',FG)])
         s.map('TEntry',bordercolor=[('focus','#748997'),('!focus','#485b68')],lightcolor=[('focus','#748997'),('!focus','#485b68')],darkcolor=[('focus','#748997'),('!focus','#485b68')])
+        s.configure('Manual.TEntry',padding=1)
         s.configure('TScrollbar',background='#27363f',troughcolor=PANEL,bordercolor=PANEL,arrowcolor=MUTED,arrowsize=10)
         s.map('TScrollbar',background=[('active','#43565f')])
 
@@ -52,12 +62,14 @@ def install_layout(cls):
         self.journal_required=tk.BooleanVar(value=True)
         self.future_option=tk.BooleanVar(value=False)
         self.nav_buttons={}
+        self._active_page='scan'
         self._cover_photo=None
         self._art=CoverCache(self)
         self.button_font=(self.ui_font,10)
 
         # Footer remains reachable even when the workspace needs scrolling.
         footer=tk.Frame(self,bg=BG)
+        self._footer=footer
         footer.pack(side='bottom',fill='x',padx=(0,12),pady=(6,10))
         footer_spacer=tk.Frame(footer,bg=BG,width=272)
         footer_spacer.pack(side='left',fill='y')
@@ -73,16 +85,24 @@ def install_layout(cls):
         self.status_label=tk.Label(footer,textvariable=self.status,bg=BG,fg=GREEN,font=(self.ui_font,9),anchor='w',justify='left',wraplength=420)
         self.status_label.pack(side='left',fill='x',expand=True,padx=(0,8))
         def footer_resize(event):
+            if self._active_page=='tracks':
+                controls.pack_forget();footer_spacer.pack_forget()
+                self.status_label.pack_configure(side='top',fill='x',expand=False)
+                self.status_label.configure(height=1,wraplength=max(300,event.width-20))
+                return
             if event.width<1100:
+                controls.pack(side='bottom',anchor='e')
                 footer_spacer.pack_forget()
                 controls.pack_configure(side='bottom',anchor='e')
                 self.status_label.pack_configure(side='top',fill='x',expand=False)
                 self.status_label.configure(wraplength=max(300,event.width-20))
             else:
+                controls.pack(side='right',anchor='e')
                 footer_spacer.pack(side='left',fill='y',before=controls)
                 controls.pack_configure(side='right',anchor='e')
                 self.status_label.pack_configure(side='left',fill='x',expand=True)
                 self.status_label.configure(wraplength=max(200,event.width-controls.winfo_reqwidth()-footer_spacer.winfo_reqwidth()-12))
+        self._footer_resize=footer_resize
         footer.bind('<Configure>',footer_resize)
         self._footer_controls=controls
 
@@ -106,17 +126,18 @@ def install_layout(cls):
             self.logo=ImageTk.PhotoImage(im,master=self)
         self._logo_label=tk.Label(brand,image=self.logo,bg=PANEL)
         self._logo_label.pack(pady=(0,8))
-        tk.Label(brand,text='MUSIC TAGGER & ORGANIZER',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(pady=(0,17))
+        tk.Label(brand,text='MUSIC TAGGER\n& ORGANIZER',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(pady=(0,17))
         nav=tk.Frame(side,bg=PANEL)
         nav.grid(row=1,column=0,sticky='ew')
         for name,label,symbol,action in [
             ('scan','Scan & Fix','search',lambda:self.tabs.select(self.tab_albums)),
             ('lookup','Album Lookup','disc',self.go_editor),
             ('manual','Manual Edit','edit',self.go_editor),
+            ('tracks','Track Editor','music',lambda:self.tabs.select(self.track_editor)),
             ('settings','Settings','gear',self.show_settings),
             ('undo','Undo / Backups','undo',lambda:self.tabs.select(self.tab_history)),
             ('logs','View Logs','files',lambda:self.tabs.select(self.tab_history)),
-            ('about','About','info',lambda:messagebox.showinfo('Groove Goblin','Groove Goblin\nMusic tagger & organizer\n\nScanning and preview are read-only.\nFLAC and MP3 editing supported.\nUndo journals are not full music backups.')),
+            ('about','About','info',lambda:messagebox.showinfo('Groove Goblin',f'Groove Goblin {__version__}\nMusic tagger & organizer\n\nScanning and preview are read-only.\nFLAC and MP3 editing supported.\nManual saves keep full-file undo backups.\nOrganizer journals store edited fields and paths.')),
         ]:
             b=Button(nav,label,action,width=234,height=49,symbol=symbol,navigation=True,font=(self.ui_font,11))
             b.active=name=='scan';b.pack(fill='x',pady=1);self.nav_buttons[name]=b
@@ -128,7 +149,7 @@ def install_layout(cls):
         doc.pack(side='left',padx=(0,15));icon(doc,'files',6,2,70,'#c4cedc')
         tk.Label(formats_inner,text='FLAC    ✓\nMP3      ✓',bg=PANEL,fg=GREEN,font=(self.ui_font,11),justify='left').pack(anchor='w')
         tk.Label(formats_inner,text='More formats planned',bg=PANEL,fg=MUTED,font=(self.ui_font,8)).pack(anchor='w',pady=(9,0))
-        tk.Label(side,text='Groove Goblin | desktop prototype',bg=PANEL,fg=MUTED,font=(self.ui_font,9)).grid(row=4,column=0,sticky='w',pady=(4,8))
+        tk.Label(side,text=f'Groove Goblin v{__version__}',bg=PANEL,fg=MUTED,font=(self.ui_font,9)).grid(row=4,column=0,sticky='w',pady=(4,8))
 
         # Main center + compact right rail.
         self.content=tk.Frame(desktop,bg=BG)
@@ -206,14 +227,15 @@ def install_layout(cls):
         opts=tk.Frame(self.tab_editor,bg=BG)
         opts.grid(row=0,column=0,sticky='ew',pady=(8,9))
         tk.Label(opts,text='Rename Options',bg=BG,fg=GREEN,font=(self.ui_font,10,'bold')).pack(anchor='w',pady=(0,5))
-        self.filename_check=Check(opts,'Rename files: ## - Artist - Title',self.opt_filenames,self.refresh_preview,width=320,font=(self.ui_font,9))
+        self.filename_check=Check(opts,'Rename music files',self.opt_filenames,self.refresh_preview,width=320,font=(self.ui_font,9))
         self.filename_check.pack(anchor='w')
+        self.file_format_box=ttk.Combobox(opts,textvariable=self.file_format,values=list(FILE_FORMATS),state='readonly',font=(self.ui_font,9))
+        self.file_format_box.pack(fill='x',padx=(27,0),pady=(0,3))
+        self.file_format_box.bind('<<ComboboxSelected>>',lambda e:self.refresh_preview())
         Check(opts,'Rename album folders',self.opt_folders,self.refresh_preview,width=320,font=(self.ui_font,9)).pack(anchor='w')
-        naming=tk.Frame(opts,bg=BG);naming.pack(fill='x',pady=2)
-        tk.Label(naming,text='Use format:',bg=BG,fg=FG,font=(self.ui_font,9)).pack(side='left',padx=(32,8))
-        style=ttk.Combobox(naming,values=['Artist - Album (Year)'],state='readonly',width=24,font=(self.ui_font,9));style.current(0);style.pack(side='left',fill='x',expand=True)
-        Check(opts,'Create artist folders (planned)',self.future_option,width=320,disabled=True,font=(self.ui_font,9)).pack(anchor='w')
-        Check(opts,'Move to new folders (planned)',self.future_option,width=320,disabled=True,font=(self.ui_font,9)).pack(anchor='w')
+        self.folder_format_box=ttk.Combobox(opts,textvariable=self.folder_format,values=list(FOLDER_FORMATS),state='readonly',font=(self.ui_font,9))
+        self.folder_format_box.pack(fill='x',padx=(27,0),pady=(0,3))
+        self.folder_format_box.bind('<<ComboboxSelected>>',lambda e:self.refresh_preview())
         Check(opts,'Replace album / year tags',self.opt_tags,self.refresh_preview,width=320,font=(self.ui_font,9)).pack(anchor='w')
         Check(opts,'Keep an undo journal (always on)',self.journal_required,width=320,disabled=True,font=(self.ui_font,9)).pack(anchor='w')
 
@@ -257,6 +279,8 @@ def install_layout(cls):
         self.btn_auto.pack(anchor='w',pady=(0,8))
         self.make_history()
         self.refresh_preview()
+        from groove_track_editor import TrackEditor
+        self.track_editor=TrackEditor(self)
         from groove_responsive import ResponsiveLayout
         self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,formats=formats,doc=doc,
             center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,

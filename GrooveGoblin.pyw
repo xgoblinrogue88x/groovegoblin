@@ -1,11 +1,13 @@
-"""Groove Goblin v1.0 - dark Windows GUI for multi-album FLAC/MP3 tagging.
-Run with Python 3.10+ and mutagen. Uses built-in tkinter; no cloud account.
+"""Groove Goblin - dark Windows GUI for multi-album FLAC/MP3 tagging.
+Run with Python 3.10+ and the packages in requirements.txt. Uses built-in tkinter; no cloud account.
 """
-import os, queue, sys, threading, traceback
+import os, queue, sys, threading, traceback, json
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from groove_drop import FolderDropMixin
+from groove_version import __version__
+from groove_naming import DEFAULT_FILE_FORMAT, DEFAULT_FOLDER_FORMAT
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
                          newest_journal, export_preview, backup_dir, year4)
 from musicbrainz_client import MusicBrainz
@@ -17,7 +19,7 @@ FG='#e9f2f4'; MUTED='#9eb0bd'; GREEN='#71f28b'; PURPLE='#cc75ff'; ORANGE='#ffc77
 class GrooveGoblin(FolderDropMixin, tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title('Groove Goblin - Music Tagger & Organizer')
+        self.title(f'Groove Goblin {__version__} - Music Tagger & Organizer')
         self.geometry('1220x790');self.minsize(740,520)
         self.configure(bg=BG)
         try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_icon.png')))
@@ -29,6 +31,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.opt_tags=tk.BooleanVar(value=True)
         self.opt_folders=tk.BooleanVar(value=True)
         self.opt_filenames=tk.BooleanVar(value=False)
+        self.file_format=tk.StringVar(value=DEFAULT_FILE_FORMAT)
+        self.folder_format=tk.StringVar(value=DEFAULT_FOLDER_FORMAT)
         self.var_artist=tk.StringVar();self.var_album=tk.StringVar();self.var_year=tk.StringVar()
         self.var_search=tk.StringVar();self.var_enabled=tk.BooleanVar(value=True)
         self.status=tk.StringVar(value='Add one or more artist or album folders to begin.')
@@ -201,7 +205,9 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
 
     def toggle_fullscreen(self): self.attributes('-fullscreen',not bool(self.attributes('-fullscreen')))
     def confirm_close(self):
-        if self.worker_busy and not messagebox.askyesno('Work in progress','A scan or lookup is running. Close Groove Goblin anyway?'):return
+        if self.worker_busy and not messagebox.askyesno('Work in progress','A file operation, scan or lookup is running. Close Groove Goblin anyway?'):return
+        if hasattr(self,'track_editor') and (self.track_editor.pending or self.track_editor.inline or any(v.get() for v in self.track_editor.enabled.values())):
+            if not messagebox.askyesno('Unsaved track edits','Discard unsaved Track Editor changes and close?'):return
         self.cancel.set();self.destroy()
 
     def is_busy(self):return self.worker_busy
@@ -220,13 +226,16 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         try:
             while True:
                 typ,*args=self.queue.get_nowait()
-                if typ=='status':self.status.set(args[0])
+                if typ.startswith('manual_'):
+                    self.track_editor.handle_event(typ,*args)
+                elif typ=='status':self.status.set(args[0])
                 elif typ=='log':self.log(args[0])
                 elif typ=='scan_done':
                     self.matched=args[0];self.album_map={a.uid:a for a in self.matched}
                     self.populate_albums();self.refresh_preview()
                     self.status.set(f'Scanned {len(self.matched)} album folders; {sum(a.file_count for a in self.matched)} files.')
                     for x in args[1][:25]:self.log('SCAN SKIP: '+x)
+                    if self._active_page=='tracks':self._import_tracks_after_scan=True
                 elif typ=='suggest':
                     uid,suggestion,results=args
                     if uid in self.album_map:
@@ -254,6 +263,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                     self.log('ERROR:\n'+args[0]);messagebox.showerror('Groove Goblin',args[0].split('\n\n')[0]);self.status.set('An error occurred. Details are in Logs & Undo.')
                 elif typ=='idle':
                     self.worker_busy=False;self.btn_scan.state(['!disabled']);self.btn_auto.state(['!disabled']);self.btn_cancel.state(['disabled']);self.refresh_preview()
+                    if getattr(self,'_import_tracks_after_scan',False):
+                        self._import_tracks_after_scan=False;self.track_editor.import_scan()
         except queue.Empty:pass
         try:self.after(120,self.poll_queue)
         except tk.TclError:pass
@@ -361,7 +372,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.var_artist.set(r['artist'] or a.artist);self.var_album.set(r['title']);self.var_year.set(r['year'])
         self.save_match();a.match_source='MusicBrainz result chosen manually';a.mbid=r['id'];self.populate_albums()
 
-    def option_dict(self):return {'tags':self.opt_tags.get(),'folders':self.opt_folders.get(),'filenames':self.opt_filenames.get()}
+    def option_dict(self):return {'tags':self.opt_tags.get(),'folders':self.opt_folders.get(),'filenames':self.opt_filenames.get(),
+                                  'file_format':self.file_format.get(),'folder_format':self.folder_format.get()}
     def refresh_preview(self):
         if not hasattr(self,'preview_tree'):return
         self.actions,self.problems=plan_actions(self.matched,self.option_dict())
@@ -404,17 +416,43 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         if not messagebox.askyesno('Apply changes?',f'Apply changes to {len(tochange)} album folders?\n\n'
                   'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'
                   'An undo journal will be stored in the application Logs folder.\n\nProceed?',icon='warning'):return
-        actions=list(tochange);options=self.option_dict()
+        self.track_editor.player.stop()
+        actions=list(tochange);options=self.option_dict();loaded=list(self.track_editor.records)
         def work():
             path=apply_actions(actions,BASE,options,lambda x:self.queue.put(('status',x)))
+            mappings={t['old_path']:str(Path(a['dest_folder'])/t['new_name']) for a in actions for t in a['tracks']}
+            folders={a['folder']:a['dest_folder'] for a in actions}
+            self.track_editor.relocate_worker(mappings,folders,loaded)
             self.queue.put(('apply_done',path))
         self.run_background(work)
     def undo(self):
         path=newest_journal(BASE)
         if not path:messagebox.showinfo('Nothing to undo','No previous apply journal has been found.');return
         if not messagebox.askyesno('Undo last apply?',f'Undo Groove Goblin changes recorded in:\n{path.name}\n\nThis will restore the saved tag values and names.'):return
+        self.track_editor.player.stop()
+        loaded=list(self.track_editor.records)
         def work():
+            data=json.loads(Path(path).read_text())
             errors=undo_journal(path,lambda x:self.queue.put(('log',x)))
+            if data.get('kind')=='manual_tracks':
+                from groove_manual import read_track
+                records={};mappings={}
+                for track in data['tracks']:
+                    mappings[track['destination']]=track['source']
+                    for item in {track['source'],track['destination']}:
+                        if Path(item).is_file():
+                            record=read_track(item);records[record['path']]=record
+                self.queue.put(('manual_undone',errors,mappings,records))
+            else:
+                mappings={};folders={}
+                for album in data.get('albums',[]):
+                    before=Path(album['folder_before']);after=Path(album['folder_after'])
+                    current=after if album.get('folder_renamed') else before
+                    if before.is_dir():folders[str(current)]=str(before)
+                    names={t['new_name'] if t.get('file_renamed') else t['old_name']:t['old_name'] for t in album['tracks']}
+                    for old in loaded:
+                        if Path(old).parent==current:mappings[old]=str(before/names.get(Path(old).name,Path(old).name))
+                self.track_editor.relocate_worker(mappings,folders,loaded)
             self.queue.put(('undo_done',errors))
         self.run_background(work)
     def open_logs(self):

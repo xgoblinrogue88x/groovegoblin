@@ -97,7 +97,9 @@ class ResponsiveLayout:
             panel.padding=6 if compact else (9 if medium else 11)
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
-        logo_width=60 if self.icon_nav else (156 if medium else 238)
+        nav_height=(36 if compact else (40 if medium else 49))+2
+        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (100 if medium else 160))-140)
+        logo_width=60 if self.icon_nav else min(156 if medium else 238,int(logo_budget*self.logo_source.width/self.logo_source.height))
         if logo_width!=self.logo_size:
             img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
             a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
@@ -174,5 +176,5 @@ class ResponsiveLayout:
         for button in w['controls'].winfo_children():
             button.configure(height=40 if compact else (44 if medium else 50))
         w['footer_spacer'].configure(width=sidebar_width+12)
-        a.status_label.configure(height=2 if compact else 1)
+        a.status_label.configure(height=1 if a._active_page=='tracks' else (2 if compact else 1))
         a.preview_errors.configure(height=1)

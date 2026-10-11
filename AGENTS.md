@@ -11,7 +11,7 @@ Primary user requirements:
 3. Preserve existing **Groove Goblin** branding (musical goblin icon, logo/wordmark, accent colors).
 4. Select and process multiple albums from multiple artists in one batch, with individual inclusion/exclusion and manual corrections.
 5. Search MusicBrainz manually if the automatic album match is wrong. Never silently accept uncertain matches.
-6. Rename album folders exactly as `Artist - Album Title (Year)` with Windows-safe filename handling.
+6. Keep `Artist - Album Title (Year)` as the default album-folder preset, with selectable file/folder presets and Windows-safe naming.
 7. Support both FLAC and MP3, preserving unrelated tags/art, without transcoding.
 8. Keep read-only preview, clear confirmation, robust collision detection, and undo.
 
@@ -20,8 +20,10 @@ Primary user requirements:
 - **Scanning, searching, and previewing are read-only.** Write only after an explicit user action and confirmation.
 - Don't send music files, fingerprints, paths, or personally identifying data online without the user's explicit choice and clear explanation. Current MusicBrainz searches transmit artist/title lookup text, not the audio file.
 - Do not modify TITLE, TRACKNUMBER, ARTIST, album artwork, ReplayGain, comments, or arbitrary other tags when changing album/year. File renaming is an independent opt-in setting (default OFF).
-- Keep folder naming `Artist - Album Title (Year)` and prefer original album release year. Preserve legacy Van Halen mappings unless a test establishes a specific correction.
+- Keep the default folder naming `Artist - Album Title (Year)` and prefer original album release year; explicit user-selected presets may change the layout. Preserve legacy Van Halen mappings unless a test establishes a specific correction.
 - Do not overwrite or merge into occupied destination folders. Detect case-insensitive collisions, nested folder conflicts, and changed files since scan. If in doubt, skip with a clear error.
+- Manual Track Editor edits may change explicitly selected title/artist/track/disc/album/year fields, filenames and front artwork after review and confirmation. Preserve all other tags/pictures and support multi-selection.
+- Manual saves make full-file undo backups; organizer operations retain targeted metadata journals. Keep playback stopped/unloaded during writes.
 - Preserve an auditable undo record before mutations. Handle partial failure/restart; be honest that undo is not a complete backup. Don't delete user media to resolve conflicts.
 - When changing write/undo code, add tests using temporary files. Never run write tests on user libraries.
 - Treat untrusted metadata and API responses as untrusted text. Sanitize Windows path components and avoid shell injection.
@@ -29,7 +31,7 @@ Primary user requirements:
 ## Engineering guidance
 
 - Source modules: `GrooveGoblin.pyw`, `groove_core.py`, `musicbrainz_client.py`, `legacy_collections.py`.
-- Dependencies: Python 3.10+, Mutagen; Tkinter from standard Windows Python; `ffmpeg` is only used by the supplied tests.
+- Dependencies: Python 3.10+, Tkinter, Mutagen, Pillow, pygame-ce; Tkinter from standard Windows Python; `ffmpeg` is only used by the supplied tests.
 - Keep GUI work responsive. Tkinter widgets/variables must only be manipulated by the UI thread; communicate from background workers using the existing queue or a safer equivalent.
 - MusicBrainz has a public rate limit. Retain timeouts, caching, appropriate User-Agent, and conservative lookup. Missing internet must not block local scanning/manual tagging.
 - Maintain keyboard accessibility and horizontal/vertical scrolling where content exceeds a small screen. Test at 800x600, 1024x768, and 1920x1080, including Windows 125%/150% scaling; avoid obscuring the Apply/Undo controls.

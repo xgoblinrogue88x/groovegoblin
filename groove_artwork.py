@@ -13,6 +13,8 @@ from PIL import Image, ImageOps, ImageTk
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3
 
+from groove_version import __version__
+
 MAX_COVER_BYTES = 20 * 1024 * 1024
 
 
@@ -61,7 +63,7 @@ def read_online_cover(mbid):
     try:
         identity=str(uuid.UUID(str(mbid)))
         request=urllib.request.Request('https://coverartarchive.org/release-group/'+identity+'/front-250',
-                                       headers={'User-Agent':'GrooveGoblin/1.0 (desktop music organizer)'})
+                                       headers={'User-Agent':f'GrooveGoblin/{__version__} (desktop music organizer)'})
         opener=urllib.request.build_opener(HTTPSRedirect())
         with opener.open(request,timeout=12) as response:
             if urllib.parse.urlsplit(response.geturl()).scheme!='https':return None

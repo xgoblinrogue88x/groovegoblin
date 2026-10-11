@@ -13,6 +13,8 @@ from mutagen.flac import FLAC
 from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TDRC, TYER
 from mutagen.mp3 import MP3
 from legacy_collections import match as legacy_match
+from groove_naming import (FILE_FORMATS, FOLDER_FORMATS, DEFAULT_FILE_FORMAT,
+                           DEFAULT_FOLDER_FORMAT, render_preset)
 
 EXTENSIONS={'.flac','.mp3'}
 ILLEGAL=r'<>:"/\\|?*'
@@ -176,16 +178,16 @@ def scan_folders(roots,callback=None,cancel=None,*,recursive=True):
         albums.append(item)
     return albums,errors
 
-def album_destination(album):
-    return str(Path(album.folder).with_name(safe_name(f'{album.artist} - {album.album} ({year4(album.year)})')))
+def album_destination(album,format_name=DEFAULT_FOLDER_FORMAT):
+    values={'artist':album.artist.strip(),'album':album.album.strip(),'year':year4(album.year)}
+    return str(Path(album.folder).with_name(safe_name(render_preset(FOLDER_FORMATS,format_name,values))))
 
-def filename_destination(track,artist_fallback=''):
-    if track.number is None or track.number <= 0:
-        raise ValueError('missing or invalid track number; add a track-number tag before renaming files')
-    artist=track.artist.strip() or track.albumartist.strip() or artist_fallback.strip()
-    if not artist or not track.title.strip():
-        raise ValueError('missing artist or title; add those tags before renaming files')
-    return safe_name(f'{track.number:02d} - {artist} - {track.title.strip()}')+track.fmt
+def filename_destination(track,artist_fallback='',format_name=DEFAULT_FILE_FORMAT,album_fallback=''):
+    values={'track':f'{track.number:02d}' if track.number and track.number>0 else '',
+            'disc':str(track.disc) if track.disc and track.disc>0 else '',
+            'artist':track.artist.strip() or track.albumartist.strip() or artist_fallback.strip(),
+            'album':album_fallback.strip() or track.album.strip(),'title':track.title.strip()}
+    return safe_name(render_preset(FILE_FORMATS,format_name,values))+track.fmt
 
 def plan_actions(albums,options):
     opts={'tags':True,'folders':True,'filenames':False,**options}
@@ -197,7 +199,8 @@ def plan_actions(albums,options):
         if a.status!='READY':problems.append(f'{a.folder}: requires confirmation of its album, artist and year');continue
         if group_folders[a.folder.casefold()]>1:problems.append(f'{a.folder}: multiple album groups share a folder');continue
         if a.folder in nested:problems.append(f'{a.folder}: contains other album folders; move or select only leaf folders');continue
-        target_folder=album_destination(a) if opts['folders'] else a.folder
+        try:target_folder=album_destination(a,opts.get('folder_format',DEFAULT_FOLDER_FORMAT)) if opts['folders'] else a.folder
+        except ValueError as error:problems.append(f'{a.folder}: {error}');continue
         if a.partial_selection and target_folder!=a.folder:
             problems.append(f'{a.folder}: only some music files were selected; turn off Rename album folders or scan the full folder');continue
         if opts['folders'] and Path(target_folder).exists() and Path(target_folder).resolve()!=Path(a.folder).resolve():
@@ -213,7 +216,7 @@ def plan_actions(albums,options):
         for t in a.tracks:
             old_name=Path(t.path).name
             try:
-                new_name=filename_destination(t,a.artist) if opts['filenames'] else old_name
+                new_name=filename_destination(t,a.artist,opts.get('file_format',DEFAULT_FILE_FORMAT),a.album) if opts['filenames'] else old_name
             except ValueError as error:
                 problems.append(f'{t.path}: {error}');bad=True;break
             if new_name.casefold() in names:
@@ -363,6 +366,9 @@ def undo_journal(path,callback=None):
     jpath=Path(path)
     if not jpath.is_file():raise ValueError('No saved undo journal was found.')
     data=json.loads(jpath.read_text(encoding='utf-8'))
+    if data.get('kind')=='manual_tracks':
+        from groove_manual import undo_manual
+        return undo_manual(jpath,callback)
     if data.get('undone'):raise ValueError('This operation has already been undone.')
     errors=[]
     for entry in reversed(data.get('albums',[])):
