@@ -10,7 +10,7 @@ dependency licenses retain their own terms.
 ## Reproduce the build
 
 On Windows x64, install CPython 3.12.10 including Tcl/Tk, Inno Setup 6, and MSYS2
-MINGW64 with GCC, make, curl, tar and diffutils. From a clean repository root:
+UCRT64 with GCC, make, curl, tar and diffutils. From a clean repository root:
 
 ```powershell
 python -m venv .venv
@@ -18,7 +18,7 @@ python -m venv .venv
 python -m pip install -r packaging/requirements-build.txt
 ```
 
-In a MINGW64 shell in that same root run `bash packaging/build_ffmpeg.sh`.
+In a UCRT64 shell in that same root run `bash packaging/build_ffmpeg.sh`.
 FFmpeg n8.0 is downloaded with a pinned SHA256 and built statically without
 external libraries, network protocols, GPL or nonfree options. Its source and
 configuration accompany the package; Python's imageio-ffmpeg wrapper uses this

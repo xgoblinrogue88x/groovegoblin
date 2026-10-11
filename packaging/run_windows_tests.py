@@ -10,7 +10,10 @@ def main():
         log = logs / (module.stem + '.txt')
         print('Testing ' + module.name, flush=True)
         with log.open('w', encoding='utf-8') as stream:
-            process = subprocess.Popen([sys.executable, '-u', '-m', 'unittest',
+            probe = ('import faulthandler,unittest; '
+                     'faulthandler.dump_traceback_later(120); '
+                     'unittest.main(module=None)')
+            process = subprocess.Popen([sys.executable, '-u', '-c', probe,
                 'discover', '-s', 'tests', '-p', module.name, '-v'], stdout=stream,
                 stderr=subprocess.STDOUT, text=True)
             try:
