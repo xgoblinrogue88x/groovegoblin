@@ -270,7 +270,7 @@ class TrackEditorTests(unittest.TestCase):
         a=self.app;e=self.editor
         for width,height in [(800,600),(1024,768),(1536,1000),(1920,1080),(850,620)]:
             a.geometry(f'{width}x{height}');a.update();a._responsive.apply();e.resize();a.update()
-            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.progress,e.volume,e.audio_output_button,*e.play_buttons,*e.top_buttons):
+            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.progress,e.volume,e.audio_output_button,e.player_cover,e.now,e.player_artist,e.player_album,*e.play_buttons,*e.top_buttons):
                 self.assertTrue(widget.winfo_ismapped(),str(widget))
                 parent=widget.master
                 x=widget.winfo_rootx();y=widget.winfo_rooty()
@@ -290,8 +290,47 @@ class TrackEditorTests(unittest.TestCase):
         self.assertLessEqual(version.winfo_rooty()+version.winfo_height(),a.winfo_rooty()+a.winfo_height())
         for size in ('1120x740','1320x800','1536x1000','1920x1080'):
             a.geometry(size);a.update();a._responsive.apply();a.update()
-            note=a._responsive.w['format_note'];font=tkfont.Font(master=a,font=note.cget('font'))
-            self.assertTrue(note.winfo_ismapped())
-            self.assertLessEqual(font.measure(note.cget('text')),note.winfo_width())
-            self.assertGreaterEqual(note.winfo_height(),note.winfo_reqheight())
-            self.assertLessEqual(note.winfo_rooty()+note.winfo_height(),note.master.winfo_rooty()+note.master.winfo_height())
+            for label in (e.now,e.player_artist,e.player_album):
+                font=tkfont.Font(master=a,font=label.cget('font'))
+                self.assertTrue(label.winfo_ismapped())
+                self.assertLessEqual(font.measure(label.cget('text')),label.winfo_width())
+
+    def test_shared_sidebar_player_survives_navigation_and_shows_tags_and_art(self):
+        from io import BytesIO
+        from mutagen.flac import FLAC,Picture
+        import subprocess
+        a=self.app;e=self.editor;path=str(self.paths[1])
+        subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=500:duration=30','-c:a','flac','-y',path],check=True)
+        picture=Picture();picture.type=3;picture.mime='image/png'
+        buffer=BytesIO();Image.new('RGB',(32,32),'blue').save(buffer,format='PNG');picture.data=buffer.getvalue()
+        audio=FLAC(path);audio.add_picture(picture);audio['title']='Second';audio['artist']='Test Artist';audio['album']='Test Album';audio['date']='2025';audio.save()
+        e.records[path]=read_track(path)
+        e.tree.selection_set(path);e.play_pause()
+        deadline=time.monotonic()+3
+        while time.monotonic()<deadline and (e.player_photo is None or e.player.state!='playing'):
+            a.update();time.sleep(.02)
+        self.assertIsNotNone(e.player_photo)
+        self.assertNotIn('manual',a.nav_buttons)
+        self.assertNotIn('formats',a._responsive.w)
+        self.assertIs(e.player_panel,a.sidebar_player_panel)
+        self.assertIsNot(e.player_panel.master,e)
+        a.geometry('1536x1000');a.update();a._responsive.apply();e.update_player_details();a.update()
+        self.assertEqual(e.now.cget('text'),'Second')
+        self.assertEqual(e.player_artist.cget('text'),'Test Artist')
+        self.assertEqual(e.player_album.cget('text'),'Test Album (2025)')
+        e.volume.set(38);volume=e.player.volume;playlist=list(e.player.playlist)
+        # A different editor selection must not replace playback from another page.
+        e.tree.selection_set(str(self.paths[0]))
+        for page in (a.tab_albums,a.tab_editor,a.tab_history,e):
+            a.tabs.select(page);a.update()
+            self.assertEqual(e.player.playlist,playlist)
+            self.assertEqual(e.player.volume,volume)
+            for widget in (e.player_panel,e.player_cover,e.progress,e.volume,e.audio_output_button,*e.play_buttons):
+                self.assertTrue(widget.winfo_ismapped())
+        a.tabs.select(a.tab_albums);e.play_pause();self.assertEqual(e.player.state,'paused')
+        e.play_pause();self.assertEqual(e.player.state,'playing')
+        self.assertEqual(e.player.current['path'],path)
+        e.player.stop();e.player.playlist=[];e.player.index=-1
+        e.update_player_art();e.update_player_details();a.update()
+        self.assertIsNone(e.player_photo)
+        self.assertEqual(e.player_artist.cget('text'),'Artist')

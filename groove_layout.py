@@ -206,7 +206,6 @@ def install_layout(cls):
         for name,label,symbol,action in [
             ('scan','Scan & Rename','search',lambda:self.tabs.select(self.tab_albums)),
             ('lookup','Album Lookup','disc',self.go_editor),
-            ('manual','Manual Edit','edit',self.go_editor),
             ('tracks','Track Editor','music',lambda:self.tabs.select(self.track_editor)),
             ('settings','Settings','gear',self.show_settings),
             ('undo','Undo / Backups','undo',lambda:self.tabs.select(self.tab_history)),
@@ -215,15 +214,8 @@ def install_layout(cls):
         ]:
             b=Button(nav,label,action,width=234,height=49,symbol=symbol,navigation=True,font=(self.ui_font,11))
             b.active=name=='scan';b.pack(fill='x',pady=1);self.nav_buttons[name]=b
-        formats=Panel(side,height=160,padding=12)
-        formats.grid(row=3,column=0,sticky='ew',pady=(8,12))
-        tk.Label(formats.body,text='Supported Formats',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(anchor='w')
-        format_note=tk.Label(formats.body,text='* Format limits: see About',bg=PANEL,fg=MUTED,font=(self.ui_font,8),anchor='w')
-        format_note.pack(side='bottom',fill='x',pady=(4,0))
-        formats_inner=tk.Frame(formats.body,bg=PANEL);formats_inner.pack(fill='both',expand=True,pady=(14,0))
-        doc=tk.Canvas(formats_inner,width=76,height=84,bg=PANEL,highlightthickness=0)
-        doc.pack(side='left',padx=(0,15));icon(doc,'files',6,2,70,'#c4cedc')
-        tk.Label(formats_inner,text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*',bg=PANEL,fg=GREEN,font=(self.ui_font,9),justify='left').pack(anchor='w')
+        self.sidebar_player_panel=Panel(side,height=252,padding=8)
+        self.sidebar_player_panel.grid(row=3,column=0,sticky='ew',pady=(4,4))
         tk.Label(side,text=f'Groove Goblin v{__version__}',bg=PANEL,fg=MUTED,font=(self.ui_font,9)).grid(row=4,column=0,sticky='w',pady=(4,8))
 
         # Main center + compact right rail.
@@ -361,7 +353,7 @@ def install_layout(cls):
         from groove_track_editor import TrackEditor
         self.track_editor=TrackEditor(self)
         from groove_responsive import ResponsiveLayout
-        self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,formats=formats,doc=doc,format_note=format_note,
+        self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,player=self.sidebar_player_panel,
             center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,
             opts=opts,details=details,results=results,form=form,yearrow=yearrow,actions=actions,
             footer=footer,footer_spacer=footer_spacer,controls=controls))

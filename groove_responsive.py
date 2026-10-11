@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import tkinter as tk
 from tkinter import ttk, font as tkfont
 from PIL import Image, ImageTk
-from groove_widgets import Button, Check, Panel, icon, BG, MUTED
+from groove_widgets import Button, Check
 
 
 class ResponsiveLayout:
@@ -18,9 +18,6 @@ class ResponsiveLayout:
         self.toolbar=list(widgets['toolbar'].winfo_children())
         self.checks=[child for child in widgets['checkrow'].winfo_children() if isinstance(child,Check)]
         self.version=[c for c in widgets['side'].winfo_children() if isinstance(c,tk.Label)][0]
-        self.format_title=widgets['formats'].body.winfo_children()[0]
-        self.format_inner=widgets['doc'].master
-        self.format_labels=[c for c in self.format_inner.winfo_children() if isinstance(c,tk.Label)]
         self.detail_title=widgets['details'].body.winfo_children()[0]
         for name,button in app.nav_buttons.items():
             button.bind('<Enter>',lambda e,b=button,text=self.nav_text[name]:self.show_tip(b,text),add='+')
@@ -68,7 +65,7 @@ class ResponsiveLayout:
         compact=width<1000 or height<650
         medium=not compact and (width<1350 or height<850)
         self.icon_nav=width<1100 or height<650
-        sidebar_width=72 if self.icon_nav else (180 if medium else 260)
+        sidebar_width=180 if self.icon_nav else (210 if medium else 260)
         rail_width=244 if compact else (294 if medium else 342)
         center_width=max(300,width-sidebar_width-rail_width-32)
         scale=.82 if compact else (.92 if medium else 1)
@@ -92,13 +89,14 @@ class ResponsiveLayout:
                 if isinstance(widget,Check):widget.configure(height=20 if compact else (23 if medium else 25))
                 widget.draw()
             else:widget.configure(font=font)
-        for panel in (w['sidebar'],w['albums'],w['preview'],w['details'],w['results'],w['formats']):
+        for panel in (w['sidebar'],w['albums'],w['preview'],w['details'],w['results'],w['player']):
             panel.padding=6 if compact else (9 if medium else 11)
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
-        nav_height=(36 if compact else (40 if medium else 49))+2
-        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (128 if medium else 170))-90)
-        logo_width=60 if self.icon_nav else min(160 if medium else 238,int(logo_budget*self.logo_source.width/self.logo_source.height))
+        player_height=226 if compact else (242 if medium else 252)
+        nav_height=(26 if compact else (36 if medium else 44))+2
+        logo_budget=max(48,height-len(a.nav_buttons)*nav_height-player_height-54)
+        logo_width=min(52 if compact else (120 if self.icon_nav else (174 if medium else 238)),int(logo_budget*self.logo_source.width/self.logo_source.height))
         if logo_width!=self.logo_size:
             img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
             a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
@@ -114,21 +112,10 @@ class ResponsiveLayout:
             while button.text and font[1]>8 and tkfont.Font(master=a,font=(*font,'bold')).measure(button.text)>available:
                 font=(font[0],font[1]-1,*font[2:])
             button.font=font
-            button.configure(width=sidebar_width-20,height=36 if compact else (40 if medium else 49));button.draw()
-        formats=w['formats'];formats.configure(height=74 if self.icon_nav else (128 if medium else 170))
-        formats.grid_configure(pady=(3,4) if compact else (8,12))
-        self.format_title.configure(text='Formats' if self.icon_nav else 'Supported Formats')
-        if self.icon_nav:
-            w['doc'].pack_forget();w['format_note'].pack_forget()
-            self.format_inner.pack_configure(pady=(3,0))
-            self.format_labels[0].configure(text='Multi\nformat')
-        else:
-            w['doc'].pack(side='left',padx=(0,8 if medium else 15),before=self.format_labels[0])
-            w['format_note'].pack(side='bottom',fill='x',pady=(4,0),before=self.format_inner)
-            self.format_inner.pack_configure(pady=(7 if medium else 10,0))
-            self.format_labels[0].configure(font=(a.ui_font,8 if medium else 9),text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*')
-            w['doc'].configure(width=50 if medium else 76,height=64 if medium else 84)
-            w['doc'].delete('all');icon(w['doc'],'files',4,2,46 if medium else 70,'#c4cedc')
+            button.configure(width=sidebar_width-20,height=26 if compact else (36 if medium else 44));button.draw()
+        w['player'].configure(height=player_height)
+        w['player'].grid_configure(pady=(3,3))
+        a.track_editor.resize_player(compact)
 
         columns=2 if center_width<660 else 4
         for col in range(4):w['toolbar'].columnconfigure(col,weight=1 if col<columns else 0,minsize=0)

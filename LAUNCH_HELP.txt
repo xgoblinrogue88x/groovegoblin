@@ -23,7 +23,7 @@ If detection still fails:
   "C:\path\to\python.exe" -m pip install --user -r requirements.txt
   "C:\path\to\python.exe" GrooveGoblin.pyw
 
-Version 1.2.4 includes naming dropdowns, Track Editor, local cover replacement,
+Version 1.3.0 includes naming dropdowns, Track Editor, local cover replacement,
 streamed playback, full-file manual-save backups and version information in About.
 See README.md for controls, screenshots and validation limitations.
 This is source code, not a standalone EXE. Actual Windows playback and DPI

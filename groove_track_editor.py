@@ -2,6 +2,8 @@
 from io import BytesIO
 import json
 import os
+import queue
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 import tkinter as tk
@@ -107,7 +109,7 @@ class TrackEditor(tk.Frame):
         width=268 if compact else 320
         self.body.columnconfigure(1,minsize=width)
         self.side_panel.configure(width=width)
-        for panel in (self.list_panel,self.side_panel,self.player_panel):
+        for panel in (self.list_panel,self.side_panel):
             panel.padding=6 if compact else 10
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
         for index,button in enumerate(self.top_buttons):
@@ -405,27 +407,94 @@ class TrackEditor(tk.Frame):
         self.app.run_background(work)
 
     def build_player(self):
-        self.player_panel=Panel(self,padding=8,height=98)
-        self.player_panel.grid(row=2,column=0,sticky='ew',pady=(8,0))
-        bar=self.player_panel.body;bar.columnconfigure(1,weight=1)
+        # The host belongs to the sidebar, not to the editor page.
+        self.player_panel=self.app.sidebar_player_panel
+        bar=self.player_panel.body;bar.columnconfigure(0,weight=1)
+        self.player_heading=tk.Label(bar,text='Now Playing',bg=PANEL,fg=FG,font=(self.app.ui_font,10,'bold'),anchor='w')
+        self.player_heading.grid(row=0,column=0,sticky='ew')
         self.now=tk.Label(bar,text='Select a track and press Play',bg=PANEL,fg=GREEN,font=(self.app.ui_font,9,'bold'),anchor='w')
-        self.now.grid(row=0,column=0,columnspan=3,sticky='ew',padx=5)
-        controls=tk.Frame(bar,bg=PANEL);controls.grid(row=1,column=0,sticky='w')
+        self.now.grid(row=1,column=0,sticky='ew',pady=(2,3))
+        details=tk.Frame(bar,bg=PANEL);details.grid(row=2,column=0,sticky='ew');details.columnconfigure(1,weight=1)
+        self.player_cover=tk.Canvas(details,width=58,height=58,bg='#080e12',highlightthickness=1,highlightbackground=LINE)
+        self.player_cover.grid(row=0,column=0,rowspan=2,padx=(0,6))
+        self.player_artist=tk.Label(details,text='Artist',bg=PANEL,fg=FG,font=(self.app.ui_font,9),anchor='w')
+        self.player_artist.grid(row=0,column=1,sticky='ew')
+        self.player_album=tk.Label(details,text='Album · Year',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8),anchor='w')
+        self.player_album.grid(row=1,column=1,sticky='ew')
+        controls=tk.Frame(bar,bg=PANEL);controls.grid(row=3,column=0,sticky='ew',pady=(4,0))
         self.play_buttons=[]
-        for text,command in [('Back',lambda:self.player_command(self.player.previous)),('Play',self.play_pause),
-                             ('Skip',lambda:self.player_command(self.player.next)),('Stop',lambda:self.player_command(self.player.stop))]:
-            button=Button(controls,text,command,width=82,height=30,primary=text=='Play',symbol=text.lower(),font=(self.app.ui_font,8))
-            button.pack(side='left',padx=2);self.play_buttons.append(button)
+        for i,(text,command) in enumerate([('Back',lambda:self.player_command(self.player.previous)),('Play',self.play_pause),
+                             ('Skip',lambda:self.player_command(self.player.next)),('Stop',lambda:self.player_command(self.player.stop))]):
+            controls.columnconfigure(i,weight=1)
+            button=Button(controls,text,command,width=38,height=40,primary=text=='Play',symbol=text.lower(),vertical=True,font=(self.app.ui_font,8))
+            button.grid(row=0,column=i,sticky='ew',padx=(0,2 if i<3 else 0));self.play_buttons.append(button)
         self.progress=ttk.Scale(bar,from_=0,to=1,style='Player.Horizontal.TScale')
-        self.progress.grid(row=1,column=1,sticky='ew',padx=8)
+        self.progress.grid(row=4,column=0,sticky='ew')
         self.progress.bind('<ButtonPress-1>',lambda e:setattr(self,'seeking',True))
         self.progress.bind('<ButtonRelease-1>',self.seek)
-        self.time=tk.Label(bar,text='0:00 / 0:00',bg=PANEL,fg=FG,font=(self.app.ui_font,8));self.time.grid(row=1,column=2,padx=5)
-        volume=tk.Frame(bar,bg=PANEL);volume.grid(row=2,column=0,columnspan=3,sticky='ew')
-        tk.Label(volume,text='Volume',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8)).pack(side='left',padx=5)
-        self.volume=ttk.Scale(volume,from_=0,to=100,command=self.player.set_volume,style='Player.Horizontal.TScale');self.volume.set(70);self.volume.configure(length=180);self.volume.pack(side='left',padx=(0,8))
-        self.audio_output_button=Button(volume,'Audio Output',self.show_audio_output,width=118,height=24,font=(self.app.ui_font,8))
-        self.audio_output_button.pack(side='right',padx=5)
+        self.time=tk.Label(bar,text='0:00 / 0:00',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8))
+        self.time.grid(row=5,column=0,sticky='ew')
+        volume=tk.Frame(bar,bg=PANEL);volume.grid(row=6,column=0,sticky='ew');volume.columnconfigure(1,weight=1)
+        tk.Label(volume,text='Volume',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8)).grid(row=0,column=0,padx=(0,4))
+        self.volume=ttk.Scale(volume,from_=0,to=100,command=self.player.set_volume,style='Player.Horizontal.TScale')
+        self.volume.set(70);self.volume.configure(length=70);self.volume.grid(row=0,column=1,sticky='ew')
+        self.audio_output_button=Button(bar,'Audio Output',self.show_audio_output,width=118,height=22,font=(self.app.ui_font,8))
+        self.audio_output_button.grid(row=7,column=0,sticky='ew',pady=(2,0))
+        self.player_art_queue=queue.Queue();self.player_art_key=object();self.player_photo=None;self.player_art_size=58
+        self.player_cover.bind('<Configure>',lambda event:self.update_player_art())
+
+    def resize_player(self,compact):
+        self.player_art_size=42 if compact else 58
+        self.player_cover.configure(width=self.player_art_size,height=self.player_art_size)
+        self.player_heading.configure(font=(self.app.ui_font,9 if compact else 10,'bold'))
+        for button in self.play_buttons:
+            button.configure(height=38 if compact else 40);button.draw()
+        self.update_player_details()
+        self.update_player_art()
+
+    def update_player_details(self):
+        from tkinter import font as tkfont
+        current=self.player.current
+        def fit(label,text,suffix=""):
+            # Keep the sidebar width fixed even with long tags or filenames.
+            text=' '.join(str(text).split())
+            width=max(20,label.winfo_width()-4)
+            font=tkfont.Font(master=self.app,font=label.cget('font'))
+            if font.measure(text+suffix)>width:
+                low,high=0,len(text)
+                while low<high:
+                    middle=(low+high+1)//2
+                    if font.measure(text[:middle]+'…'+suffix)<=width:low=middle
+                    else:high=middle-1
+                text=text[:low]+'…'
+            text+=suffix
+            label.configure(text=text)
+        fit(self.now,(current.get('title') or Path(current['path']).stem) if current else 'Select a track and press Play')
+        fit(self.player_artist,(current.get('artist') or 'Unknown artist') if current else 'Artist')
+        album=(current.get('album') or 'Unknown album') if current else 'Album'
+        year=current.get('year','') if current else ''
+        fit(self.player_album,album,(' ('+str(year)+')' if year else ''))
+
+    def update_player_art(self):
+        current=self.player.current
+        key=(current['path'],tuple(current.get('signature',())),self.player_art_size) if current else None
+        if key==self.player_art_key:return
+        self.player_art_key=key;self.player_photo=None
+        self.player_cover.delete('all')
+        from groove_widgets import icon
+        size=self.player_art_size
+        icon(self.player_cover,'disc',4,4,size-8,MUTED)
+        if not key:return
+        def read():
+            image=None
+            try:
+                art=read_track(key[0],include_artwork=True).get('artwork')
+                if art:
+                    with Image.open(BytesIO(art)) as source:
+                        source.thumbnail((key[2],key[2]),Image.Resampling.LANCZOS);image=source.convert('RGB').copy()
+            except (OSError,ValueError):pass
+            self.player_art_queue.put((key,image))
+        threading.Thread(target=read,daemon=True,name='sidebar-artwork').start()
 
     def show_audio_output(self):
         existing=getattr(self,'audio_dialog',None)
@@ -480,7 +549,7 @@ class TrackEditor(tk.Frame):
         if self.app.worker_busy:return
         selected=self.selected()
         path=selected[0] if selected else None
-        if self.player.current and (path is None or self.player.current['path'] in selected):self.player_command(self.player.toggle)
+        if self.player.current and (self.app._active_page!='tracks' or path is None or self.player.current['path'] in selected):self.player_command(self.player.toggle)
         elif path:
             if Path(path).suffix.lower()=='.pcm' and not self.records[path].get('pcm'):
                 settings=self.pcm_dialog()
@@ -524,8 +593,13 @@ class TrackEditor(tk.Frame):
         self.timer=None
         try:self.player.pump()
         except Exception as error:self.player.stop();self.app.log('Playback: '+str(error));self.app.status.set('Playback: '+str(error).splitlines()[0])
-        current=self.player.current
-        self.now.configure(text=(self.player.state.title()+': '+Path(current['path']).name) if current else 'Select a track and press Play')
+        self.update_player_details();self.update_player_art()
+        while not self.player_art_queue.empty():
+            key,image=self.player_art_queue.get_nowait()
+            if key==self.player_art_key and image is not None:
+                self.player_photo=ImageTk.PhotoImage(image,master=self.app)
+                self.player_cover.delete('all')
+                self.player_cover.create_image(self.player_art_size/2,self.player_art_size/2,image=self.player_photo)
         self.play_buttons[1].state(['disabled'] if self.player.state=='buffering' else ['!disabled'])
         playing=self.player.state=='playing'
         self.play_buttons[1].text='Wait' if self.player.state=='buffering' else ('Pause' if playing else 'Play')

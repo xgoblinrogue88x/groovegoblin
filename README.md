@@ -1,4 +1,4 @@
-# Groove Goblin 1.2.4
+# Groove Goblin 1.3.0
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -109,14 +109,19 @@ with a launcher, not a standalone EXE.
 ## Window sizing and keyboard
 
 Track Editor uses the same rounded panels and icon buttons as Scan & Rename, with
-alternating dark rows, green selection/staging accents and a framed player.
+alternating dark rows and green selection/staging accents.
 Tables use slim rounded scrollbars; player sliders have green handles.
 
 The app fits windows down to 800×600 without an outer scrollbar. Lists scroll
 internally when needed. Resizing reduces artwork and spacing and uses sidebar
 icons with hover labels on compact screens. The logo fills the available sidebar
-space. Format notes have a full-width footer, and [About](docs/about-linux.png)
-groups supported formats and Undo information in styled panels.
+space. [About](docs/about-linux.png) groups supported formats and Undo
+information in styled panels. The compact sidebar player replaces Supported
+Formats and remains visible across sections. It shows embedded artwork, track
+title, artist, album/year, playback buttons, time/seek and volume, with Audio
+Output underneath. Changing sections preserves playback and volume. Long tags
+are shortened with an ellipsis to fit the sidebar. Manual Edit navigation was
+removed; use Track Editor for track tags and Album Lookup for album matches.
 [Compact Scan & Rename](docs/interface-compact-linux.png) and
 [compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
 Select album rows with Ctrl-click / Shift-click (Ctrl+A selects all visible rows),
@@ -129,7 +134,7 @@ Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still work
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.2.4.
+sidebar display version 1.3.0.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -150,9 +155,10 @@ front-art replacement/removal with other art and tags preserved; byte-for-byte
 manual Undo; partial failures and external-edit protection; live GUI workflows,
 resize bounds, staging without writes, drop auto-scanning, and editor paths after
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
-through SDL's test audio device and exercise transport, seeking and volume.
+through SDL's test audio device and exercise transport, seeking and volume,
+sidebar artwork/metadata and playback continuity across sections.
 
-62 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+63 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

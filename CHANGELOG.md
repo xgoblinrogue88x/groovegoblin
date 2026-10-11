@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+
+- Removed redundant Manual Edit navigation; Track Editor and Album Lookup remain.
+- Replaced the sidebar Supported Formats panel with a compact shared player visible across sections.
+- Added current artwork, title, artist and album/year alongside playback, seek/time, volume and Audio Output controls.
+- Removed the player bar from Track Editor and preserved playback/volume during navigation.
+- Adapted sidebar sizing for smaller windows; long metadata fits with ellipses and artwork loads off the UI thread.
+
 ## 1.2.4
 
 - Changed wheel scrolling to one row per notch in organizer/editor lists and one line in text panels.
