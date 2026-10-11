@@ -19,17 +19,18 @@ class PlaybackDecoder:
         self.temporary=tempfile.TemporaryDirectory(prefix='GrooveGoblin_Playback_',ignore_cleanup_errors=True)
         self.cancel=None;self.future=None;self.closed=False;self.process=None;self.jobs=[]
 
-    def request(self,record):
+    def request(self,record,*,output_format='flac'):
+        if output_format not in {'flac','wav'}:raise ValueError('Unsupported listening-copy format.')
         self.stop();self.cancel=threading.Event()
-        self.future=self.executor.submit(self.decode,dict(record),self.cancel)
+        self.future=self.executor.submit(self.decode,{**record,'_output_format':output_format},self.cancel)
         self.jobs=[job for job in self.jobs if not job.done()]+[self.future]
         return self.future
 
     def decode(self,record,cancel):
         import imageio_ffmpeg
-        path=Path(record['path']);pcm=record.get('pcm')
-        key=hashlib.sha256((str(path)+str(path.stat().st_size)+str(path.stat().st_mtime_ns)+str(pcm)).encode()).hexdigest()
-        output=Path(self.temporary.name)/(key+'.flac')
+        path=Path(record['path']);pcm=record.get('pcm');output_format=record.get('_output_format','flac')
+        key=hashlib.sha256((str(path)+str(path.stat().st_size)+str(path.stat().st_mtime_ns)+str(pcm)+output_format).encode()).hexdigest()
+        output=Path(self.temporary.name)/(key+'.'+output_format)
         if output.is_file():return str(output)
         command=[imageio_ffmpeg.get_ffmpeg_exe(),'-hide_banner','-loglevel','error','-nostdin','-y']
         if path.suffix.lower()=='.pcm':
@@ -37,7 +38,7 @@ class PlaybackDecoder:
             if pcm.get('format') not in PCM_FORMATS.values() or not 8000<=int(pcm.get('rate',0))<=384000 or int(pcm.get('channels',0)) not in (1,2,4,6,8):
                 raise ValueError('Invalid raw PCM playback settings.')
             command+=['-f',pcm['format'],'-ar',str(pcm['rate']),'-ac',str(pcm['channels'])]
-        command+=['-i',str(path),'-map','0:a:0','-vn','-ar','48000','-ac','2','-sample_fmt','s16','-c:a','flac',str(output)]
+        command+=['-i',str(path),'-map','0:a:0','-vn','-ar','48000','-ac','2','-sample_fmt','s16','-c:a','pcm_s16le' if output_format=='wav' else 'flac',str(output)]
         flags={'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {}
         if cancel.is_set():raise RuntimeError('Playback preparation canceled.')
         process=subprocess.Popen(command,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,**flags)
@@ -55,7 +56,7 @@ class PlaybackDecoder:
                 raise ValueError('Unable to decode this audio file. It may be corrupt, encrypted or use an unsupported codec.\n'+error.decode(errors='replace')[-1800:])
             if cancel.is_set():raise RuntimeError('Playback preparation canceled.')
             # Bound the listening-copy cache; current music is unloaded before a new request.
-            old=sorted(Path(self.temporary.name).glob('*.flac'),key=lambda p:p.stat().st_mtime,reverse=True)
+            old=sorted((p for p in Path(self.temporary.name).iterdir() if p.suffix in {'.flac','.wav'}),key=lambda p:p.stat().st_mtime,reverse=True)
             for item in old[4:]:item.unlink(missing_ok=True)
             return str(output)
         except Exception:

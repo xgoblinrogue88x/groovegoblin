@@ -12,6 +12,38 @@ from groove_version import __version__
 
 @unittest.skipUnless(os.name=='nt' or os.environ.get('DISPLAY'),'Tk display required')
 class TrackEditorTests(unittest.TestCase):
+    def test_audio_output_device_selection_test_sound_and_failure_feedback(self):
+        from tkinter import ttk
+        from groove_widgets import Button,Check
+        e=self.editor;a=self.app
+        with patch.object(e.player,'output_devices',return_value=['Speakers','Headphones']):
+            e.audio_output_button.invoke();a.update()
+        dialog=e.audio_dialog
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+        widgets=list(descendants(dialog))
+        combo=next(w for w in widgets if isinstance(w,ttk.Combobox))
+        self.assertEqual(combo.cget('values'),('System default','Speakers','Headphones'))
+        combo.set('Headphones')
+        next(w for w in widgets if isinstance(w,Check)).variable.set(True)
+        buttons={w.text:w for w in widgets if isinstance(w,Button)}
+        with patch.object(e.player,'configure_output') as configure,patch.object(e.player,'test_sound') as tone:
+            buttons['Test Sound'].invoke();a.update()
+            configure.assert_called_once_with('Headphones',compatibility=True);tone.assert_called_once()
+        with patch.object(e.player,'configure_output',side_effect=RuntimeError('Output disconnected')):
+            buttons['Reconnect'].invoke();a.update()
+        messages=[w for w in widgets if w.winfo_class()=='Label' and w.cget('textvariable')]
+        self.assertTrue(any('Output disconnected' in a.getvar(w.cget('textvariable')) for w in messages))
+        for size in ('520x350','560x350'):
+            dialog.geometry(size);a.update()
+            for widget in (combo,*buttons.values()):
+                self.assertTrue(widget.winfo_ismapped())
+                self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),dialog.winfo_rootx()+dialog.winfo_width())
+                self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),dialog.winfo_rooty()+dialog.winfo_height())
+        dialog.destroy()
+
     def setUp(self):
         from test_gui import LayoutTests
         from test_groove import GrooveTests
@@ -212,7 +244,7 @@ class TrackEditorTests(unittest.TestCase):
         a=self.app;e=self.editor
         for width,height in [(800,600),(1024,768),(1536,1000),(1920,1080),(850,620)]:
             a.geometry(f'{width}x{height}');a.update();a._responsive.apply();e.resize();a.update()
-            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.progress,e.volume,*e.play_buttons,*e.top_buttons):
+            for widget in (*e.entries.values(),e.cover,e.save_button,e.undo_button,e.stage_button,e.discard_button,e.progress,e.volume,e.audio_output_button,*e.play_buttons,*e.top_buttons):
                 self.assertTrue(widget.winfo_ismapped(),str(widget))
                 parent=widget.master
                 x=widget.winfo_rootx();y=widget.winfo_rooty()

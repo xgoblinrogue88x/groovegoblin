@@ -151,7 +151,7 @@ class FormatTests(unittest.TestCase):
         from groove_player import MusicPlayer
         import os
         os.environ.setdefault('SDL_AUDIODRIVER','dummy')
-        player=MusicPlayer();self.addCleanup(player.close)
+        player=MusicPlayer(allow_test_output=True);self.addCleanup(player.close)
         # Each real generated encoding goes through FFmpeg, SDL playback and seek.
         for p in [p for p in self.paths if p.suffix not in {'.ape','.wave','.aif','.dsd','.oga'}]:
             with self.subTest(format=p.suffix):

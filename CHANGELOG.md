@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3
+
+- Added Audio Output selection, reconnect and a short test tone to Track Editor.
+- Enabled compatibility playback by default on Windows, decoding temporary 48 kHz stereo 16-bit WAV listening copies to bypass direct compressed-file playback. Source audio remains unchanged.
+- Preserved volume and the current playing/paused position when reconnecting output.
+- Added actionable output-open errors and playback/output regression coverage.
+- Logged the active audio backend and rejected silent test/file-output drivers during normal Windows playback.
+
 ## 1.2.2
 
 - Added multiple album-row selection with Ctrl-click, Shift-click and Ctrl+A.

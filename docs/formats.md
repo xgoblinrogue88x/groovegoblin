@@ -1,4 +1,4 @@
-# Audio formats in Groove Goblin 1.2.2
+# Audio formats in Groove Goblin 1.2.3
 
 Add Files, folder scans, Explorer drops, Track Editor and cover previews share
 one format list. A filename extension is checked against the actual container;
@@ -48,12 +48,17 @@ fields. Neither converts the user's library. Filename extensions are retained.
 
 ## Playback
 
-Existing MP3/FLAC playback stays streamed. Other formats are decoded by the
-separately installed imageio-ffmpeg package in a background worker. The player
+Compatibility playback is enabled by default on Windows. It streams a temporary
+48 kHz stereo 16-bit WAV listening copy, bypassing the direct compressed-file
+decoder. With compatibility off, MP3/FLAC stream directly; other formats use
+temporary FLAC copies. These copies are decoded by the separately installed
+imageio-ffmpeg package in a background worker. The player
 shows Buffering while preparing a temporary stereo 48 kHz listening copy, then
 provides pause, seeking, previous/next, stop and volume. DSD is decoded to PCM for
 listening; the original DSD file is unchanged. This playback path is not a
-bit-perfect DSD output mode.
+bit-perfect DSD output mode. Audio Output provides device selection, reconnect
+and a short test tone. If the tone is silent, check the chosen device and the
+Python/Groove Goblin volume in Windows Volume mixer.
 
 Listening copies use temporary disk space; at most four are cached and they are
 removed when the player closes. Stop cancels preparation, and a canceled job

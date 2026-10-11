@@ -1,6 +1,7 @@
 """Mp3tag-style staged editing, multi-selection, cover editing and playback."""
 from io import BytesIO
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 import tkinter as tk
@@ -408,6 +409,57 @@ class TrackEditor(tk.Frame):
         volume=tk.Frame(bar,bg=PANEL);volume.grid(row=2,column=0,columnspan=3,sticky='ew')
         tk.Label(volume,text='Volume',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8)).pack(side='left',padx=5)
         self.volume=ttk.Scale(volume,from_=0,to=100,command=self.player.set_volume,style='Player.Horizontal.TScale');self.volume.set(70);self.volume.configure(length=180);self.volume.pack(side='left',padx=(0,8))
+        self.audio_output_button=Button(volume,'Audio Output',self.show_audio_output,width=118,height=24,font=(self.app.ui_font,8))
+        self.audio_output_button.pack(side='right',padx=5)
+
+    def show_audio_output(self):
+        existing=getattr(self,'audio_dialog',None)
+        if existing is not None and existing.winfo_exists():existing.lift();return
+        dialog=tk.Toplevel(self.app,bg=BG);self.audio_dialog=dialog
+        dialog.title('Audio Output');dialog.transient(self.app);dialog.geometry('560x350');dialog.minsize(520,350)
+        body=tk.Frame(dialog,bg=BG);body.pack(fill='both',expand=True,padx=18,pady=16)
+        buttons=tk.Frame(body,bg=BG);buttons.pack(side='bottom',fill='x',pady=(12,0))
+        tk.Label(body,text='Audio Output',bg=BG,fg=GREEN,font=(self.app.ui_font,15,'bold')).pack(anchor='w',pady=(0,10))
+        tk.Label(body,text='Choose the speakers or headphones you want to hear.',bg=BG,fg=FG,font=(self.app.ui_font,10)).pack(anchor='w')
+        choice=tk.StringVar(value=self.player.device or 'System default')
+        row=tk.Frame(body,bg=BG);row.pack(fill='x',pady=10)
+        output=ttk.Combobox(row,textvariable=choice,state='readonly');output.pack(side='left',fill='x',expand=True)
+        message=tk.StringVar(value='')
+        def refresh():
+            try:
+                names=['System default',*self.player.output_devices()]
+                output.configure(values=names)
+                if choice.get() not in names:choice.set('System default')
+            except Exception as error:
+                output.configure(values=['System default']);choice.set('System default')
+                message.set('Could not list outputs. Reconnect your speakers/headphones and try Refresh.')
+                self.app.log('Audio outputs: '+str(error))
+        Button(row,'Refresh',refresh,width=90,height=28,font=(self.app.ui_font,9)).pack(side='right',padx=(8,0))
+        compatible=tk.BooleanVar(value=self.player.compatibility)
+        Check(body,'Compatibility playback (stereo WAV)',compatible,width=480,font=(self.app.ui_font,10)).pack(anchor='w',pady=(2,6))
+        tk.Label(body,text='Recommended on Windows. Plays a temporary listening copy;\nyour original music stays unchanged.',bg=BG,fg=MUTED,font=(self.app.ui_font,9),justify='left').pack(anchor='w')
+        tk.Label(body,textvariable=message,bg=BG,fg=GREEN,font=(self.app.ui_font,9),justify='left',wraplength=480).pack(fill='x',pady=(12,0))
+        if os.environ.get('SDL_AUDIODRIVER')=='dummy':
+            message.set('Silent test output is active (SDL_AUDIODRIVER=dummy).\nClear that environment variable and restart to hear sound.')
+        def reconnect(test=False):
+            if self.app.worker_busy:
+                message.set('Wait for the current operation to finish, then reconnect audio.');return
+            try:
+                self.player.configure_output(None if choice.get()=='System default' else choice.get(),compatibility=compatible.get())
+                self.app.log('Audio output: '+(self.player.device or 'System default')+'; backend: '+self.player.audio_driver+'; compatibility: '+str(self.player.compatibility)+'; volume: '+str(round(self.player.volume))+'%')
+                if test:
+                    if self.player.volume==0:
+                        message.set('Volume is 0%. Raise the player volume, then try Test Sound.');return
+                    self.player.test_sound()
+                    message.set('A short tone was sent to this output. If silent, check Windows\nVolume Mixer for this Python app and select the same output here.')
+                else:message.set('Reconnected to '+(self.player.device or 'System default')+'.')
+            except Exception as error:
+                message.set(str(error).splitlines()[0]);self.app.log('Audio output: '+str(error))
+        Button(buttons,'Reconnect',reconnect,width=116,height=34,primary=True,font=(self.app.ui_font,9)).pack(side='left')
+        Button(buttons,'Test Sound',lambda:reconnect(True),width=118,height=34,font=(self.app.ui_font,9)).pack(side='left',padx=8)
+        Button(buttons,'Close',dialog.destroy,width=80,height=34,font=(self.app.ui_font,9)).pack(side='right')
+        dialog.bind('<Escape>',lambda event:dialog.destroy())
+        refresh()
 
     def play_pause(self):
         if self.app.worker_busy:return
@@ -445,7 +497,9 @@ class TrackEditor(tk.Frame):
     def player_command(self,command):
         if self.app.worker_busy and command!=self.player.stop:return
         try:command()
-        except Exception as error:messagebox.showwarning('Playback',str(error))
+        except Exception as error:
+            self.app.log('Playback: '+str(error));self.app.status.set('Playback: '+str(error).splitlines()[0])
+            messagebox.showwarning('Playback',str(error))
 
     def seek(self,event=None):
         self.seeking=False

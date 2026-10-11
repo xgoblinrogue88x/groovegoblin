@@ -1,4 +1,4 @@
-GROOVE GOBLIN 1.2.2 - Music Tagger & Organizer
+GROOVE GOBLIN 1.2.3 - Music Tagger & Organizer
 
 1. Extract the ENTIRE ZIP into a new writable folder. Do not run inside the ZIP.
 2. Double-click START_GROOVE_GOBLIN.bat. Keep its console open for diagnostics.
@@ -16,6 +16,6 @@ GROOVE GOBLIN 1.2.2 - Music Tagger & Organizer
 Multiple audio containers supported; see docs/formats.md. Raw AAC/PCM have limited editing; CDA requires CD ripping. Existing destinations are not overwritten. Organizer Undo
 stores targeted tags/paths; manual Undo stores complete original files. Read
 README.md for workflow, backup disk usage, controls and limits. This is Python
-source with a Windows launcher, not a standalone EXE. About shows version 1.2.2.
+source with a Windows launcher, not a standalone EXE. About shows version 1.2.3.
 
 Startup problems: see LAUNCH_HELP.txt. Send console error text for diagnostics.

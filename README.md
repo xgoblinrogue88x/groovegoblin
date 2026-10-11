@@ -1,4 +1,4 @@
-# Groove Goblin 1.2.2
+# Groove Goblin 1.2.3
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -65,6 +65,14 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
   table when a single track is selected. The player has volume, a seek bar and
   elapsed / total time. Back restarts the current track after three seconds;
   otherwise it goes to the previous track. MP3 seeking can be approximate.
+- [Audio Output](docs/audio-output-linux.png) lets you choose your speakers/headphones, reconnect the device,
+  and play a short test tone. Compatibility playback is enabled by default on
+  Windows: FFmpeg prepares a temporary 48 kHz stereo 16-bit WAV so playback can
+  avoid the direct FLAC/MP3 decoder. The source audio and its tags stay unchanged.
+  Preparation runs in the background; long tracks can take longer to start.
+  If the timer moves but you hear nothing, choose the correct output and Test
+  Sound. If the tone is silent too, check Windows Settings → System → Sound →
+  Volume mixer and unmute/raise the Python or Groove Goblin app volume.
 - Undo Last Save restores the latest manual save. Scan & Fix renames also
   update loaded editor paths while preserving staged edits.
 
@@ -115,7 +123,7 @@ Shift+wheel scrolls the Track Editor horizontally; scrollbar dragging still work
 
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.2.2.
+sidebar display version 1.2.3.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -138,7 +146,7 @@ resize bounds, staging without writes, drop auto-scanning, and editor paths afte
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume.
 
-56 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+61 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed
