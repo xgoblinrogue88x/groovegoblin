@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- Removed the branding caption and enlarged the sidebar logo.
+- Gave the format-limits note a full-width footer to prevent clipping.
+- Replaced the About message box with a styled window and clearer format/Undo sections.
+
 ## 1.2.0
 
 - Added container-aware tagging/artwork for WAV, AIFF, ALAC/M4A, APE, WavPack,

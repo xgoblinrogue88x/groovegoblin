@@ -1,4 +1,4 @@
-# Groove Goblin 1.2.0
+# Groove Goblin 1.2.1
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -101,12 +101,14 @@ Tables use slim rounded scrollbars; player sliders have green handles.
 
 The app fits windows down to 800×600 without an outer scrollbar. Lists scroll
 internally when needed. Resizing reduces artwork and spacing and uses sidebar
-icons with hover labels on compact screens. The branding caption uses two lines
-to fit. [Compact Scan & Fix](docs/interface-compact-linux.png) and
+icons with hover labels on compact screens. The logo fills the available sidebar
+space. Format notes have a full-width footer, and [About](docs/about-linux.png)
+groups supported formats and Undo information in styled panels.
+[Compact Scan & Fix](docs/interface-compact-linux.png) and
 [compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.2.0.
+sidebar display version 1.2.1.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,

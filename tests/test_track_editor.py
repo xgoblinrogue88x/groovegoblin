@@ -77,8 +77,21 @@ class TrackEditorTests(unittest.TestCase):
         e.inline.event_generate('<Return>');self.app.update()
         self.assertEqual(e.pending[path]['title'],'Inline title')
         self.assertEqual(read_track(path)['title'],'First')
-        with patch('groove_layout.messagebox.showinfo') as info:self.app.nav_buttons['about'].invoke()
-        self.assertIn(__version__,info.call_args.args[1])
+        self.app.nav_buttons['about'].invoke();self.app.update()
+        dialog=self.app._about_window
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+        labels=[w for w in descendants(dialog) if w.winfo_class()=='Label']
+        self.assertTrue(any(__version__ in w.cget('text') for w in labels))
+        self.app.show_about();self.assertIs(self.app._about_window,dialog)
+        for size in ('560x520','620x540'):
+            dialog.geometry(size);self.app.update()
+            for label in labels:
+                self.assertGreaterEqual(label.winfo_height(),label.winfo_reqheight(),label.cget('text'))
+                self.assertLessEqual(label.winfo_rooty()+label.winfo_height(),label.master.winfo_rooty()+label.master.winfo_height(),label.cget('text'))
+        dialog.destroy()
 
     def test_presets_update_live_previews_and_use_approved_album(self):
         from groove_core import scan_folders
@@ -212,8 +225,15 @@ class TrackEditorTests(unittest.TestCase):
         a.tabs.select(a.tab_albums);a.update()
         self.assertTrue(a.btn_apply.winfo_ismapped())
         a.geometry('1536x1000');a.update();a._responsive.apply();a.update()
-        caption=a._responsive.caption;version=a._responsive.version
+        version=a._responsive.version
         import tkinter.font as tkfont
-        font=tkfont.Font(master=a,font=caption.cget('font'))
-        self.assertLessEqual(max(font.measure(line) for line in caption.cget('text').splitlines()),caption.winfo_width())
+        self.assertEqual(a._responsive.w['brand'].winfo_children(),[a._logo_label])
+        self.assertGreaterEqual(a.logo.width(),200)
         self.assertLessEqual(version.winfo_rooty()+version.winfo_height(),a.winfo_rooty()+a.winfo_height())
+        for size in ('1120x740','1320x800','1536x1000','1920x1080'):
+            a.geometry(size);a.update();a._responsive.apply();a.update()
+            note=a._responsive.w['format_note'];font=tkfont.Font(master=a,font=note.cget('font'))
+            self.assertTrue(note.winfo_ismapped())
+            self.assertLessEqual(font.measure(note.cget('text')),note.winfo_width())
+            self.assertGreaterEqual(note.winfo_height(),note.winfo_reqheight())
+            self.assertLessEqual(note.winfo_rooty()+note.winfo_height(),note.master.winfo_rooty()+note.master.winfo_height())

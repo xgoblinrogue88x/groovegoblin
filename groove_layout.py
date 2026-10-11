@@ -35,6 +35,46 @@ def install_layout(cls):
     old_clear=cls.clear
     old_show=cls.show_editor
 
+    def show_about(self):
+        existing=getattr(self,'_about_window',None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift();existing.focus_set();return
+        window=tk.Toplevel(self,bg=BG)
+        self._about_window=window
+        window.title('About Groove Goblin');window.transient(self)
+        window.geometry('620x540');window.minsize(560,520)
+        body=tk.Frame(window,bg=BG);body.pack(fill='both',expand=True,padx=16,pady=14)
+        Button(body,'Close',window.destroy,width=110,height=36,primary=True,font=(self.ui_font,10)).pack(side='bottom',anchor='e',pady=(4,0))
+        heading=tk.Frame(body,bg=BG);heading.pack(fill='x',pady=(0,8))
+        tk.Label(heading,text='GROOVE GOBLIN',bg=BG,fg=GREEN,font=(self.ui_font,18,'bold')).pack(anchor='w')
+        tk.Label(heading,text=f'Version {__version__}',bg=BG,fg=MUTED,font=(self.ui_font,9)).pack(anchor='w',pady=(2,4))
+        description=tk.Label(heading,text='Match albums, edit tags and artwork, organize files and folders,\nand listen to your music.',bg=BG,fg=FG,font=(self.ui_font,9),justify='left',anchor='w')
+        description.pack(fill='x')
+        wrapped=[description]
+        def section(title,height):
+            panel=Panel(body,height=height,padding=12)
+            panel.pack(fill='x',pady=(0,10))
+            tk.Label(panel.body,text=title,bg=PANEL,fg=GREEN,font=(self.ui_font,11,'bold')).pack(anchor='w',pady=(0,6))
+            return panel.body
+        def paragraph(parent,text,color=FG):
+            label=tk.Label(parent,text=text,bg=PANEL,fg=color,font=(self.ui_font,9),justify='left',anchor='w')
+            label.pack(fill='x',pady=(0,3));wrapped.append(label)
+            return label
+        formats=section('Audio formats',190)
+        paragraph(formats,'Tag editing, artwork and playback',GREEN)
+        paragraph(formats,'WAV, AIFF, FLAC, ALAC/M4A, APE, WavPack, MP3, Ogg/Vorbis,\nWMA, Opus and DSD (DSF/DFF).')
+        paragraph(formats,'AAC / PCM — Filename editing and playback only. Raw PCM needs its sample settings.',MUTED)
+        paragraph(formats,'CDA — A reference to a track on an audio CD. Rip the CD to an audio file before editing or playback.',MUTED)
+        saving=section('Changes & undo',134)
+        paragraph(saving,'Scanning and previews leave your music unchanged.')
+        paragraph(saving,'Track Editor saves keep full-file backups for Undo.',MUTED)
+        paragraph(saving,'Organizer Undo restores the edited tags and file/folder names. Keep your own music backup too.',MUTED)
+        def resize(event):
+            if event.widget is window:
+                for label in wrapped:label.configure(wraplength=max(420,event.width-64))
+        window.bind('<Configure>',resize,add='+')
+        window.bind('<Escape>',lambda event:window.destroy())
+
     def build_style(self):
         old_style(self)
         self.ui_font='Segoe UI' if 'Segoe UI' in tkfont.families(self) else 'Helvetica'
@@ -159,9 +199,8 @@ def install_layout(cls):
         with Image.open(Path(__file__).parent/'assets/groove_goblin_logo.png') as source:
             im=source.convert('RGBA');im.thumbnail((238,316),Image.Resampling.LANCZOS)
             self.logo=ImageTk.PhotoImage(im,master=self)
-        self._logo_label=tk.Label(brand,image=self.logo,bg=PANEL)
+        self._logo_label=tk.Label(brand,image=self.logo,bg=PANEL,bd=0,padx=0,pady=0)
         self._logo_label.pack(pady=(0,8))
-        tk.Label(brand,text='MUSIC TAGGER\n& ORGANIZER',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(pady=(0,17))
         nav=tk.Frame(side,bg=PANEL)
         nav.grid(row=1,column=0,sticky='ew')
         for name,label,symbol,action in [
@@ -172,18 +211,19 @@ def install_layout(cls):
             ('settings','Settings','gear',self.show_settings),
             ('undo','Undo / Backups','undo',lambda:self.tabs.select(self.tab_history)),
             ('logs','View Logs','files',lambda:self.tabs.select(self.tab_history)),
-            ('about','About','info',lambda:messagebox.showinfo('Groove Goblin',f'Groove Goblin {__version__}\nMusic tagger & organizer\n\nScanning and preview are read-only.\nEmbedded tags: WAV/AIFF, FLAC, ALAC/M4A, APE, WV,\nMP3, Ogg/Opus, WMA, DSF/DFF.\nRaw AAC/PCM: filenames and playback.\nCDA: CD references; rip before editing/playing.\nManual saves keep full-file undo backups.\nOrganizer journals store edited fields and paths.')),
+            ('about','About','info',self.show_about),
         ]:
             b=Button(nav,label,action,width=234,height=49,symbol=symbol,navigation=True,font=(self.ui_font,11))
             b.active=name=='scan';b.pack(fill='x',pady=1);self.nav_buttons[name]=b
         formats=Panel(side,height=160,padding=12)
         formats.grid(row=3,column=0,sticky='ew',pady=(8,12))
         tk.Label(formats.body,text='Supported Formats',bg=PANEL,fg=FG,font=(self.ui_font,10,'bold')).pack(anchor='w')
+        format_note=tk.Label(formats.body,text='* Format limits: see About',bg=PANEL,fg=MUTED,font=(self.ui_font,8),anchor='w')
+        format_note.pack(side='bottom',fill='x',pady=(4,0))
         formats_inner=tk.Frame(formats.body,bg=PANEL);formats_inner.pack(fill='both',expand=True,pady=(14,0))
         doc=tk.Canvas(formats_inner,width=76,height=84,bg=PANEL,highlightthickness=0)
         doc.pack(side='left',padx=(0,15));icon(doc,'files',6,2,70,'#c4cedc')
         tk.Label(formats_inner,text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*',bg=PANEL,fg=GREEN,font=(self.ui_font,9),justify='left').pack(anchor='w')
-        tk.Label(formats_inner,text='* Limits: see About',bg=PANEL,fg=MUTED,font=(self.ui_font,8)).pack(anchor='w',pady=(9,0))
         tk.Label(side,text=f'Groove Goblin v{__version__}',bg=PANEL,fg=MUTED,font=(self.ui_font,9)).grid(row=4,column=0,sticky='w',pady=(4,8))
 
         # Main center + compact right rail.
@@ -317,7 +357,7 @@ def install_layout(cls):
         from groove_track_editor import TrackEditor
         self.track_editor=TrackEditor(self)
         from groove_responsive import ResponsiveLayout
-        self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,formats=formats,doc=doc,
+        self._responsive=ResponsiveLayout(self,dict(sidebar=sidebar,side=side,brand=brand,nav=nav,formats=formats,doc=doc,format_note=format_note,
             center=center,toolbar=toolbar,checkrow=checkrow,albums=albums,preview=preview,filters=filters,views=views,
             opts=opts,details=details,results=results,form=form,yearrow=yearrow,actions=actions,
             footer=footer,footer_spacer=footer_spacer,controls=controls))
@@ -467,7 +507,7 @@ def install_layout(cls):
     cls.build_style=build_style;cls.build_ui=build_ui
     cls.refresh_preview=refresh_preview;cls.clear=clear;cls.show_editor=show_editor
     cls.populate_albums=populate_albums;cls.update_cover=update_cover;cls.result_cover=result_cover;cls.choose_result=choose_result
-    cls.show_settings=show_settings;cls.add_files=add_files
+    cls.show_settings=show_settings;cls.show_about=show_about;cls.add_files=add_files
     cls.toggle_all_preview=toggle_all_preview
     cls.toggle_all_albums=toggle_all_albums
     cls.toggle_album_id=toggle_album_id;cls.toggle_preview_id=toggle_preview_id

@@ -17,7 +17,6 @@ class ResponsiveLayout:
         self.walk(app)
         self.toolbar=list(widgets['toolbar'].winfo_children())
         self.checks=[child for child in widgets['checkrow'].winfo_children() if isinstance(child,Check)]
-        self.caption=[c for c in widgets['brand'].winfo_children() if isinstance(c,tk.Label) and c is not app._logo_label][0]
         self.version=[c for c in widgets['side'].winfo_children() if isinstance(c,tk.Label)][0]
         self.format_title=widgets['formats'].body.winfo_children()[0]
         self.format_inner=widgets['doc'].master
@@ -98,15 +97,15 @@ class ResponsiveLayout:
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
         nav_height=(36 if compact else (40 if medium else 49))+2
-        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (128 if medium else 170))-140)
-        logo_width=60 if self.icon_nav else min(156 if medium else 238,int(logo_budget*self.logo_source.width/self.logo_source.height))
+        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (128 if medium else 170))-90)
+        logo_width=60 if self.icon_nav else min(160 if medium else 238,int(logo_budget*self.logo_source.width/self.logo_source.height))
         if logo_width!=self.logo_size:
             img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
             a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
         if self.icon_nav:
-            self.caption.pack_forget();self.version.grid_remove()
+            self.version.grid_remove()
         else:
-            self.caption.pack(pady=(0,8 if medium else 17));self.version.grid()
+            self.version.grid()
         for name,button in a.nav_buttons.items():
             button.text='' if self.icon_nav else self.nav_text[name]
             button.configure(width=sidebar_width-20,height=36 if compact else (40 if medium else 49));button.draw()
@@ -114,12 +113,13 @@ class ResponsiveLayout:
         formats.grid_configure(pady=(3,4) if compact else (8,12))
         self.format_title.configure(text='Formats' if self.icon_nav else 'Supported Formats')
         if self.icon_nav:
-            w['doc'].pack_forget();self.format_labels[-1].pack_forget()
+            w['doc'].pack_forget();w['format_note'].pack_forget()
             self.format_inner.pack_configure(pady=(3,0))
             self.format_labels[0].configure(text='Multi\nformat')
         else:
             w['doc'].pack(side='left',padx=(0,8 if medium else 15),before=self.format_labels[0])
-            self.format_labels[-1].pack(anchor='w',pady=(4,0));self.format_inner.pack_configure(pady=(7 if medium else 14,0))
+            w['format_note'].pack(side='bottom',fill='x',pady=(4,0),before=self.format_inner)
+            self.format_inner.pack_configure(pady=(7 if medium else 10,0))
             self.format_labels[0].configure(font=(a.ui_font,8 if medium else 9),text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*')
             w['doc'].configure(width=50 if medium else 76,height=64 if medium else 84)
             w['doc'].delete('all');icon(w['doc'],'files',4,2,46 if medium else 70,'#c4cedc')
