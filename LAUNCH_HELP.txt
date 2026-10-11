@@ -3,9 +3,9 @@ GROOVE GOBLIN - STARTUP REPAIR
 1. Extract ALL files from this ZIP to a new writable folder.
 2. Double-click START_GROOVE_GOBLIN.bat in that extracted folder.
 3. Leave the console open while using Groove Goblin. Startup errors remain visible.
-   The first launch may install Mutagen, Pillow and pygame-ce using your internet connection.
+   The first launch may install Mutagen, Pillow, pygame-ce and imageio-ffmpeg using your internet connection.
 
-The launcher checks Python 3.10+, the ability to open a Tk window, and the Mutagen/Pillow/pygame-ce dependencies.
+The launcher checks Python 3.10+, the ability to open a Tk window, and the Mutagen/Pillow/pygame-ce/imageio-ffmpeg dependencies.
 It tries py -3, py, python, python3, and common Python installation folders.
 It uses the SAME detected Python executable for installation and launch.
 VERIFY_PYTHON.bat checks prerequisites without installing packages or opening the app.
@@ -23,7 +23,7 @@ If detection still fails:
   "C:\path\to\python.exe" -m pip install --user -r requirements.txt
   "C:\path\to\python.exe" GrooveGoblin.pyw
 
-Version 1.1.1 includes naming dropdowns, Track Editor, local cover replacement,
+Version 1.2.0 includes naming dropdowns, Track Editor, local cover replacement,
 streamed playback, full-file manual-save backups and version information in About.
 See README.md for controls, screenshots and validation limitations.
 This is source code, not a standalone EXE. Actual Windows playback and DPI

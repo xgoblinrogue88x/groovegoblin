@@ -1,7 +1,7 @@
 """Real MP3/FLAC streaming through SDL's dummy audio device plus playlist controls."""
 import os
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock,patch
 from groove_player import MusicPlayer
 
 
@@ -39,3 +39,25 @@ class PlaybackTests(unittest.TestCase):
         player.pump();self.assertEqual(player.state,'finished')
         player.set_volume(-10);mixer.music.set_volume.assert_called_with(0)
         player.stop();mixer.music.unload.assert_called()
+
+    def test_stop_cancels_preparation_and_never_starts_late_audio(self):
+        from groove_decode import PlaybackDecoder
+        import threading,time
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        started=threading.Event()
+        def prepare(record,cancel):
+            started.set()
+            if cancel.wait(3):raise RuntimeError('Canceled')
+            raise RuntimeError('Test decoder did not receive cancellation')
+        mixer=Mock();mixer.get_init.return_value=True
+        player=MusicPlayer(mixer);self.addCleanup(player.close)
+        with patch.object(PlaybackDecoder,'decode',side_effect=prepare):
+            player.play([{'path':'test.wav','duration':10}])
+            self.assertTrue(started.wait(2));future=player.future;folder=Path(player.decoder.temporary.name)
+            player.stop()
+            deadline=time.monotonic()+3
+            while not future.done() and time.monotonic()<deadline:time.sleep(.01)
+            self.assertTrue(future.done());player.pump()
+            self.assertEqual(player.state,'stopped');mixer.music.play.assert_not_called()
+            player.close();self.assertFalse(folder.exists())

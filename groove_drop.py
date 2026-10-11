@@ -64,7 +64,7 @@ class FolderDropMixin:
             return False
         added, accepted, ignored = self.add_paths(paths, folders_only=folders_only)
         if not accepted:
-            self.status.set('Drop folders or FLAC/MP3 files here to add them.')
+            self.status.set('Drop folders or supported music files here to add them.')
             return False
         noun='folder(s)' if folders_only else 'item(s)'
         message = (f'Added {added} {noun}. Starting scan…' if added

@@ -12,7 +12,7 @@ Primary user requirements:
 4. Select and process multiple albums from multiple artists in one batch, with individual inclusion/exclusion and manual corrections.
 5. Search MusicBrainz manually if the automatic album match is wrong. Never silently accept uncertain matches.
 6. Keep `Artist - Album Title (Year)` as the default album-folder preset, with selectable file/folder presets and Windows-safe naming.
-7. Support both FLAC and MP3, preserving unrelated tags/art, without transcoding.
+7. Support the formats documented in docs/formats.md, preserving unrelated tags/art and source audio without transcoding the library. Raw AAC/PCM have limited operations; CDA is a CD reference.
 8. Keep read-only preview, clear confirmation, robust collision detection, and undo.
 
 ## Protect the user's music
@@ -31,7 +31,7 @@ Primary user requirements:
 ## Engineering guidance
 
 - Source modules: `GrooveGoblin.pyw`, `groove_core.py`, `musicbrainz_client.py`, `legacy_collections.py`.
-- Dependencies: Python 3.10+, Tkinter, Mutagen, Pillow, pygame-ce; Tkinter from standard Windows Python; `ffmpeg` is only used by the supplied tests.
+- Dependencies: Python 3.10+, Tkinter, Mutagen, Pillow, pygame-ce, imageio-ffmpeg; Tkinter from standard Windows Python. FFmpeg decodes temporary listening copies in a worker, never replaces source audio. System ffmpeg is also used to generate disposable test files.
 - Keep GUI work responsive. Tkinter widgets/variables must only be manipulated by the UI thread; communicate from background workers using the existing queue or a safer equivalent.
 - MusicBrainz has a public rate limit. Retain timeouts, caching, appropriate User-Agent, and conservative lookup. Missing internet must not block local scanning/manual tagging.
 - Maintain keyboard accessibility and horizontal/vertical scrolling where content exceeds a small screen. Test at 800x600, 1024x768, and 1920x1080, including Windows 125%/150% scaling; avoid obscuring the Apply/Undo controls.

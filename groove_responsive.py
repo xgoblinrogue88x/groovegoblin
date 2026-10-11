@@ -98,7 +98,7 @@ class ResponsiveLayout:
             panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
 
         nav_height=(36 if compact else (40 if medium else 49))+2
-        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (100 if medium else 160))-140)
+        logo_budget=max(70,height-len(a.nav_buttons)*nav_height-(74 if self.icon_nav else (128 if medium else 170))-140)
         logo_width=60 if self.icon_nav else min(156 if medium else 238,int(logo_budget*self.logo_source.width/self.logo_source.height))
         if logo_width!=self.logo_size:
             img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
@@ -110,17 +110,17 @@ class ResponsiveLayout:
         for name,button in a.nav_buttons.items():
             button.text='' if self.icon_nav else self.nav_text[name]
             button.configure(width=sidebar_width-20,height=36 if compact else (40 if medium else 49));button.draw()
-        formats=w['formats'];formats.configure(height=74 if self.icon_nav else (100 if medium else 160))
+        formats=w['formats'];formats.configure(height=74 if self.icon_nav else (128 if medium else 170))
         formats.grid_configure(pady=(3,4) if compact else (8,12))
         self.format_title.configure(text='Formats' if self.icon_nav else 'Supported Formats')
         if self.icon_nav:
             w['doc'].pack_forget();self.format_labels[-1].pack_forget()
             self.format_inner.pack_configure(pady=(3,0))
-            self.format_labels[0].configure(text='FLAC ✓\nMP3  ✓')
+            self.format_labels[0].configure(text='Multi\nformat')
         else:
             w['doc'].pack(side='left',padx=(0,8 if medium else 15),before=self.format_labels[0])
             self.format_labels[-1].pack(anchor='w',pady=(4,0));self.format_inner.pack_configure(pady=(7 if medium else 14,0))
-            self.format_labels[0].configure(text='FLAC    ✓\nMP3      ✓')
+            self.format_labels[0].configure(font=(a.ui_font,8 if medium else 9),text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*')
             w['doc'].configure(width=50 if medium else 76,height=64 if medium else 84)
             w['doc'].delete('all');icon(w['doc'],'files',4,2,46 if medium else 70,'#c4cedc')
 

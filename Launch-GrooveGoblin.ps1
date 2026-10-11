@@ -62,9 +62,9 @@ try {
     & $runtime -c 'import tkinter; t=tkinter.Tk(); t.withdraw(); t.update(); t.destroy()'
     if ($LASTEXITCODE -ne 0) { throw 'Python could not create a Tk window. Modify/repair this Python installation and enable Tcl/Tk and IDLE.' }
     Write-Host 'Tk window check passed'
-    & $runtime -c 'import mutagen; import PIL; import pygame'
+    & $runtime -c 'import mutagen; import PIL; import pygame; import imageio_ffmpeg'
     if ($LASTEXITCODE -ne 0) {
-        if ($CheckOnly) { throw 'Mutagen, Pillow or pygame-ce is missing. Run START_GROOVE_GOBLIN.bat to install the dependency.' }
+        if ($CheckOnly) { throw 'Mutagen, Pillow, pygame-ce or imageio-ffmpeg is missing. Run START_GROOVE_GOBLIN.bat to install the dependency.' }
         Write-Host 'Installing the music-tagging, image and playback dependencies for this exact Python...'
         & $runtime -m pip --version
         if ($LASTEXITCODE -ne 0) {
@@ -77,7 +77,7 @@ try {
         $installArgs += @('-r', (Join-Path $PSScriptRoot 'requirements.txt'))
         & $runtime @installArgs
         if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. Check the error above and your internet connection.' }
-        & $runtime -c 'import mutagen; import PIL; import pygame'
+        & $runtime -c 'import mutagen; import PIL; import pygame; import imageio_ffmpeg'
         if ($LASTEXITCODE -ne 0) { throw 'Required packages still cannot be imported. Copy the errors above for support.' }
     }
     if ($CheckOnly) { Write-Host 'Startup prerequisites passed.'; exit 0 }

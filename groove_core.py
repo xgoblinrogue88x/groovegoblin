@@ -16,7 +16,7 @@ from legacy_collections import match as legacy_match
 from groove_naming import (FILE_FORMATS, FOLDER_FORMATS, DEFAULT_FILE_FORMAT,
                            DEFAULT_FOLDER_FORMAT, render_preset)
 
-EXTENSIONS={'.flac','.mp3'}
+from groove_formats import EXTENSIONS, read_fields, can_tag, can_rename, format_note, snapshot_album, restore_album, write_fields
 ILLEGAL=r'<>:"/\\|?*'
 GENERIC={'', 'unknown', 'unknown album', 'the collection', 'collection', 'the collection ii', 'collection ii', 'greatest hits', 'disc 1', 'disc 2', 'disc 3', 'album', 'various', 'untitled'}
 
@@ -85,22 +85,9 @@ class Album:
 
 def inspect_track(path):
     p=Path(path)
-    if p.suffix.lower()=='.flac':
-        tag=FLAC(str(p))
-        d={str(k).lower():list(v) for k,v in (tag.tags or {}).items()}
-        get=lambda key: tag_first(d,key)
-        title=get('title');artist=get('artist');albumartist=get('albumartist');album=get('album')
-        year=get('date') or get('year');number=int_prefix(get('tracknumber'));disc=int_prefix(get('discnumber'))
-    elif p.suffix.lower()=='.mp3':
-        # MP3(...) checks basic audio validity rather than treating unrelated files as MP3s.
-        m=MP3(str(p))
-        id3=m.tags
-        def get(id):
-            frames=id3.getall(id) if id3 else []
-            return str(frames[0].text[0]) if frames and frames[0].text else ''
-        title=get('TIT2');artist=get('TPE1');albumartist=get('TPE2');album=get('TALB')
-        year=get('TDRC') or get('TYER');number=int_prefix(get('TRCK'));disc=int_prefix(get('TPOS'))
-    else: raise ValueError('Unsupported format')
+    data=read_fields(p)
+    title=data['title'];artist=data['artist'];albumartist=data['albumartist'];album=data['album']
+    year=data['year'];number=int_prefix(data['track']);disc=int_prefix(data['disc'])
     if not title:
         title=re.sub(r'^\s*(?:\d+[-_. ])?\d+\s*[-_. ]+','',p.stem).replace('_',' ').strip()
     return Track(str(p),p.suffix.lower(),artist,albumartist,album,title,year,number,disc,file_signature(p))
@@ -196,6 +183,8 @@ def plan_actions(albums,options):
     group_folders=Counter(a.folder.casefold() for a in enabled)
     nested={a.folder for a in enabled if any(a.folder!=b.folder and str(Path(b.folder)).casefold().startswith(str(Path(a.folder)).casefold()+os.sep) for b in albums)}
     for a in enabled:
+        if any(not can_rename(t.path) for t in a.tracks):
+            problems.append(f'{a.folder}: CD references must be ripped to audio files first');continue
         if a.status!='READY':problems.append(f'{a.folder}: requires confirmation of its album, artist and year');continue
         if group_folders[a.folder.casefold()]>1:problems.append(f'{a.folder}: multiple album groups share a folder');continue
         if a.folder in nested:problems.append(f'{a.folder}: contains other album folders; move or select only leaf folders');continue
@@ -230,6 +219,8 @@ def plan_actions(albums,options):
             needs_tags=opts['tags'] and (norm(t.album)!=norm(a.album) or year4(t.year)!=year4(a.year) or t.album!=a.album)
             tracks.append({'old_path':t.path,'old_name':old_name,'new_name':new_name,'signature':t.signature,
                            'title':t.title,'needs_tags':needs_tags,'old_album':t.album,'old_year':t.year})
+        if any(t['needs_tags'] and not can_tag(t['old_path']) for t in tracks):
+            problems.append(f'{a.folder}: raw AAC/PCM cannot store supported embedded tags; turn off Replace album / year tags to rename only');bad=True
         if bad:continue
         changed=(target_folder!=a.folder or any(t['needs_tags'] or t['old_name']!=t['new_name'] for t in tracks))
         actions.append({'album_uid':a.uid,'folder':a.folder,'dest_folder':target_folder,'artist':a.artist,
@@ -239,6 +230,7 @@ def plan_actions(albums,options):
 # Targeted fields only. Other artist, title, track, pictures, comments, ReplayGain etc. are preserved.
 def tag_snapshot(path):
     p=Path(path)
+    if p.suffix.lower() not in {'.flac','.mp3'}:return snapshot_album(p)
     if p.suffix.lower()=='.flac':
         a=FLAC(str(p)); d={str(k).lower():list(v) for k,v in (a.tags or {}).items()}
         return {'format':'flac','fields':{key:d.get(key) for key in ('album','date','year')}}
@@ -252,6 +244,8 @@ def tag_snapshot(path):
 
 def set_tags(path,album,year):
     p=Path(path)
+    if p.suffix.lower() not in {'.flac','.mp3'}:
+        write_fields(p,p.suffix.lower(),{'album':album,'year':year});return
     if p.suffix.lower()=='.flac':
         a=FLAC(str(p)); a['album']=[album];a['date']=[year]
         if 'year' in a:a['year']=[year]
@@ -267,6 +261,7 @@ def set_tags(path,album,year):
 
 def restore_tags(path,snapshot):
     p=Path(path)
+    if snapshot['format']=='container':restore_album(p,snapshot);return
     d=snapshot['fields']
     if snapshot['format']=='flac':
         a=FLAC(str(p))

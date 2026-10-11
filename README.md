@@ -1,8 +1,8 @@
-# Groove Goblin 1.1.1
+# Groove Goblin 1.2.0
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
-local cover-art replacement, playback, previews and Undo. Supports FLAC and MP3.
+local cover-art replacement, playback, previews and Undo. Supports multiple audio containers; [see the format matrix and limits](docs/formats.md).
 
 ![Running Scan & Fix with generated test music](docs/interface-linux.png)
 
@@ -10,7 +10,7 @@ local cover-art replacement, playback, previews and Undo. Supports FLAC and MP3.
 
 Extract the entire project into a new writable folder. Double-click
 `START_GROOVE_GOBLIN.bat` and leave its console open for diagnostics. The launcher
-finds Python 3.10+, checks Tk, installs missing Mutagen, Pillow and pygame-ce
+finds Python 3.10+, checks Tk, installs missing Mutagen, Pillow, pygame-ce and imageio-ffmpeg
 packages, and runs the application with that same interpreter. Initial package
 installation requires internet; local editing and playback do not.
 
@@ -25,7 +25,7 @@ If detection fails, drag your installed `python.exe` onto the launcher.
 
 ## Scan, match and organize
 
-1. Add Folders or Add Files, or drop folders / FLAC / MP3 files from Explorer.
+1. Add Folders or Add Files, or drop folders / supported music files from Explorer.
    New drops automatically scan; duplicate-only, unsupported and busy drops do
    not restart scanning. Add buttons wait for Start Scan.
 2. Scan is read-only. Search online after scan controls MusicBrainz lookup.
@@ -60,6 +60,7 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
 - Staging is read-only and marked with an asterisk. Review & Save shows each
   actual change and the full-file backup size. Save Changes commits the edits.
   Discard Selected drops staged changes for the selected rows.
+- Playback prepares a temporary listening copy for additional formats in a background worker; the source stays unchanged. PCM asks for its sample settings.
 - Play / Pause, Back, Skip and Stop operate on the selected tracks, or the full
   table when a single track is selected. The player has volume, a seek bar and
   elapsed / total time. Back restarts the current track after three seconds;
@@ -89,7 +90,7 @@ Add Files scopes an organizer operation to the selected tracks. Renaming their
 folder is blocked when unselected audio would be moved with it. Folder presets
 rename within the current parent and do not create artist trees. Grouping is
 by music-containing directory; separate mixed-album folders before organizing.
-M4A, OGG, WAV and WMA editing are not implemented. This distribution is source
+Raw AAC/PCM allow filename editing and playback; CDA files are read-only CD references. Embedded tag/artwork support depends on the container; see the format matrix. This distribution is source
 with a launcher, not a standalone EXE.
 
 ## Window sizing and keyboard
@@ -105,7 +106,7 @@ to fit. [Compact Scan & Fix](docs/interface-compact-linux.png) and
 [compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.1.1.
+sidebar display version 1.2.0.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -128,13 +129,14 @@ resize bounds, staging without writes, drop auto-scanning, and editor paths afte
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume.
 
-47 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+54 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed
 Explorer drops work with the queued native implementation on Python 3.15.
 Native callbacks never invoke Tk; a Tk timer handles queued drop paths.
 
+The additional format checks include real generated encodings, synthetic DSD streams and a synthetic APE header. See [format validation details](docs/formats.md).
 No real user media or live MusicBrainz requests are used in the tests.
 
 ## Source and licensing
@@ -143,7 +145,7 @@ No real user media or live MusicBrainz requests are used in the tests.
 `groove_responsive.py` and `groove_widgets.py` build the UI. `groove_core.py` and
 `groove_naming.py` handle organization/presets. `groove_track_editor.py`,
 `groove_manual.py` and `groove_player.py` provide manual editing, full-file Undo
-and streamed playback. `groove_version.py` defines the application version.
+and streamed playback. `groove_formats.py` maps container tags/artwork and capabilities; `groove_decode.py` prepares temporary listening copies. `groove_version.py` defines the application version.
 Artwork, MusicBrainz and native queued drops live in their corresponding
 `groove_artwork.py`, `musicbrainz_client.py` and `groove_windows_drop.py` modules.
 Original branding stays in `assets/`; `GUI_Preview.png` is the original mockup.

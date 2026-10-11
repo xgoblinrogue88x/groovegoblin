@@ -10,6 +10,8 @@ from groove_widgets import BG,PANEL,LINE,FG,MUTED,GREEN,PURPLE,Button,Check,Pane
 from groove_manual import FIELDS,read_track,load_artwork,validate_changes,plan_manual,apply_manual
 from groove_core import scan_folders,newest_journal,undo_journal
 from groove_player import MusicPlayer
+from groove_formats import FILE_PATTERN, can_tag, can_rename, format_note
+from groove_decode import PCM_FORMATS
 
 LABELS={'filename':'Filename','title':'Track title','artist':'Artist','albumartist':'Album artist',
         'album':'Album','track':'Track','disc':'Disc number','year':'Year'}
@@ -159,6 +161,15 @@ class TrackEditor(tk.Frame):
                 self.vars[field].set(next(iter(values)) if len(values)==1 else '')
                 self.enabled[field].set(False)
         finally:self.loading=False
+        editable=bool(selected) and all(can_tag(p) for p in selected)
+        renameable=bool(selected) and all(can_rename(p) for p in selected)
+        for field in FIELDS:
+            self.checks[field].disabled=not (renameable if field=='filename' else editable)
+            self.checks[field].draw()
+            self.entries[field].state(['!disabled'] if (renameable if field=='filename' else editable) else ['disabled'])
+        for button in self.art_buttons:button.state(['!disabled'] if editable else ['disabled'])
+        notes=[format_note(p) for p in selected if format_note(p)]
+        self.summary.configure(text=(notes[0] if notes else (f'{len(self.pending)} tracks have unsaved changes' if self.pending else 'No staged changes')))
         self.show_cover()
 
     def show_cover(self):
@@ -240,7 +251,7 @@ class TrackEditor(tk.Frame):
 
     def add_files(self):
         if not self.check_idle():return
-        paths=filedialog.askopenfilenames(title='Add tracks to Track Editor',filetypes=[('Music','*.flac *.mp3')])
+        paths=filedialog.askopenfilenames(title='Add tracks to Track Editor',filetypes=[('Music',FILE_PATTERN)])
         if paths:self.load_paths(paths)
 
     def add_folder(self):
@@ -401,8 +412,32 @@ class TrackEditor(tk.Frame):
         path=selected[0] if selected else None
         if self.player.current and (path is None or self.player.current['path'] in selected):self.player_command(self.player.toggle)
         elif path:
+            if Path(path).suffix.lower()=='.pcm' and not self.records[path].get('pcm'):
+                settings=self.pcm_dialog()
+                if settings is None:return
+                for item in selected:
+                    if Path(item).suffix.lower()=='.pcm':self.records[item]['pcm']=dict(settings)
             playlist=selected if len(selected)>1 else list(self.tree.get_children())
             self.player_command(lambda:self.player.play([self.records[p] for p in playlist],playlist.index(path)))
+
+    def pcm_dialog(self):
+        dialog=tk.Toplevel(self.app);dialog.title('Raw PCM playback settings');dialog.transient(self.app)
+        dialog.configure(bg=PANEL);dialog.resizable(False,False)
+        tk.Label(dialog,text='PCM has no header. Choose the actual recording settings.\nThese settings are used for playback only.',bg=PANEL,fg=FG,justify='left').grid(row=0,column=0,columnspan=2,padx=14,pady=12)
+        values=[]
+        for row,(label,options,default) in enumerate([
+            ('Sample format',list(PCM_FORMATS),next(iter(PCM_FORMATS))),
+            ('Sample rate (Hz)',['44100','48000','88200','96000','176400','192000','352800','384000'],'44100'),
+            ('Channels',['1','2','4','6','8'],'2')],1):
+            tk.Label(dialog,text=label,bg=PANEL,fg=MUTED).grid(row=row,column=0,sticky='w',padx=14,pady=5)
+            value=tk.StringVar(value=default);values.append(value)
+            ttk.Combobox(dialog,textvariable=value,values=options,state='readonly',width=30).grid(row=row,column=1,padx=14,pady=5)
+        answer=[None]
+        def accept():
+            answer[0]={'format':PCM_FORMATS[values[0].get()],'rate':int(values[1].get()),'channels':int(values[2].get())};dialog.destroy()
+        Button(dialog,'Play with these settings',accept,width=230,height=38,primary=True).grid(row=4,column=1,padx=14,pady=14)
+        Button(dialog,'Cancel',dialog.destroy,width=100,height=38).grid(row=4,column=0,padx=14,pady=14)
+        dialog.grab_set();self.app.wait_window(dialog);return answer[0]
 
     def player_command(self,command):
         if self.app.worker_busy and command!=self.player.stop:return
@@ -416,11 +451,12 @@ class TrackEditor(tk.Frame):
     def tick(self):
         self.timer=None
         try:self.player.pump()
-        except Exception as error:self.player.stop();self.app.log('Playback: '+str(error))
+        except Exception as error:self.player.stop();self.app.log('Playback: '+str(error));self.app.status.set('Playback: '+str(error).splitlines()[0])
         current=self.player.current
         self.now.configure(text=(self.player.state.title()+': '+Path(current['path']).name) if current else 'Select a track and press Play')
+        self.play_buttons[1].state(['disabled'] if self.player.state=='buffering' else ['!disabled'])
         playing=self.player.state=='playing'
-        self.play_buttons[1].text='Pause' if playing else 'Play'
+        self.play_buttons[1].text='Wait' if self.player.state=='buffering' else ('Pause' if playing else 'Play')
         self.play_buttons[1].symbol='pause' if playing else 'play';self.play_buttons[1].draw()
         self.progress.configure(to=max(.01,self.player.duration))
         if not self.seeking:self.progress.set(self.player.position)

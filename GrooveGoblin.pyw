@@ -1,4 +1,4 @@
-"""Groove Goblin - dark Windows GUI for multi-album FLAC/MP3 tagging.
+"""Groove Goblin - dark Windows GUI for multi-format music tagging.
 Run with Python 3.10+ and the packages in requirements.txt. Uses built-in tkinter; no cloud account.
 """
 import os, queue, sys, threading, traceback, json
@@ -193,7 +193,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         ttk.Button(row,text='View last journal',command=self.view_journal).pack(side='left')
         self.log_box=tk.Text(self.tab_history,bg=PANEL,fg=FG,insertbackground=GREEN,wrap='word',relief='flat',font=('Consolas',10))
         self.log_box.pack(fill='both',expand=True)
-        self.log('Welcome to Groove Goblin. FLAC and MP3 supported. No files are changed by scanning.')
+        self.log('Welcome to Groove Goblin. Multiple audio formats supported; see About for format limits. No files are changed by scanning.')
 
     def log(self,s):
         if not hasattr(self,'log_box'):return

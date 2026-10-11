@@ -138,6 +138,27 @@ class TrackEditorTests(unittest.TestCase):
         self.assertIn(str(path),e.records)
         self.assertEqual(path.read_bytes(),before)
 
+    def test_wav_drop_scans_imports_and_pcm_editor_blocks_embedded_edits(self):
+        import shutil,subprocess
+        from groove_formats import FILE_PATTERN
+        a=self.app;e=self.editor;a.auto_lookup.set(False)
+        wav=self.f.root/'new.wav'
+        subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-i',str(self.f.mastermp3),'-y',str(wav)],check=True)
+        original=wav.read_bytes();self.assertIn('*.wma',FILE_PATTERN);self.assertIn('*.dsf',FILE_PATTERN)
+        self.assertTrue(a.drop_paths([str(wav)]));self.wait()
+        self.assertIn(str(wav),e.records);self.assertEqual(wav.read_bytes(),original)
+        e.tree.selection_set(str(wav));e.selection_changed();e.vars['title'].set('WAV title');e.stage_fields()
+        self.assertEqual(e.pending[str(wav)]['title'],'WAV title');self.assertEqual(wav.read_bytes(),original)
+        pcm=self.f.root/'raw.pcm';pcm.write_bytes(b'\0'*17640)
+        e.records[str(pcm)]=read_track(pcm);e.refresh();e.tree.selection_set(str(pcm));e.selection_changed()
+        self.assertTrue(e.entries['title'].instate(['disabled']))
+        self.assertFalse(e.entries['filename'].instate(['disabled']))
+        self.assertTrue(e.art_buttons[0].disabled)
+        settings={'format':'s16le','rate':44100,'channels':2}
+        with patch.object(e,'pcm_dialog',return_value=settings),patch.object(e.player,'play') as play:
+            e.play_pause();self.assertEqual(e.records[str(pcm)]['pcm'],settings)
+            self.assertEqual(next(t for t in play.call_args.args[0] if t['path']==str(pcm))['pcm'],settings)
+
     def test_themed_scrollbars_drag_and_theme_images_survive_zoom(self):
         from tkinter import ttk
         e=self.editor;a=self.app

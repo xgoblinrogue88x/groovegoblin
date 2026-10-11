@@ -8,6 +8,7 @@ from groove_widgets import BG, PANEL, LINE, FG, MUTED, GREEN, Button, Check, Rad
 from groove_core import plan_actions
 from groove_version import __version__
 from groove_naming import FILE_FORMATS, FOLDER_FORMATS
+from groove_formats import FILE_PATTERN
 
 
 class PageNavigation:
@@ -171,7 +172,7 @@ def install_layout(cls):
             ('settings','Settings','gear',self.show_settings),
             ('undo','Undo / Backups','undo',lambda:self.tabs.select(self.tab_history)),
             ('logs','View Logs','files',lambda:self.tabs.select(self.tab_history)),
-            ('about','About','info',lambda:messagebox.showinfo('Groove Goblin',f'Groove Goblin {__version__}\nMusic tagger & organizer\n\nScanning and preview are read-only.\nFLAC and MP3 editing supported.\nManual saves keep full-file undo backups.\nOrganizer journals store edited fields and paths.')),
+            ('about','About','info',lambda:messagebox.showinfo('Groove Goblin',f'Groove Goblin {__version__}\nMusic tagger & organizer\n\nScanning and preview are read-only.\nEmbedded tags: WAV/AIFF, FLAC, ALAC/M4A, APE, WV,\nMP3, Ogg/Opus, WMA, DSF/DFF.\nRaw AAC/PCM: filenames and playback.\nCDA: CD references; rip before editing/playing.\nManual saves keep full-file undo backups.\nOrganizer journals store edited fields and paths.')),
         ]:
             b=Button(nav,label,action,width=234,height=49,symbol=symbol,navigation=True,font=(self.ui_font,11))
             b.active=name=='scan';b.pack(fill='x',pady=1);self.nav_buttons[name]=b
@@ -181,8 +182,8 @@ def install_layout(cls):
         formats_inner=tk.Frame(formats.body,bg=PANEL);formats_inner.pack(fill='both',expand=True,pady=(14,0))
         doc=tk.Canvas(formats_inner,width=76,height=84,bg=PANEL,highlightthickness=0)
         doc.pack(side='left',padx=(0,15));icon(doc,'files',6,2,70,'#c4cedc')
-        tk.Label(formats_inner,text='FLAC    ✓\nMP3      ✓',bg=PANEL,fg=GREEN,font=(self.ui_font,11),justify='left').pack(anchor='w')
-        tk.Label(formats_inner,text='More formats planned',bg=PANEL,fg=MUTED,font=(self.ui_font,8)).pack(anchor='w',pady=(9,0))
+        tk.Label(formats_inner,text='WAV AIFF FLAC\nMP3 M4A ALAC\nAPE WV WMA\nOGG OPUS DSD\nAAC PCM CDA*',bg=PANEL,fg=GREEN,font=(self.ui_font,9),justify='left').pack(anchor='w')
+        tk.Label(formats_inner,text='* Limits: see About',bg=PANEL,fg=MUTED,font=(self.ui_font,8)).pack(anchor='w',pady=(9,0))
         tk.Label(side,text=f'Groove Goblin v{__version__}',bg=PANEL,fg=MUTED,font=(self.ui_font,9)).grid(row=4,column=0,sticky='w',pady=(4,8))
 
         # Main center + compact right rail.
@@ -362,7 +363,7 @@ def install_layout(cls):
 
     def add_files(self):
         if self.worker_busy:return
-        files=filedialog.askopenfilenames(title='Select music files',filetypes=[('Supported music','*.flac *.mp3'),('FLAC','*.flac'),('MP3','*.mp3')])
+        files=filedialog.askopenfilenames(title='Select music files',filetypes=[('Supported music',FILE_PATTERN),('All files','*.*')])
         self.add_paths(files)
 
     def populate_albums(self):

@@ -1,4 +1,4 @@
-"""Explicit manual FLAC/MP3 edits with full-file undo backups and staged commits."""
+"""Explicit manual container-aware edits with full-file undo backups and staged commits."""
 import hashlib
 from io import BytesIO
 import json
@@ -14,9 +14,9 @@ import warnings
 from PIL import Image
 from mutagen.flac import FLAC, Picture
 from mutagen.id3 import ID3, ID3NoHeaderError, TIT2, TPE1, TPE2, TALB, TRCK, TPOS, TDRC, TYER, APIC
-from mutagen.mp3 import MP3
 from groove_core import EXTENSIONS, safe_name, file_signature, atomic_json, backup_dir
 from groove_version import __version__
+from groove_formats import read_fields, write_fields, can_tag, can_rename, format_note
 
 FIELDS=('filename','title','artist','albumartist','album','track','disc','year')
 FLAC_KEYS={'title':'title','artist':'artist','albumartist':'albumartist','album':'album',
@@ -35,27 +35,9 @@ def digest(path):
 
 def read_track(path,include_artwork=False):
     path=Path(path).resolve()
-    if path.suffix.lower() not in EXTENSIONS:raise ValueError('Only FLAC and MP3 are supported.')
+    if path.suffix.lower() not in EXTENSIONS:raise ValueError('Unsupported audio format.')
     values={'path':str(path),'filename':path.name,'signature':file_signature(path)}
-    if path.suffix.lower()=='.flac':
-        tags=FLAC(path)
-        for field,key in FLAC_KEYS.items():
-            data=tags.get(key,[]) or (tags.get('year',[]) if field=='year' else [])
-            values[field]=str(data[0]) if data else ''
-        pictures=tags.pictures
-    else:
-        audio=MP3(path);tags=audio.tags
-        for field,(key,_) in ID3_KEYS.items():
-            frames=tags.getall(key) if tags else []
-            if field=='year' and not frames and tags:frames=tags.getall('TYER')
-            values[field]=str(frames[0].text[0]) if frames and frames[0].text else ''
-        pictures=tags.getall('APIC') if tags else []
-        tags=audio
-    values['duration']=float(tags.info.length)
-    values['artwork_count']=len(pictures)
-    values['front_cover_count']=sum(p.type==3 for p in pictures)
-    values['artwork']=(next((p.data for p in pictures if p.type==3),pictures[0].data if pictures else None) if include_artwork else None)
-    return values
+    values.update(read_fields(path,include_artwork));return values
 
 
 def load_artwork(path):
@@ -81,6 +63,8 @@ def validate_changes(record,changes):
     unknown=set(changes)-set(FIELDS)-{'artwork'}
     if unknown:raise ValueError('Unknown fields: '+', '.join(sorted(unknown)))
     changes=dict(changes)
+    if changes and not can_rename(record['path']):raise ValueError(format_note(record['path']))
+    if not can_tag(record['path']) and any(field!='filename' for field in changes):raise ValueError(format_note(record['path']))
     for field,value in changes.items():
         if field=='artwork':
             if value is not None and (not isinstance(value,dict) or not isinstance(value.get('data'),bytes)
@@ -91,6 +75,8 @@ def validate_changes(record,changes):
         if field in ('track','disc') and value:
             if not re.fullmatch(r'[1-9]\d*(?:/[1-9]\d*)?|0*[1-9]\d*(?:/0*[1-9]\d*)?',value):
                 raise ValueError(field.title()+' must be a positive number, optionally number/total.')
+        if field in ('track','disc') and value and Path(record['path']).suffix.lower() in {'.m4a','.alac','.mp4'}:
+            if any(int(part)>65535 for part in value.split('/')):raise ValueError('MP4 track/disc numbers and totals must be at most 65535.')
         if field=='year' and value and not re.fullmatch(r'\d{4}(?:-\d{2}(?:-\d{2})?)?',value):
             raise ValueError('Year must be YYYY, YYYY-MM or YYYY-MM-DD, or blank to clear.')
         if field=='filename':
@@ -98,7 +84,7 @@ def validate_changes(record,changes):
                 raise ValueError('Filename must be a name, not a folder path.')
             ext=Path(record['path']).suffix
             if value.lower().endswith(ext.lower()):value=value[:-len(ext)]
-            elif Path(value).suffix.lower() in {'.mp3','.flac','.wav','.ogg','.m4a'}:
+            elif Path(value).suffix.lower() in EXTENSIONS:
                 raise ValueError('A filename change cannot change the audio format.')
             changes[field]=safe_name(value)+ext
     return changes
@@ -129,6 +115,8 @@ def plan_manual(records,pending):
 
 
 def write_tags(path,fmt,changes):
+    if fmt not in {'.flac','.mp3'}:
+        write_fields(path,fmt,changes);return
     if fmt=='.flac':
         tags=FLAC(path)
         for field,key in FLAC_KEYS.items():

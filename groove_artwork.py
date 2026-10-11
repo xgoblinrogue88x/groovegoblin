@@ -10,10 +10,9 @@ import urllib.parse
 import uuid
 
 from PIL import Image, ImageOps, ImageTk
-from mutagen.flac import FLAC
-from mutagen.id3 import ID3
 
 from groove_version import __version__
+from groove_formats import read_fields
 
 MAX_COVER_BYTES = 20 * 1024 * 1024
 
@@ -23,11 +22,9 @@ def read_cover(album):
     data = None
     for track in album.tracks[:3]:
         try:
-            pictures = FLAC(track.path).pictures if track.fmt == '.flac' else ID3(track.path).getall('APIC')
-            pictures = sorted(pictures, key=lambda p: p.type != 3)
-            if pictures and len(pictures[0].data) <= MAX_COVER_BYTES:
-                data = pictures[0].data
-                break
+            picture=read_fields(track.path,include_artwork=True)['artwork']
+            if picture and len(picture)<=MAX_COVER_BYTES:
+                data=picture;break
         except Exception:
             continue
     if data is None:

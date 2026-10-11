@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Added container-aware tagging/artwork for WAV, AIFF, ALAC/M4A, APE, WavPack,
+  Ogg/Vorbis, WMA, Opus and DSF/DFF alongside existing FLAC/MP3.
+- Expanded scans, file pickers, Explorer drops and cover previews to the shared
+  format list, with aliases for common container extensions.
+- Added filename-only editing/playback for raw AAC and PCM; PCM playback requires
+  declared sample settings. CDA is recognized as a read-only CD track reference.
+- Added cancellable background decoding to temporary listening copies for
+  additional playback formats, leaving source files unchanged.
+- Added container-specific organizer snapshots and retained full-file manual Undo.
+- Documented codec/container distinctions, playback limits and validation scope.
+
 ## 1.1.1
 
 - Matched Track Editor to the main app with rounded panels, icon toolbar cards,
