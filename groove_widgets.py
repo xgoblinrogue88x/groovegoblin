@@ -49,6 +49,17 @@ def icon(c, name, x, y, size=24, color=MUTED):
         line([p(15,14),p(22,22)],3*s)
     elif name == 'play':
         c.create_polygon(*p(7,3),*p(7,21),*p(21,12),fill=color,outline=color)
+    elif name == 'pause':
+        for left in (6,15):c.create_rectangle(*p(left,4),*p(left+3,20),fill=color,outline=color)
+    elif name == 'stop':
+        c.create_rectangle(*p(5,5),*p(19,19),fill=color,outline=color)
+    elif name in ('back','skip'):
+        if name=='back':
+            line([p(5,4),p(5,20)],2*s)
+            c.create_polygon(*p(19,4),*p(19,20),*p(7,12),fill=color,outline=color)
+        else:
+            line([p(19,4),p(19,20)],2*s)
+            c.create_polygon(*p(5,4),*p(5,20),*p(17,12),fill=color,outline=color)
     elif name == 'cross':
         line([p(4,4),p(20,20)],3*s);line([p(20,4),p(4,20)],3*s)
     elif name == 'check':
@@ -212,6 +223,13 @@ class Radio(Check):
         self.create_text(28,mid,anchor='w',text=self.text,font=self.font,fill=FG)
 
 
+class Scrollbar(ttk.Scrollbar):
+    """A themed scrollbar that leaves a quiet gutter when everything fits."""
+    def set(self,first,last):
+        super().set(first,last)
+        self.state(['disabled'] if float(first)<=0 and float(last)>=1 else ['!disabled'])
+
+
 class Panel(tk.Canvas):
     def __init__(self,parent,*,padding=11,**kw):
         super().__init__(parent,bg=parent.cget('bg'),highlightthickness=0,bd=0,**kw)
@@ -243,7 +261,7 @@ class Table(tk.Frame):
         if mode!='results':self.head.pack(fill='x')
         self.head.bind('<Button-1>',lambda e:self.on_toggle_all() if e.x<35 and self.on_toggle_all else None)
         self.body=tk.Canvas(self,bg=PANEL,highlightthickness=0,takefocus=True)
-        scroll=ttk.Scrollbar(self,orient='vertical',command=self.yview)
+        scroll=Scrollbar(self,orient='vertical',command=self.yview,style='Vertical.Goblin.TScrollbar')
         scroll.pack(side='right',fill='y');self.body.pack(fill='both',expand=True)
         self.body.configure(yscrollcommand=lambda lo,hi:(scroll.set(lo,hi),self.schedule()))
         self.body.bind('<Configure>',lambda e:self.schedule())

@@ -2,7 +2,7 @@
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, font as tkfont
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 from groove_artwork import CoverCache
 from groove_widgets import BG, PANEL, LINE, FG, MUTED, GREEN, Button, Check, Radio, Panel, Table, icon
 from groove_core import plan_actions
@@ -49,6 +49,40 @@ def install_layout(cls):
         s.configure('Manual.TEntry',padding=1)
         s.configure('TScrollbar',background='#27363f',troughcolor=PANEL,bordercolor=PANEL,arrowcolor=MUTED,arrowsize=10)
         s.map('TScrollbar',background=[('active','#43565f')])
+        # Image elements prevent platform themes from adding bevels or grips.
+        if not hasattr(self,'_theme_images'):self._theme_images=[]
+        def pill(size,color):
+            image=Image.new('RGBA',(size[0]*3,size[1]*3))
+            ImageDraw.Draw(image).rounded_rectangle((0,0,size[0]*3-1,size[1]*3-1),radius=12,fill=color)
+            photo=ImageTk.PhotoImage(image.resize(size,Image.Resampling.LANCZOS),master=self)
+            self._theme_images.append(photo);return photo
+        for direction,sticky,size in [('Vertical','ns',(10,28)),('Horizontal','ew',(28,10))]:
+            element='Goblin.'+direction+'.Scrollbar.thumb'
+            if element not in s.element_names():
+                s.element_create(element,'image',pill(size,'#344753'),
+                                 ('disabled',pill(size,PANEL)),('pressed',pill(size,GREEN)),('active',pill(size,'#608090')),
+                                 border=4,sticky='nsew')
+            name=direction+'.Goblin.TScrollbar'
+            s.layout(name,[(direction+'.Scrollbar.trough',{'sticky':sticky,'children':[
+                (element,{'expand':True,'sticky':'nsew'})]})])
+            s.configure(name,troughcolor=PANEL,bordercolor=PANEL,
+                        lightcolor=PANEL,darkcolor=PANEL,borderwidth=0,arrowsize=10)
+        s.configure('Editor.Treeview',background=PANEL,fieldbackground=PANEL,foreground=FG,
+                    borderwidth=0,relief='flat',rowheight=32)
+        s.layout('Editor.Treeview',[('Treeview.treearea',{'sticky':'nsew'})])
+        s.configure('Editor.Treeview.Heading',background='#1a252e',foreground=FG,
+                    relief='flat',font=(self.ui_font,9,'bold'),padding=(8,7))
+        s.map('Editor.Treeview',background=[('selected','#193b30')],foreground=[('selected','#b6ffcb')])
+        s.map('Editor.Treeview.Heading',background=[('active','#243641')])
+        element='Goblin.Horizontal.Scale.slider'
+        if element not in s.element_names():
+            s.element_create(element,'image',pill((14,14),GREEN),
+                             ('active',pill((14,14),'#b6ffcb')),sticky='')
+        s.layout('Player.Horizontal.TScale',[('Horizontal.Scale.trough',{'sticky':'we','children':[
+            (element,{'side':'left','sticky':''})]})])
+        s.configure('Player.Horizontal.TScale',background=PANEL,troughcolor='#172832',
+                    bordercolor=LINE,lightcolor=LINE,darkcolor=LINE,borderwidth=0)
+        s.map('Manual.TEntry',bordercolor=[('focus',GREEN),('!focus','#485b68')])
 
     def build_ui(self):
         self.configure(bg=BG)

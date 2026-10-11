@@ -1,4 +1,4 @@
-# Groove Goblin 1.1.0
+# Groove Goblin 1.1.1
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -94,6 +94,10 @@ with a launcher, not a standalone EXE.
 
 ## Window sizing and keyboard
 
+Track Editor uses the same rounded panels and icon buttons as Scan & Fix, with
+alternating dark rows, green selection/staging accents and a framed player.
+Tables use slim rounded scrollbars; player sliders have green handles.
+
 The app fits windows down to 800×600 without an outer scrollbar. Lists scroll
 internally when needed. Resizing reduces artwork and spacing and uses sidebar
 icons with hover labels on compact screens. The branding caption uses two lines
@@ -101,7 +105,7 @@ to fit. [Compact Scan & Fix](docs/interface-compact-linux.png) and
 [compact Track Editor](docs/track-editor-compact-linux.png) show the actual UI.
 Tab navigates controls, Ctrl / Shift selects multiple editor rows, F11 enters
 fullscreen and Esc exits. Ctrl +/- adjusts organizer table text. About and the
-sidebar display version 1.1.0.
+sidebar display version 1.1.1.
 
 Screenshots were captured on a Linux virtual display with disposable generated
 audio and covers; online results are mocked. They show the running application,
@@ -124,7 +128,7 @@ resize bounds, staging without writes, drop auto-scanning, and editor paths afte
 organizer renames/Undo. Playback checks stream real generated MP3 and FLAC files
 through SDL's test audio device and exercise transport, seeking and volume.
 
-46 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
+47 tests passed on Linux/Python 3.12; two Windows-only tests were skipped.
 Linux validation cannot establish actual Windows audio-device,
 Python 3.15 playback or 125%/150% DPI behavior. The PowerShell launcher and native
 Windows message-loop subprocess tests are skipped on Linux. The user confirmed

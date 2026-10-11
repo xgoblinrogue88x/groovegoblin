@@ -2,10 +2,11 @@
 from io import BytesIO
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
-from groove_widgets import BG,PANEL,FG,MUTED,GREEN,Button,Check
+from groove_widgets import BG,PANEL,LINE,FG,MUTED,GREEN,PURPLE,Button,Check,Panel,Scrollbar
 from groove_manual import FIELDS,read_track,load_artwork,validate_changes,plan_manual,apply_manual
 from groove_core import scan_folders,newest_journal,undo_journal
 from groove_player import MusicPlayer
@@ -23,30 +24,38 @@ class TrackEditor(tk.Frame):
         toolbar=tk.Frame(self,bg=BG);toolbar.grid(row=0,column=0,sticky='ew',pady=(0,6))
         tk.Label(toolbar,text='Track Editor',bg=BG,fg=GREEN,font=(app.ui_font,12,'bold')).pack(side='left',padx=(0,12))
         self.top_buttons=[]
-        for text,command in [('Add Files',self.add_files),('Add Folder',self.add_folder),('Use Scan List',self.import_scan)]:
-            button=Button(toolbar,text,command,width=105,height=34,font=(app.ui_font,9))
+        for text,command,symbol,accent,subtitle in [('Add Files',self.add_files,'music',PURPLE,'Select tracks to edit'),('Add Folder',self.add_folder,'folder','#ffd24c','Add a music folder'),('Use Scan List',self.import_scan,'list',GREEN,'Import scanned tracks')]:
+            button=Button(toolbar,text,command,width=180,height=58,symbol=symbol,accent=accent,subtitle=subtitle,font=(app.ui_font,10))
             button.pack(side='left',padx=(0,5));self.top_buttons.append(button)
         self.body=tk.Frame(self,bg=BG);self.body.grid(row=1,column=0,sticky='nsew')
         self.body.columnconfigure(0,weight=1);self.body.columnconfigure(1,minsize=320);self.body.rowconfigure(0,weight=1)
-        listing=tk.Frame(self.body,bg=PANEL);listing.grid(row=0,column=0,sticky='nsew',padx=(0,8))
+        self.list_panel=Panel(self.body,padding=8);self.list_panel.grid(row=0,column=0,sticky='nsew',padx=(0,8))
+        listing=self.list_panel.body
         listing.rowconfigure(1,weight=1);listing.columnconfigure(0,weight=1)
-        tk.Label(listing,text='Ctrl / Shift selects tracks. Double-click a cell to edit; * marks staged changes.',
-                 bg=PANEL,fg=MUTED,font=(app.ui_font,8),anchor='w').grid(row=0,column=0,sticky='ew',padx=6,pady=5)
-        self.tree=ttk.Treeview(listing,columns=FIELDS,show='headings',selectmode='extended')
+        header=tk.Frame(listing,bg=PANEL);header.grid(row=0,column=0,columnspan=2,sticky='ew',pady=(0,7))
+        tk.Label(header,text='Tracks',bg=PANEL,fg=FG,font=(app.ui_font,11,'bold')).pack(side='left')
+        self.track_hint=tk.Label(header,text='Double-click to edit',bg=PANEL,fg=MUTED,font=(app.ui_font,8))
+        self.track_hint.pack(side='left',padx=12)
+        self.track_count=tk.Label(header,text='0 tracks',bg=PANEL,fg=GREEN,font=(app.ui_font,9));self.track_count.pack(side='right')
+        self.tree=ttk.Treeview(listing,columns=FIELDS,show='headings',selectmode='extended',style='Editor.Treeview')
         for field in FIELDS:
             self.tree.heading(field,text=LABELS[field],command=lambda f=field:self.sort(f))
             self.tree.column(field,width=210 if field=='filename' else (60 if field in ('track','disc','year') else 145),minwidth=45,stretch=False)
+        self.tree.tag_configure('even',background='#0e181f')
+        self.tree.tag_configure('odd',background=PANEL)
+        self.tree.tag_configure('staged',foreground=GREEN)
         self.tree.grid(row=1,column=0,sticky='nsew')
-        ttk.Scrollbar(listing,orient='vertical',command=self.tree.yview).grid(row=1,column=1,sticky='ns')
+        Scrollbar(listing,orient='vertical',command=self.tree.yview,style='Vertical.Goblin.TScrollbar').grid(row=1,column=1,sticky='ns')
         self.tree.configure(yscrollcommand=listing.winfo_children()[-1].set)
-        horizontal=ttk.Scrollbar(listing,orient='horizontal',command=self.tree.xview)
+        horizontal=Scrollbar(listing,orient='horizontal',command=self.tree.xview,style='Horizontal.Goblin.TScrollbar')
         horizontal.grid(row=2,column=0,sticky='ew');self.tree.configure(xscrollcommand=horizontal.set)
         self.tree.bind('<<TreeviewSelect>>',self.selection_changed)
         self.tree.bind('<Double-1>',self.begin_inline)
         self.tree.bind('<Control-a>',self.select_all)
-        self.side=tk.Frame(self.body,bg=PANEL,width=320)
-        self.side.grid(row=0,column=1,sticky='nsew');self.side.grid_propagate(False);self.side.columnconfigure(0,weight=1)
-        self.selection_label=tk.Label(self.side,text='Select tracks to edit',bg=PANEL,fg=GREEN,font=(app.ui_font,10,'bold'),anchor='w')
+        self.side_panel=Panel(self.body,padding=8,width=320)
+        self.side_panel.grid(row=0,column=1,sticky='nsew')
+        self.side=self.side_panel.body;self.side.columnconfigure(0,weight=1)
+        self.selection_label=tk.Label(self.side,text='Track Tags',bg=PANEL,fg=GREEN,font=(app.ui_font,10,'bold'),anchor='w')
         self.selection_label.grid(row=0,column=0,sticky='ew',padx=8,pady=(6,2))
         self.help=tk.Label(self.side,text='Checked fields apply to selected tracks.\nBlank checked fields clear that tag.',bg=PANEL,fg=MUTED,font=(app.ui_font,8),justify='left')
         self.help.grid(row=1,column=0,sticky='w',padx=8,pady=(0,4))
@@ -62,16 +71,16 @@ class TrackEditor(tk.Frame):
             variable.trace_add('write',lambda *args,f=field:self.mark_field(f))
             self.vars[field]=variable;self.enabled[field]=enabled;self.entries[field]=entry;self.checks[field]=check
         self.art_frame=tk.Frame(self.side,bg=PANEL);self.art_frame.grid(row=3,column=0,sticky='ew',padx=8,pady=5)
-        self.cover=tk.Label(self.art_frame,bg='#080e12',width=10,height=4,text='No artwork',fg=MUTED)
+        self.cover=tk.Label(self.art_frame,bg='#080e12',width=10,height=4,text='No artwork',fg=MUTED,highlightthickness=1,highlightbackground=LINE)
         self.cover.pack(side='left',padx=(0,7))
         art_buttons=tk.Frame(self.art_frame,bg=PANEL);art_buttons.pack(side='left',fill='x',expand=True)
         self.art_buttons=[]
-        for text,command in [('Choose Artwork',self.choose_artwork),('Remove Front',self.remove_artwork)]:
-            button=Button(art_buttons,text,command,width=145,height=30,font=(app.ui_font,8))
+        for text,command,symbol in [('Choose Artwork',self.choose_artwork,'disc'),('Remove Front',self.remove_artwork,'cross')]:
+            button=Button(art_buttons,text,command,width=145,height=30,symbol=symbol,font=(app.ui_font,8))
             button.pack(fill='x',pady=1);self.art_buttons.append(button)
         actions=tk.Frame(self.side,bg=PANEL);actions.grid(row=4,column=0,sticky='ew',padx=8,pady=3)
         actions.columnconfigure(0,weight=1);actions.columnconfigure(1,weight=1)
-        self.stage_button=Button(actions,'Stage Edits',self.stage_fields,width=140,height=32,font=(app.ui_font,9),green_active=True)
+        self.stage_button=Button(actions,'Stage Edits',self.stage_fields,width=140,height=32,font=(app.ui_font,9),green_active=True,accent=GREEN)
         self.stage_button.grid(row=0,column=0,sticky='ew',padx=(0,4))
         self.discard_button=Button(actions,'Discard Selected',self.discard_selected,width=140,height=32,font=(app.ui_font,8))
         self.discard_button.grid(row=0,column=1,sticky='ew')
@@ -92,11 +101,20 @@ class TrackEditor(tk.Frame):
         compact=self.winfo_width()<1000 or self.winfo_height()<650
         width=268 if compact else 320
         self.body.columnconfigure(1,minsize=width)
-        self.side.configure(width=width)
+        self.side_panel.configure(width=width)
+        for panel in (self.list_panel,self.side_panel,self.player_panel):
+            panel.padding=6 if compact else 10
+            panel.resize(SimpleNamespace(width=panel.winfo_width(),height=panel.winfo_height()))
+        for index,button in enumerate(self.top_buttons):
+            button.configure(width=130 if compact else 180,height=42 if compact else 58)
+            button.subtitle='' if compact else ['Select tracks to edit','Add a music folder','Import scanned tracks'][index]
+            button.font=(self.app.ui_font,8 if compact else 10);button.draw()
+        ttk.Style(self).configure('Editor.Treeview',rowheight=28 if compact else 34)
         for field in FIELDS:
             self.checks[field].configure(width=93 if compact else 105,height=20 if compact else 24)
             self.checks[field].font=(self.app.ui_font,8 if compact else 9);self.checks[field].draw()
             self.entries[field].configure(font=(self.app.ui_font,8 if compact else 9))
+        self.track_hint.configure(text='Double-click to edit' if compact else 'Ctrl / Shift selects tracks · Double-click to edit · * staged')
         self.summary.configure(wraplength=width-16)
         self.help.configure(text='Check fields to set; blank clears a tag.' if compact else 'Checked fields apply to selected tracks.\nBlank checked fields clear that tag.')
         for button in (self.stage_button,self.discard_button):button.configure(height=28 if compact else 32)
@@ -122,17 +140,18 @@ class TrackEditor(tk.Frame):
     def refresh(self):
         selected=self.selected()
         for item in self.tree.get_children():self.tree.delete(item)
-        for path in self.records:
+        for index,path in enumerate(self.records):
             data=self.values(path)
             values=[data.get(field,'') for field in FIELDS]
             if path in self.pending:values[0]='* '+values[0]
-            self.tree.insert('','end',iid=path,values=values)
+            self.tree.insert('','end',iid=path,values=values,tags=(('even' if index%2==0 else 'odd'),)+(('staged',) if path in self.pending else ()))
         self.tree.selection_set([p for p in selected if p in self.records])
-        self.summary.configure(text=f'{len(self.records)} tracks · {len(self.pending)} staged')
+        self.track_count.configure(text=f'{len(self.records)} tracks · {len(self.pending)} staged')
+        self.summary.configure(text=f'{len(self.pending)} tracks have unsaved changes' if self.pending else 'No staged changes')
         self.selection_changed()
 
     def selection_changed(self,event=None):
-        selected=self.selected();self.selection_label.configure(text=f'{len(selected)} track(s) selected' if selected else 'Select tracks to edit')
+        selected=self.selected();self.selection_label.configure(text=f'Track Tags · {len(selected)} selected' if selected else 'Track Tags')
         self.loading=True
         try:
             for field in FIELDS:
@@ -324,7 +343,7 @@ class TrackEditor(tk.Frame):
         body=tk.Frame(dialog,bg=PANEL);body.pack(fill='both',expand=True,padx=12)
         text=tk.Text(body,bg=PANEL,fg=FG,wrap='word',font=(self.app.ui_font,9),relief='flat')
         text.pack(side='left',fill='both',expand=True)
-        scroll=ttk.Scrollbar(body,command=text.yview);scroll.pack(side='right',fill='y');text.configure(yscrollcommand=scroll.set)
+        scroll=Scrollbar(body,command=text.yview,style='Vertical.Goblin.TScrollbar');scroll.pack(side='right',fill='y');text.configure(yscrollcommand=scroll.set)
         for plan in plans:
             text.insert('end',Path(plan['source']).name+'\n')
             original=self.records[plan['source']]
@@ -356,23 +375,25 @@ class TrackEditor(tk.Frame):
         self.app.run_background(work)
 
     def build_player(self):
-        bar=tk.Frame(self,bg=PANEL);bar.grid(row=2,column=0,sticky='ew',pady=(6,0));bar.columnconfigure(1,weight=1)
-        self.now=tk.Label(bar,text='Select a track and press Play',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8),anchor='w')
+        self.player_panel=Panel(self,padding=8,height=98)
+        self.player_panel.grid(row=2,column=0,sticky='ew',pady=(8,0))
+        bar=self.player_panel.body;bar.columnconfigure(1,weight=1)
+        self.now=tk.Label(bar,text='Select a track and press Play',bg=PANEL,fg=GREEN,font=(self.app.ui_font,9,'bold'),anchor='w')
         self.now.grid(row=0,column=0,columnspan=3,sticky='ew',padx=5)
         controls=tk.Frame(bar,bg=PANEL);controls.grid(row=1,column=0,sticky='w')
         self.play_buttons=[]
         for text,command in [('Back',lambda:self.player_command(self.player.previous)),('Play',self.play_pause),
                              ('Skip',lambda:self.player_command(self.player.next)),('Stop',lambda:self.player_command(self.player.stop))]:
-            button=Button(controls,text,command,width=54,height=28,font=(self.app.ui_font,8))
+            button=Button(controls,text,command,width=82,height=30,primary=text=='Play',symbol=text.lower(),font=(self.app.ui_font,8))
             button.pack(side='left',padx=2);self.play_buttons.append(button)
-        self.progress=ttk.Scale(bar,from_=0,to=1)
+        self.progress=ttk.Scale(bar,from_=0,to=1,style='Player.Horizontal.TScale')
         self.progress.grid(row=1,column=1,sticky='ew',padx=8)
         self.progress.bind('<ButtonPress-1>',lambda e:setattr(self,'seeking',True))
         self.progress.bind('<ButtonRelease-1>',self.seek)
         self.time=tk.Label(bar,text='0:00 / 0:00',bg=PANEL,fg=FG,font=(self.app.ui_font,8));self.time.grid(row=1,column=2,padx=5)
         volume=tk.Frame(bar,bg=PANEL);volume.grid(row=2,column=0,columnspan=3,sticky='ew')
         tk.Label(volume,text='Volume',bg=PANEL,fg=MUTED,font=(self.app.ui_font,8)).pack(side='left',padx=5)
-        self.volume=ttk.Scale(volume,from_=0,to=100,command=self.player.set_volume);self.volume.set(70);self.volume.pack(side='left',fill='x',expand=True,padx=(0,8))
+        self.volume=ttk.Scale(volume,from_=0,to=100,command=self.player.set_volume,style='Player.Horizontal.TScale');self.volume.set(70);self.volume.configure(length=180);self.volume.pack(side='left',padx=(0,8))
 
     def play_pause(self):
         if self.app.worker_busy:return
@@ -398,7 +419,9 @@ class TrackEditor(tk.Frame):
         except Exception as error:self.player.stop();self.app.log('Playback: '+str(error))
         current=self.player.current
         self.now.configure(text=(self.player.state.title()+': '+Path(current['path']).name) if current else 'Select a track and press Play')
-        self.play_buttons[1].text='Pause' if self.player.state=='playing' else 'Play';self.play_buttons[1].draw()
+        playing=self.player.state=='playing'
+        self.play_buttons[1].text='Pause' if playing else 'Play'
+        self.play_buttons[1].symbol='pause' if playing else 'play';self.play_buttons[1].draw()
         self.progress.configure(to=max(.01,self.player.duration))
         if not self.seeking:self.progress.set(self.player.position)
         def fmt(seconds):return f'{int(seconds)//60}:{int(seconds)%60:02d}'

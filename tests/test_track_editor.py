@@ -138,6 +138,42 @@ class TrackEditorTests(unittest.TestCase):
         self.assertIn(str(path),e.records)
         self.assertEqual(path.read_bytes(),before)
 
+    def test_themed_scrollbars_drag_and_theme_images_survive_zoom(self):
+        from tkinter import ttk
+        e=self.editor;a=self.app
+        for index in range(80):
+            e.tree.insert('','end',iid='viewport-test-'+str(index),values=('Track '+str(index),)*8)
+        a.update()
+        listing=e.tree.master
+        bars=[w for w in listing.winfo_children() if isinstance(w,ttk.Scrollbar)]
+        vertical=next(w for w in bars if str(w.cget('orient'))=='vertical')
+        horizontal=next(w for w in bars if str(w.cget('orient'))=='horizontal')
+        self.assertGreater(e.tree.yview()[1],0);self.assertLess(e.tree.yview()[1],1)
+        self.assertFalse(vertical.instate(['disabled']))
+        # Exercise the actual themed thumb through Tk's built-in bindings.
+        vertical.event_generate('<ButtonPress-1>',x=5,y=12)
+        vertical.event_generate('<B1-Motion>',x=5,y=120)
+        vertical.event_generate('<ButtonRelease-1>',x=5,y=120);a.update()
+        self.assertGreater(e.tree.yview()[0],0)
+        horizontal.event_generate('<ButtonPress-1>',x=20,y=5)
+        horizontal.event_generate('<B1-Motion>',x=100,y=5)
+        horizontal.event_generate('<ButtonRelease-1>',x=100,y=5);a.update()
+        self.assertGreater(e.tree.xview()[0],0)
+        e.player.playlist=[{**e.records[str(self.paths[0])],'duration':100}];e.player.index=0
+        e.progress.configure(to=100);e.progress.set(0);a.update()
+        x,y=e.progress.coords()
+        with patch.object(e.player,'seek') as seek:
+            e.progress.event_generate('<ButtonPress-1>',x=x,y=y)
+            e.progress.event_generate('<B1-Motion>',x=e.progress.winfo_width()//2,y=y)
+            e.progress.event_generate('<ButtonRelease-1>',x=e.progress.winfo_width()//2,y=y)
+            seek.assert_called_once();self.assertGreater(seek.call_args.args[0],0)
+        e.player.playlist=[];e.player.index=-1
+        photos=[str(p) for p in a._theme_images];a.zoom(1);a.update()
+        live=set(a.tk.call('image','names'))
+        self.assertTrue(set(photos).issubset(live))
+        for index in range(80):e.tree.delete('viewport-test-'+str(index))
+        a.update();self.assertTrue(vertical.instate(['disabled']))
+
     def test_editor_widgets_and_branding_fit_during_resize(self):
         a=self.app;e=self.editor
         for width,height in [(800,600),(1024,768),(1536,1000),(1920,1080),(850,620)]:

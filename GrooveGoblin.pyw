@@ -6,6 +6,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from groove_drop import FolderDropMixin
+from groove_widgets import Scrollbar
 from groove_version import __version__
 from groove_naming import DEFAULT_FILE_FORMAT, DEFAULT_FOLDER_FORMAT
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
@@ -132,8 +133,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         for i,key in enumerate(columns):
             t.heading(key,text=(labels[i] if labels else key))
             t.column(key,width=widths[i],minwidth=75,stretch=(i in [0,1]))
-        sy=ttk.Scrollbar(wrap,orient='vertical',command=t.yview)
-        sx=ttk.Scrollbar(wrap,orient='horizontal',command=t.xview)
+        sy=Scrollbar(wrap,orient='vertical',command=t.yview,style='Vertical.Goblin.TScrollbar')
+        sx=Scrollbar(wrap,orient='horizontal',command=t.xview,style='Horizontal.Goblin.TScrollbar')
         t.configure(yscrollcommand=sy.set,xscrollcommand=sx.set)
         wrap.grid_rowconfigure(0,weight=1);wrap.grid_columnconfigure(0,weight=1)
         t.grid(row=0,column=0,sticky='nsew');sy.grid(row=0,column=1,sticky='ns');sx.grid(row=1,column=0,sticky='ew')

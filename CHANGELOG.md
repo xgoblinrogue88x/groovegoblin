@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1
+
+- Matched Track Editor to the main app with rounded panels, icon toolbar cards,
+  alternating track rows, green selection/staging accents and a framed player.
+- Replaced raised scrollbars with slim rounded dark thumbs throughout the tables
+  and manual review dialog; styled playback sliders with green handles.
+- Kept controls visible at the 800×600 minimum size.
+
 ## 1.1.0
 
 - Added eight filename and seven album-folder naming presets with live previews.
