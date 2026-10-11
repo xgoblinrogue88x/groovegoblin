@@ -53,9 +53,11 @@ def install_layout(cls):
         description=tk.Label(heading,text='Match albums, edit tags and artwork, organize files and folders,\nand listen to your music.',bg=BG,fg=FG,font=(self.ui_font,9),justify='left',anchor='w')
         description.pack(fill='x')
         wrapped=[description]
+        sections=[]
         def section(title,height):
             panel=Panel(body,height=height,padding=12)
             panel.pack(fill='x',pady=(0,10))
+            sections.append((panel,height))
             tk.Label(panel.body,text=title,bg=PANEL,fg=GREEN,font=(self.ui_font,11,'bold')).pack(anchor='w',pady=(0,6))
             return panel.body
         def paragraph(parent,text,color=FG):
@@ -71,9 +73,18 @@ def install_layout(cls):
         paragraph(saving,'Scanning and previews leave your music unchanged.')
         paragraph(saving,'Track Editor saves keep full-file backups for Undo.',MUTED)
         paragraph(saving,'Organizer Undo restores the edited tags and file/folder names. Keep your own music backup too.',MUTED)
+        fitting=[False]
         def resize(event):
-            if event.widget is window:
+            if event.widget is not window or fitting[0]:return
+            fitting[0]=True
+            try:
                 for label in wrapped:label.configure(wraplength=max(420,event.width-64))
+                window.update_idletasks()
+                for panel,height in sections:
+                    panel.configure(height=max(height,panel.body.winfo_reqheight()+panel.padding*2+2))
+                window.update_idletasks()
+                window.minsize(560,max(520,body.winfo_reqheight()+28))
+            finally:fitting[0]=False
         window.bind('<Configure>',resize,add='+')
         window.bind('<Escape>',lambda event:window.destroy())
 
