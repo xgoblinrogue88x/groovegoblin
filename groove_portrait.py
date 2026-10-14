@@ -301,7 +301,8 @@ class PortraitLayout:
 
     def fit_dialog(self,window,height=440):
         """Keep application-owned confirmation/settings windows on the remote viewport."""
-        width=max(300,min(520,self.a.winfo_width()-16));height=min(height,self.a.winfo_height()-40)
+        # Leave room for native Windows borders and the dialog title bar too.
+        width=max(300,min(520,self.a.winfo_width()-40));height=min(height,self.a.winfo_height()-80)
         window.minsize(300,260);window.resizable(True,True)
         window.geometry(f'{width}x{height}+{self.a.winfo_rootx()+8}+{self.a.winfo_rooty()+12}')
         def walk(parent):
@@ -314,7 +315,7 @@ class PortraitLayout:
 
     def about(self):
         a=self.a;window=tk.Toplevel(a,bg=BG);window.title('About Groove Goblin LITE');window.transient(a)
-        window.geometry(f'{min(480,a.winfo_width()-16)}x{min(650,a.winfo_height()-40)}+{a.winfo_rootx()+8}+{a.winfo_rooty()+16}')
+        window.geometry(f'{min(480,a.winfo_width()-40)}x{min(650,a.winfo_height()-80)}+{a.winfo_rootx()+8}+{a.winfo_rooty()+12}')
         Button(window,'Close',window.destroy,width=20,height=44,primary=True).pack(side='bottom',fill='x',padx=8,pady=8)
         text=tk.Text(window,bg=PANEL,fg=FG,wrap='word',relief='flat',font=(a.ui_font,12),padx=14,pady=14)
         scroll=Scrollbar(window,orient='vertical',command=text.yview,style='Vertical.Goblin.TScrollbar');scroll.pack(side='right',fill='y')
