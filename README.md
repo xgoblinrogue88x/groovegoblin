@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.3.7
+# Groove Goblin LITE 1.4.0
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -245,3 +245,18 @@ Handoff documents describe the broader roadmap, not completed features.
 Verify All and Remove Selected share a compact row above the track and album
 rename-format dropdowns. Changing a preset updates the read-only plan and Apply
 confirmation; renaming and undo remain enabled.
+
+## Portrait remote use on Android
+
+Open **GrooveGoblinPhone.exe** (or **Groove Goblin Phone** from the installed
+Start menu) for a portrait window sized for remote use. This is the Windows
+application viewed through Windows App on the phone, not an Android APK.
+The regular EXE automatically uses touch workspaces when the window is narrow
+or portrait-shaped. Settings → Layout offers Auto and Phone.
+
+The navigation menu replaces the sidebar. Scan actions wrap into two rows.
+Albums use touch-sized cards with a Select Multiple option; Match, Results and
+Options have their own tabs. Track Editor separates Tracks from Tags & Artwork,
+with Select All and a scrolling tag form. Tall forms scroll within their pane;
+navigation and primary actions stay reachable. Wide windows in Auto return to
+the existing desktop layout. Minimum window: 360×540 Windows pixels.

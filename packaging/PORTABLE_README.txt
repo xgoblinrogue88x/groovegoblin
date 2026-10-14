@@ -1,4 +1,4 @@
-Groove Goblin LITE 1.3.7 — Windows 10/11 x64
+Groove Goblin LITE 1.4.0 — Windows 10/11 x64
 
 PORTABLE: Extract the entire ZIP into a writable folder. Open GrooveGoblinLite.exe
 (the goblin icon). Keep _internal, runtime-manifest.json and portable.flag
@@ -21,3 +21,8 @@ Matching application/dependency source archives: Sources. FFmpeg is compiled
 without GPL/nonfree options or external codec libraries; its configuration and
 LGPL license accompany its matching source. Build instructions are in the
 application source archive's packaging/README.md.
+
+For Android remote desktop / Samsung S25 Ultra portrait use, open
+GrooveGoblinPhone.exe. It uses the same _internal and Data folders.
+GrooveGoblinLite.exe remains the normal Auto layout launcher.
+Settings > Layout switches between Auto and Phone.

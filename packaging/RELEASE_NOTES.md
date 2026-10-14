@@ -1,41 +1,36 @@
-Groove Goblin LITE 1.3.7 for Windows 10/11 x64, launched with **GrooveGoblinLite.exe** and
-the Groove Goblin icon. Python, Tcl/Tk, tagging/image/audio libraries and FFmpeg
-are bundled. No BAT launcher or separate Python/FFmpeg installation is required.
+Groove Goblin LITE 1.4.0 — portrait remote desktop support for Windows App on Android.
 
-- **Setup.exe:** installs for your Windows account and creates a Start menu shortcut.
-- **Portable.zip:** extract the complete ZIP into a writable folder and open GrooveGoblinLite.exe.
-- **SHA256SUMS.txt:** checksums of both downloads.
+Open **GrooveGoblinPhone.exe** for the touch layout and a portrait window.
+The installer adds a **Groove Goblin Phone** Start menu shortcut. The normal
+GrooveGoblinLite.exe automatically adapts narrow or portrait windows, and
+Settings > Layout lets you select Auto or Phone. Both EXEs share the bundled
+runtime, music lists and persistent undo data.
 
-Keep the portable `Data` folder when updating: it contains undo records and
-backups. Installed app data is under `%LOCALAPPDATA%\GrooveGoblinLite` and survives
-uninstall. Runtime integrity checks report missing or damaged components;
-reinstall/extract a fresh complete package to repair them.
+- Touch navigation replaces the sidebar; scan actions use two rows.
+- Albums appear as readable cards with Select Multiple.
+- Albums, Match, Results and Options each have a full-width workspace.
+- Track Editor has Tracks / Tags & Artwork tabs, Select All and a scrolling form.
+- Matching forms, settings, Verify All and manual-save review fit phone widths.
+- Auto restores the desktop layout when widened; minimum window is 360×540.
 
-This build passes the Windows regression suite, frozen GUI/FLAC decoding smoke
-test, silent installer check, installed EXE launch and uninstall check before
-these assets are published. Automated playback uses a dummy audio output; audible
-speaker output and 125%/150% display scaling still need hands-on verification.
-Supported-format limits remain those documented in About, including raw PCM
-configuration and CDA references.
+This is a Windows application used remotely, not an Android APK. Windows App
+must display the app window or use portrait/dynamic session resolution; the
+program cannot change the remote client's desktop resolution. Phone EXE also
+works when the remote session reports a landscape display.
 
-Application license: GPLv3. Dependency notices and corresponding application,
-Mutagen, pygame-ce, FFmpeg and other source archives accompany both packages.
+Python, Tcl/Tk, libraries and FFmpeg are bundled; no separate installations or
+BAT launcher needed. Installer: run Setup.exe. Portable: extract the entire ZIP,
+keep its files together, and open either EXE. Preserve portable Data when updating.
+Installed data is in %LOCALAPPDATA%\GrooveGoblinLite and survives uninstall.
 
-LITE layout: six actions in one top row; expanded album and search lists;
-Selected Album Details moves to the top of the right rail. Preview Changes,
-Now Playing, Rename Options and Save Report are removed from the interface.
-File and folder renaming, album/year tag replacement and undo journaling remain
-on, with explicit confirmation and validation before writing music.
-The original full 1.3.3 installer is preserved as a separate release.
+Scanning and searching are read-only. Applying changes still requires your
+confirmation, matching validation and collision/stale-file checks. Independent
+rename toggles and undo remain available. Format limits are documented in About.
 
-Verify All and Remove Selected share a compact row above the track and album
-rename-format dropdowns. Changing a preset updates the read-only plan and Apply
-confirmation; renaming and undo remain enabled.
+Publication requires Windows regression tests, both frozen EXE smoke tests,
+bundled decoder tests, silent installation, installed EXE launch and uninstall.
+Device-specific Android remote touch gestures and physical S25 Ultra usability
+still require hands-on verification. Audio checks use a dummy output.
 
-Track and album renaming now have independent checkboxes. Both start checked;
-unchecking one disables its dropdown and skips its rename operation. Apply
-shows disabled operations as Off. Tag replacement and undo remain available.
-
-EXE, installer and application window icons show the full goblin and GROOVE
-GOBLIN wordmark, proportionately fitted with transparent padding. Includes
-Windows icon sizes from 16 through 256 pixels.
+Application: GPLv3. Dependency notices and matching source archives accompany
+both packages. The full-logo Windows icon is preserved.

@@ -28,6 +28,9 @@ def main():
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--clean', '--noconfirm',
                     'packaging/GrooveGoblin.spec'], cwd=ROOT, check=True)
     app = ROOT / 'dist/GrooveGoblinLite'
+    # The same frozen runtime selects its initial phone workspace by EXE name.
+    # Keeping both beside _internal also makes the phone launcher portable.
+    shutil.copy2(app / 'GrooveGoblinLite.exe', app / 'GrooveGoblinPhone.exe')
     bundled_decoders = [file.relative_to(app).as_posix() for file in app.rglob('*.exe')
                         if 'ffmpeg' in file.name.lower()]
     if bundled_decoders != ['_internal/ffmpeg/ffmpeg.exe']:
@@ -143,9 +146,13 @@ def main():
     if result.returncode or not report.is_file() or not json.loads(report.read_text())['ok']:
         detail = report.read_text() if report.is_file() else 'No startup report was produced.'
         raise RuntimeError('Frozen application smoke test failed; no installer published.\n' + detail)
+    phone_report=ROOT / 'build/frozen-phone-smoke.json'
+    result=subprocess.run([str(app / 'GrooveGoblinPhone.exe'),'--self-test',str(phone_report)],timeout=90)
+    if result.returncode or not phone_report.is_file() or not json.loads(phone_report.read_text())['ok']:
+        raise RuntimeError('Frozen phone launcher smoke test failed; no installer published.')
     # Never include test-generated undo/data in the portable ZIP.
     shutil.rmtree(app / 'Data', ignore_errors=True)
-    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-LITE-1.3.7-Windows-x64-Portable'), 'zip',
+    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-LITE-1.4.0-Windows-x64-Portable'), 'zip',
                         root_dir=ROOT / 'dist', base_dir='GrooveGoblinLite')
 
 

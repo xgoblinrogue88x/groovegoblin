@@ -44,6 +44,28 @@ class AlbumLookup(tk.Frame):
 
     def resize(self,event=None):
         width=self.winfo_width();compact=width<1000 or self.winfo_height()<650
+        phone=getattr(self.app,'_phone',None)
+        if phone is not None and phone.active:
+            size=round(12*getattr(phone,'unit',1))
+            self.target.configure(width=1,font=(self.app.ui_font,size),style='Phone.TCombobox')
+            for entry in self.entries:entry.configure(width=1,font=(self.app.ui_font,size),style='Phone.TEntry')
+            self.search_button.master.grid_configure(column=0,columnspan=2,sticky='ew')
+            self.search_button.symbol=None;self.search_button.text='Search MusicBrainz'
+            for button in (self.search_button,self.cancel_button):
+                button.font=(self.app.ui_font,11);button.configure(height=44);button.draw()
+            for button,text in ((self.choose_button,'Use Result'),(self.scan_button,'Scan & Rename')):
+                button.symbol=None;button.text=text;button.font=(self.app.ui_font,11)
+                button.configure(width=max(100,(width-10)//2),height=44);button.draw()
+            self.message.configure(wraplength=max(240,width-24),height=3)
+            self.search_panel.configure(height=max(260,self.search_panel.body.winfo_reqheight()+20))
+            self.results.rowheight=round(82*getattr(phone,'unit',1));self.results.font=(self.app.ui_font,size);self.results.schedule()
+            return
+        self.search_button.master.grid_configure(column=1,columnspan=1,sticky='w')
+        self.target.configure(style='TCombobox')
+        for entry in self.entries:entry.configure(style='TEntry')
+        for button,text in ((self.choose_button,'Use Selected Result'),(self.scan_button,'Go to Scan & Rename')):
+            button.text=text;button.configure(width=190,height=34);button.font=(self.app.ui_font,9);button.draw()
+        self.choose_button.symbol='check';self.search_button.symbol='search';self.message.configure(height=0)
         self.search_panel.configure(height=182 if compact else 194)
         self.message.configure(wraplength=max(240,width-30))
         for panel in (self.search_panel,self.results_panel):

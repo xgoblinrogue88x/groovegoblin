@@ -372,6 +372,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         def approve():dialog.destroy();self.approve_all()
         Button(dialog,'Approve Current Suggestions',approve,width=285,height=36,symbol='check',accent=GREEN,font=(self.ui_font,10)).pack(anchor='w',padx=18)
         dialog.bind('<Escape>',lambda event:dialog.destroy())
+        if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(dialog,460)
 
     def approve_all(self):
         if self.worker_busy:return

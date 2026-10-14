@@ -113,3 +113,5 @@ def install_lite(app):
         app._responsive.version.configure(text=f'Groove Goblin LITE v{__version__}')
     app._lite_apply=apply_layout
     apply_layout()
+    from groove_portrait import PortraitLayout
+    app._phone=PortraitLayout(app)

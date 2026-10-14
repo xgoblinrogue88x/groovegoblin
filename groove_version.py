@@ -1,5 +1,5 @@
 """One version string for the window, About, journals and network user agent."""
-__version__ = '1.3.7'
+__version__ = '1.4.0'
 
 def is_lite():
     import os

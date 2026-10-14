@@ -404,16 +404,17 @@ class Table(tk.Frame):
         keys=list(self.data)
         if 0<=index<len(keys):
             key=keys[index]
+            edge=getattr(self,'touch_edge',35) if getattr(self,'phone',False) else 35
             if self.mode=='albums' and event.state & 0x1:
                 self.select_range(key)
-            elif self.mode=='albums' and event.state & 0x4:
+            elif self.mode=='albums' and (event.state & 0x4 or getattr(self,'touch_multi',False)):
                 selected=self.selection()
                 self.selection_set([k for k in selected if k!=key] if key in selected else [key,*selected])
-            elif not (self.mode=='albums' and event.x<35 and key in self.selected_keys):
+            elif not (self.mode=='albums' and event.x<edge and key in self.selected_keys):
                 self.selection_set(key)
-            if self.mode=='results' and event.x>self.body.winfo_width()-88:
+            if self.mode=='results' and event.x>self.body.winfo_width()-max(88,int(self.rowheight*.9)+15):
                 if self.on_choose:self.on_choose()
-            elif event.x<35 and self.on_toggle:self.on_toggle(keys[index])
+            elif event.x<edge and self.on_toggle:self.on_toggle(keys[index])
     def schedule(self):
         if not self.redraw_id:self.redraw_id=self.after_idle(self.draw)
     def text(self,c,x,y,value,width,color=FG,anchor='w',bold=False):
@@ -439,6 +440,9 @@ class Table(tk.Frame):
         count=len(self.data);region=(0,0,w,max(c.winfo_height(),count*self.rowheight))
         if getattr(self,'_region',None)!=region:
             self._region=region;c.configure(scrollregion=region)
+        if self.mode=='albums' and getattr(self,'phone',False):
+            self.draw_phone(first=max(0,int(c.canvasy(0)//self.rowheight)),width=w)
+            return
         if self.mode=='albums':
             widths=[28,28,.17,.23,.27,42,34,66] if w<700 else [34,44,.17,.23,.27,60,55,92]
             fixed=sum(v for v in widths if v>=1);remaining=max(1,w-fixed)
@@ -485,17 +489,36 @@ class Table(tk.Frame):
                 self.badge(c,x+7,mid,('Skipped' if not row.get('enabled',True) else 'Review') if action=='SKIP' else (('Rename' if w<700 else 'Will Rename') if action in ('FOLDER','FILENAME') else ('Tag' if w<700 else 'Will Tag')),action!='SKIP',width=widths[-1]-8)
             else:
                 album,artist,year,kind,score=values
-                photo=self.cover_provider(key,40 if self.rowheight<60 else 48) if self.cover_provider else None
+                art_size=min(120,int(self.rowheight*.6));left=art_size+18;button_width=max(70,int(self.rowheight*.9))
+                photo=self.cover_provider(key,art_size) if self.cover_provider else None
                 if photo:c.create_image(7,mid,anchor='w',image=photo)
-                else:icon(c,'disc',10,mid-19,38,'#91a4b6')
-                self.text(c,58,y+14,album,max(50,w-150),GREEN if key==self.selected else FG,bold=True)
-                self.text(c,58,y+31,artist,max(50,w-150),MUTED)
-                self.text(c,58,y+47,f'{year or "Year unknown"} · {kind or "Release group"}',max(50,w-150),MUTED)
-                bx=max(0,w-81);selected=key==self.selected
-                rounded(c,bx,mid-15,bx+70,mid+15,4,fill='#123a1c' if selected else '#172128',outline='#26bd48' if selected else '#485966')
-                c.create_text(bx+35,mid,text='Select',fill=GREEN if selected else FG,font=(self.font[0],9))
+                else:icon(c,'disc',7,mid-art_size/2,art_size,'#91a4b6')
+                for value,fraction,color,bold in ((album,.2,GREEN if key==self.selected else FG,True),(artist,.45,MUTED,False),(f'{year or "Year unknown"} · {kind or "Release group"}',.72,MUTED,False)):
+                    self.text(c,left,y+self.rowheight*fraction,value,max(30,w-left-button_width-24),color,bold=bold)
+                bx=max(0,w-button_width-11);selected=key==self.selected;bh=max(30,self.rowheight*.5)
+                rounded(c,bx,mid-bh/2,bx+button_width,mid+bh/2,4,fill='#123a1c' if selected else '#172128',outline='#26bd48' if selected else '#485966')
+                c.create_text(bx+button_width/2,mid,text='Select',fill=GREEN if selected else FG,font=self.font)
         if not count:
             self.text(c,12,24,'Add folders or files to begin.' if self.mode=='albums' else ('No changes to preview.' if self.mode=='preview' else 'Search online to see album matches.'),w-24,MUTED)
+
+    def draw_phone(self,first,width):
+        c=self.body;keys=list(self.data);last=min(len(keys),first+int(c.winfo_height()/self.rowheight)+2)
+        left=max(40,int(self.rowheight*.4));badge_width=max(74,int(self.rowheight*.74))
+        for index in range(first,last):
+            key=keys[index];row=self.data[key];use,artist,old,new,year,tracks,status,_=row['values'];y=index*self.rowheight
+            c.create_rectangle(0,y,width,y+self.rowheight,fill='#193b30' if key in self.selected_keys else ('#101a21' if index%2==0 else '#0b141a'),outline='')
+            c.create_line(0,y+self.rowheight,width,y+self.rowheight,fill=LINE)
+            size=max(20,int(self.rowheight*.22));cx=left*.2;cy=y+self.rowheight*.23
+            rounded(c,cx,cy-size/2,cx+size,cy+size/2,3,fill=GREEN if use=='✓' else BG,outline=GREEN if use=='✓' else MUTED)
+            if use=='✓':icon(c,'check',cx+3,cy-size/2+3,size-6,BG)
+            self.text(c,left,y+self.rowheight*.2,artist,width-left-badge_width-20,bold=True)
+            bx=width-badge_width-8;bh=self.rowheight*.3;mid=y+self.rowheight*.22;ready=status=='READY'
+            rounded(c,bx,mid-bh/2,bx+badge_width,mid+bh/2,4,fill='#123a1c' if ready else '#3d3108',outline='#27bd49' if ready else '#ad840d')
+            c.create_text(bx+badge_width/2,mid,text='Match' if ready else 'Verify',fill=GREEN if ready else '#ffcf32',font=self.font)
+            self.text(c,left,y+self.rowheight*.45,new or old or '(Album missing)',width-left-8,GREEN,bold=True)
+            self.text(c,left,y+self.rowheight*.68,f'{year or "Year unknown"} · {tracks} tracks',width-left-8,MUTED)
+            self.text(c,left,y+self.rowheight*.88,'Current: '+str(old or '(missing)'),width-left-8,MUTED)
+        if not keys:self.text(c,12,28,'Add folders or files to begin.',width-24,MUTED)
 
 
 def PathName(value):

@@ -30,6 +30,7 @@ class PageNavigation:
         if tracks and not a.track_editor.records and not a.track_editor.list_cleared and a.matched and not a.worker_busy:a.track_editor.import_scan()
         if lookup:a.lookup_page.refresh_albums()
         if page is a.tab_editor:a.album_entry.focus_set()
+        if hasattr(a,'_phone'):a._responsive.schedule()
 
 
 def install_layout(cls):
@@ -38,6 +39,7 @@ def install_layout(cls):
     old_show=cls.show_editor
 
     def show_about(self):
+        if getattr(getattr(self,'_phone',None),'active',False):self._phone.about();return
         existing=getattr(self,'_about_window',None)
         if existing is not None and existing.winfo_exists():
             existing.lift();existing.focus_set();return
@@ -176,7 +178,7 @@ def install_layout(cls):
             if self.is_lite:
                 controls.pack_forget();footer_spacer.pack_forget()
                 self.status_label.pack_configure(side='top',fill='x',expand=False)
-                self.status_label.configure(height=1,wraplength=max(300,event.width-20));return
+                self.status_label.configure(height=2 if getattr(getattr(self,'_phone',None),'active',False) else 1,wraplength=max(300,event.width-20));return
             if self._active_page in ('tracks','lookup'):
                 controls.pack_forget();footer_spacer.pack_forget()
                 self.status_label.pack_configure(side='top',fill='x',expand=False)
@@ -417,9 +419,20 @@ def install_layout(cls):
     def show_settings(self):
         self.tabs.select(self.tab_albums)
         window=tk.Toplevel(self);window.title('Groove Goblin - Settings');window.configure(bg=BG);window.geometry('460x260')
+        if hasattr(self,'_phone'):
+            layout=tk.Frame(window,bg=BG);layout.pack(fill='x',padx=20,pady=(10,0))
+            tk.Label(layout,text='Layout',bg=BG,fg=FG,font=(self.ui_font,11)).pack(side='left',padx=(0,10))
+            choice=ttk.Combobox(layout,textvariable=self._phone.mode,values=['Auto','Phone'],state='readonly',width=10,font=(self.ui_font,11))
+            choice.pack(side='left',fill='x',expand=True)
+            def change_layout(event):
+                if self._phone.mode.get()=='Phone':self._phone.open_phone()
+                else:self._responsive.schedule()
+            choice.bind('<<ComboboxSelected>>',change_layout)
+            window.geometry('460x330')
         Check(window,'Search MusicBrainz after scan',self.auto_lookup,width=390,font=(self.ui_font,10)).pack(anchor='w',padx=20,pady=(20,5))
         tk.Label(window,text='Online searches send artist / album lookup text,\nnot audio files. Results can load public cover previews.\nTurn online scanning off to work offline.\n\nUndo journals save changed fields and paths.\nKeep separate music backups.',bg=BG,fg=MUTED,font=(self.ui_font,10),justify='left').pack(anchor='w',padx=20,pady=10)
         Button(window,'Search All Albums Online',self.lookup_all,width=260,font=self.button_font).pack(anchor='w',padx=20)
+        if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(window,410)
 
     def add_files(self):
         if self.worker_busy:return

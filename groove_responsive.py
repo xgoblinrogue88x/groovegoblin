@@ -62,6 +62,10 @@ class ResponsiveLayout:
         self.pending=None
         a=self.app;w=self.w;width=a._desktop.winfo_width();height=a._desktop.winfo_height()
         if width<100 or height<100:return
+        phone=getattr(a,'_phone',None)
+        if phone is not None:
+            if phone.wants():phone.apply();return
+            phone.restore()
         compact=width<1000 or height<650
         medium=not compact and (width<1350 or height<850)
         self.icon_nav=False

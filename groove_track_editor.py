@@ -113,6 +113,8 @@ class TrackEditor(tk.Frame):
         self.timer=app.after(150,self.tick)
 
     def resize(self,event=None):
+        if getattr(getattr(self.app,'_phone',None),'active',False):
+            self.app._phone.resize_tracks();return
         compact=self.winfo_width()<1000 or self.winfo_height()<650
         width=268 if compact else 320
         self.body.columnconfigure(1,minsize=width)
@@ -429,6 +431,7 @@ class TrackEditor(tk.Frame):
                 else:line=LABELS[key]+': '+repr(original.get(key,''))+' → '+repr(value)
                 text.insert('end','  '+line+'\n')
             text.insert('end','\n')
+        if getattr(getattr(self.app,'_phone',None),'active',False):self.app._phone.fit_dialog(dialog,460)
         text.configure(state='disabled');dialog.grab_set();self.app.wait_window(dialog)
         return answer[0]
 

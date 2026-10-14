@@ -35,12 +35,20 @@ def main():
         if '--self-test' in sys.argv:
             # Exercises real Tcl/Tk, Pillow image widgets, every page and the player.
             app.update()
-            for dimensions in ('800x600', '1024x768', '1920x1080'):
+            if Path(sys.executable).stem=='GrooveGoblinPhone' and app._phone.mode.get()!='Phone':
+                raise RuntimeError('Phone EXE did not select its portrait workspace.')
+            app._phone.mode.set('Auto');app.maxsize(4096,4096)
+            for dimensions in ('800x600', '412x915', '1440x3120', '1024x768', '1920x1080'):
                 app.geometry(dimensions)
                 app.update()
+                app._responsive.apply();app.update()
+            app.geometry('412x915');app.update();app._responsive.apply();app.update()
+            for name in ('Albums','Match','Results','Options'):
+                app._phone.select(name);app.update()
             for page in (app.dashboard, app.track_editor, app.lookup_page, app.tab_history):
                 app.tabs.select(page)
                 app.update()
+            app._phone.select_tracks('Tags & Artwork');app.update()
             # Exercise the frozen decoder and SDL too, using disposable audio.
             import tempfile
             import time
