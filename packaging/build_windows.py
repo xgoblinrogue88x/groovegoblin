@@ -148,7 +148,8 @@ def main():
     for mode,filename in {**MODE_EXECUTABLES,'suite':SUITE_EXECUTABLE}.items():
         report=ROOT/'build'/f'frozen-{mode}-smoke.json'
         result=subprocess.run([str(app/filename),'--self-test',str(report)],timeout=90)
-        if result.returncode or not report.is_file() or not json.loads(report.read_text())['ok']:
+        if (result.returncode or not report.is_file() or not json.loads(report.read_text())['ok']
+                or json.loads(report.read_text()).get('mode')!=mode):
             detail=report.read_text() if report.is_file() else 'No startup report was produced.'
             raise RuntimeError(f'Frozen {mode} smoke test failed; no installer published.\n'+detail)
     subprocess.run([sys.executable,'packaging/test_mode_handoff.py',str(app)],cwd=ROOT,check=True,timeout=360)
