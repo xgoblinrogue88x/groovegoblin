@@ -114,7 +114,7 @@ class ResponsiveLayout:
             while button.text and font[1]>8 and tkfont.Font(master=a,font=(*font,'bold')).measure(button.text)>available:
                 font=(font[0],font[1]-1,*font[2:])
             button.font=font
-            button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 40));button.draw()
+            button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 39));button.draw()
             button.pack_configure(pady=0 if compact else 1)
         mode_button=getattr(a,'desktop_mode_button',None)
         if mode_button is not None:
