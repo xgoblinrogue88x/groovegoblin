@@ -84,7 +84,7 @@ class ModeRuntimeTests(unittest.TestCase):
                 self.assertEqual(is_lite(),mode!='desktop')
                 self.assertEqual(groove_modes.launch_command(mode)[-1],'--'+mode)
         with tempfile.TemporaryDirectory() as temporary:
-            root=Path(temporary)
+            root=Path(temporary).resolve()
             for filename in MODE_EXECUTABLES.values():(root/filename).touch()
             with patch.object(sys,'frozen',True,create=True),patch.object(sys,'argv',['app']):
                 for mode,filename in {**MODE_EXECUTABLES,'suite':SUITE_EXECUTABLE}.items():
