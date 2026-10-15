@@ -23,7 +23,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
     def __init__(self):
         super().__init__()
         self.is_lite=is_lite()
-        self.title(f'Groove Goblin {"LITE " if self.is_lite else ""}{__version__} - Music Tagger & Organizer')
+        self.title(f'Groove Goblin {__version__} - '+('Mobile Remote Mode' if self.is_lite else 'Music Tagger & Organizer'))
         self.geometry('1220x790');self.minsize(740,520)
         self.configure(bg=BG)
         try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_app_icon.png')))
@@ -52,6 +52,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         self.bind('<Control-equal>',lambda e:self.zoom(1))
         self.bind('<Control-minus>',lambda e:self.zoom(-1))
         self.protocol('WM_DELETE_WINDOW',self.confirm_close)
+        from groove_modes import register_ready
+        register_ready(self)
 
     def build_style(self):
         s=ttk.Style(self);s.theme_use('clam')
@@ -220,6 +222,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
 
     def is_busy(self):return self.worker_busy
     def run_background(self,work):
+        if getattr(getattr(self,'_mode_switch',None),'active',False):
+            messagebox.showinfo('Switching modes','Wait for the other mode to open before starting more work.');return
         if self.worker_busy:
             messagebox.showinfo('Please wait','Another scan, lookup, or file operation is already running.');return
         self.worker_busy=True;self.cancel.clear()

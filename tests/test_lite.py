@@ -57,7 +57,8 @@ class LiteTests(unittest.TestCase):
             self.assertLess(w['details'].winfo_rooty()-a.lite_toolbar.winfo_rooty(),55)
         for page in (a.track_editor,a.lookup_page,a.tab_history,a.tab_albums):
             a.tabs.select(page);a.update();self.assertFalse(w['player'].winfo_ismapped())
-        self.assertIn('LITE',a.title())
+        self.assertIn('Mobile Remote Mode',a.title())
+        self.assertNotIn('LITE',a.title())
 
     def load(self):
         from groove_core import scan_folders

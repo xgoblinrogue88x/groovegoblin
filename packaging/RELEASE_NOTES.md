@@ -1,36 +1,35 @@
-Groove Goblin LITE 1.4.0 — portrait remote desktop support for Windows App on Android.
+Groove Goblin 1.5 for Windows 10/11 x64
 
-Open **GrooveGoblinPhone.exe** for the touch layout and a portrait window.
-The installer adds a **Groove Goblin Phone** Start menu shortcut. The normal
-GrooveGoblinLite.exe automatically adapts narrow or portrait windows, and
-Settings > Layout lets you select Auto or Phone. Both EXEs share the bundled
-runtime, music lists and persistent undo data.
+- GrooveGoblin.exe: the full desktop layout from 1.3.3 with current stability fixes.
+- GrooveGoblinMobile.exe: launch Mobile Remote Mode directly for Android remote use.
+- Full desktop includes Preview Changes, Now Playing, rename options and Save Report.
+- Blue Switch to Mobile Remote Mode button above the desktop workspace.
+- Matching blue Switch to Desktop Mode button in Mobile Remote Settings.
+- Button labels wrap to stay fully visible at narrow widths and native font sizes.
 
-- Touch navigation replaces the sidebar; scan actions use two rows.
-- Albums appear as readable cards with Select Multiple.
-- Albums, Match, Results and Options each have a full-width workspace.
-- Track Editor has Tracks / Tags & Artwork tabs, Select All and a scrolling form.
-- Matching forms, settings, Verify All and manual-save review fit phone widths.
-- Auto restores the desktop layout when widened; minimum window is 360×540.
+Switching launches the other EXE and closes the old window only after startup is
+acknowledged. Active work blocks switching; unsaved Track Editor edits require
+confirmation. Failed startup keeps the current window open. Switching starts a
+fresh album/track list and never changes music. Both modes share undo/data.
 
-This is a Windows application used remotely, not an Android APK. Windows App
-must display the app window or use portrait/dynamic session resolution; the
-program cannot change the remote client's desktop resolution. Phone EXE also
-works when the remote session reports a landscape display.
+The LITE product branding is retired. The complete goblin/logo Windows icon,
+portrait workspaces, touch controls, scrolling, decoder, collision/stale-file
+checks and undo improvements remain. Desktop defaults filename renaming off;
+Mobile Remote retains independent rename checkboxes enabled by default.
 
-Python, Tcl/Tk, libraries and FFmpeg are bundled; no separate installations or
-BAT launcher needed. Installer: run Setup.exe. Portable: extract the entire ZIP,
-keep its files together, and open either EXE. Preserve portable Data when updating.
-Installed data is in %LOCALAPPDATA%\GrooveGoblinLite and survives uninstall.
+Installer: run Setup.exe; both modes get Start menu shortcuts. Portable: extract
+the entire ZIP and open either EXE. All Python/Tk, tagging/artwork/playback
+libraries and FFmpeg are bundled. Keep the portable Data folder when updating.
+Installed data is under %LOCALAPPDATA%\GrooveGoblin. An earlier mobile data folder
+is reused when no desktop folder exists, without merging or overwriting records.
+The installer upgrades the original full product; earlier mobile-only installs
+remain separate and their data is preserved.
 
-Scanning and searching are read-only. Applying changes still requires your
-confirmation, matching validation and collision/stale-file checks. Independent
-rename toggles and undo remain available. Format limits are documented in About.
+Publishing requires Windows regression tests, frozen runtime tests for both
+modes, real cross-process handoff checks in both directions, silent install,
+installed EXE launch and uninstall checks. Download SHA256 checksums are included.
+Physical S25 Ultra touch gestures, audible output and 125%/150% native scaling
+still need hands-on checks; automated playback uses a dummy output.
 
-Publication requires Windows regression tests, both frozen EXE smoke tests,
-bundled decoder tests, silent installation, installed EXE launch and uninstall.
-Device-specific Android remote touch gestures and physical S25 Ultra usability
-still require hands-on verification. Audio checks use a dummy output.
-
-Application: GPLv3. Dependency notices and matching source archives accompany
-both packages. The full-logo Windows icon is preserved.
+Application license: GPLv3. Notices and matching application/dependency sources
+accompany both downloads. Supported-format limits remain documented in About.

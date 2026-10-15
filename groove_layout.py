@@ -21,7 +21,7 @@ class PageNavigation:
         target=a.lookup_page if lookup else (a.track_editor if tracks else (a.tab_history if history else a.dashboard))
         for frame in (a.dashboard,a.tab_history,getattr(a,'track_editor',a.dashboard),getattr(a,'lookup_page',a.dashboard)):
             frame.grid_remove()
-        target.grid(row=0,column=0,sticky='nsew')
+        target.grid(row=getattr(a,'_page_row',0),column=0,sticky='nsew')
         a._active_page='lookup' if lookup else ('tracks' if tracks else ('logs' if history else 'scan'))
         for name,button in a.nav_buttons.items():
             button.active=name==a._active_page;button.draw()
@@ -45,12 +45,12 @@ def install_layout(cls):
             existing.lift();existing.focus_set();return
         window=tk.Toplevel(self,bg=BG)
         self._about_window=window
-        window.title('About Groove Goblin'+(' LITE' if self.is_lite else ''));window.transient(self)
+        window.title('About Groove Goblin');window.transient(self)
         window.geometry('620x540');window.minsize(560,520)
         body=tk.Frame(window,bg=BG);body.pack(fill='both',expand=True,padx=16,pady=14)
         Button(body,'Close',window.destroy,width=110,height=36,primary=True,font=(self.ui_font,10)).pack(side='bottom',anchor='e',pady=(4,0))
         heading=tk.Frame(body,bg=BG);heading.pack(fill='x',pady=(0,8))
-        tk.Label(heading,text='GROOVE GOBLIN'+(' LITE' if self.is_lite else ''),bg=BG,fg=GREEN,font=(self.ui_font,18,'bold')).pack(anchor='w')
+        tk.Label(heading,text='GROOVE GOBLIN',bg=BG,fg=GREEN,font=(self.ui_font,18,'bold')).pack(anchor='w')
         tk.Label(heading,text=f'Version {__version__}',bg=BG,fg=MUTED,font=(self.ui_font,9)).pack(anchor='w',pady=(2,4))
         description=tk.Label(heading,text='Match albums, edit tags and artwork, organize files and folders,\nand listen to your music.',bg=BG,fg=FG,font=(self.ui_font,9),justify='left',anchor='w')
         description.pack(fill='x')
@@ -383,6 +383,8 @@ def install_layout(cls):
         if self.is_lite:
             from groove_lite import install_lite
             install_lite(self)
+        from groove_modes import install_mode_switch
+        install_mode_switch(self)
 
     def update_cover(self):
         if not hasattr(self,'cover_box'):return
@@ -419,6 +421,12 @@ def install_layout(cls):
     def show_settings(self):
         self.tabs.select(self.tab_albums)
         window=tk.Toplevel(self);window.title('Groove Goblin - Settings');window.configure(bg=BG);window.geometry('460x260')
+        self.settings_window=window
+        target='desktop' if self.is_lite else 'mobile'
+        from groove_modes import switch_button
+        self.settings_switch_button=switch_button(self,window,target)
+        self.settings_switch_button.pack(fill='x',padx=20,pady=(10,0))
+        window.geometry('460x340')
         if hasattr(self,'_phone'):
             layout=tk.Frame(window,bg=BG);layout.pack(fill='x',padx=20,pady=(10,0))
             tk.Label(layout,text='Layout',bg=BG,fg=FG,font=(self.ui_font,11)).pack(side='left',padx=(0,10))
@@ -428,11 +436,11 @@ def install_layout(cls):
                 if self._phone.mode.get()=='Phone':self._phone.open_phone()
                 else:self._responsive.schedule()
             choice.bind('<<ComboboxSelected>>',change_layout)
-            window.geometry('460x330')
+            window.geometry('460x420')
         Check(window,'Search MusicBrainz after scan',self.auto_lookup,width=390,font=(self.ui_font,10)).pack(anchor='w',padx=20,pady=(20,5))
         tk.Label(window,text='Online searches send artist / album lookup text,\nnot audio files. Results can load public cover previews.\nTurn online scanning off to work offline.\n\nUndo journals save changed fields and paths.\nKeep separate music backups.',bg=BG,fg=MUTED,font=(self.ui_font,10),justify='left').pack(anchor='w',padx=20,pady=10)
         Button(window,'Search All Albums Online',self.lookup_all,width=260,font=self.button_font).pack(anchor='w',padx=20)
-        if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(window,410)
+        if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(window,480)
 
     def add_files(self):
         if self.worker_busy:return

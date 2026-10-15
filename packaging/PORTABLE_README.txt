@@ -1,13 +1,13 @@
-Groove Goblin LITE 1.4.0 — Windows 10/11 x64
+Groove Goblin 1.5 — Windows 10/11 x64
 
-PORTABLE: Extract the entire ZIP into a writable folder. Open GrooveGoblinLite.exe
+PORTABLE: Extract the entire ZIP into a writable folder. Open GrooveGoblin.exe
 (the goblin icon). Keep _internal, runtime-manifest.json and portable.flag
 alongside it. No Python, pip, FFmpeg installation, BAT file or admin rights
 are needed. Keep Data when updating: it contains your undo records/backups.
 
 INSTALLER: Run the Setup EXE. It installs for your Windows account and creates
-a Start menu shortcut to GrooveGoblinLite.exe. Installed app data/undo records are
-under %LOCALAPPDATA%\GrooveGoblinLite, preserved when uninstalling.
+a Start menu shortcut to GrooveGoblin.exe. Installed app data/undo records are
+under %LOCALAPPDATA%\GrooveGoblin, preserved when uninstalling.
 
 The bundled runtime is checked at startup. Missing or damaged components
 produce a visible error and startup-error.log; repair by rerunning Setup or
@@ -23,6 +23,9 @@ LGPL license accompany its matching source. Build instructions are in the
 application source archive's packaging/README.md.
 
 For Android remote desktop / Samsung S25 Ultra portrait use, open
-GrooveGoblinPhone.exe. It uses the same _internal and Data folders.
-GrooveGoblinLite.exe remains the normal Auto layout launcher.
-Settings > Layout switches between Auto and Phone.
+GrooveGoblinMobile.exe. It uses the same _internal and Data folders.
+GrooveGoblin.exe opens the full Desktop Mode.
+The desktop blue button switches to Mobile Remote Mode; the blue button in
+Mobile Remote Settings switches back. Switching starts a fresh list, leaves
+music untouched and keeps the same undo location. Finish active work first.
+Existing mobile undo data is reused when no desktop data folder exists.

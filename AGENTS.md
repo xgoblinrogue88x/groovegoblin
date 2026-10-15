@@ -19,7 +19,7 @@ Primary user requirements:
 
 - **Scanning, searching, and previewing are read-only.** Write only after an explicit user action and confirmation.
 - Don't send music files, fingerprints, paths, or personally identifying data online without the user's explicit choice and clear explanation. Current MusicBrainz searches transmit artist/title lookup text, not the audio file.
-- Do not modify TITLE, TRACKNUMBER, ARTIST, album artwork, ReplayGain, comments, or arbitrary other tags when changing album/year. FULL defaults file renaming OFF. The user explicitly requested LITE with file/folder renaming ON by default (independently switchable) and album/year replacement ON; preserve its apply confirmation and undo journal.
+- Do not modify TITLE, TRACKNUMBER, ARTIST, album artwork, ReplayGain, comments, or arbitrary other tags when changing album/year. FULL defaults file renaming OFF. The user explicitly requested Mobile Remote Mode with file/folder renaming ON by default (independently switchable) and album/year replacement ON; preserve its apply confirmation and undo journal.
 - Keep the default folder naming `Artist - Album Title (Year)` and prefer original album release year; explicit user-selected presets may change the layout. Preserve legacy Van Halen mappings unless a test establishes a specific correction.
 - Do not overwrite or merge into occupied destination folders. Detect case-insensitive collisions, nested folder conflicts, and changed files since scan. If in doubt, skip with a clear error.
 - Manual Track Editor edits may change explicitly selected title/artist/track/disc/album/year fields, filenames and front artwork after review and confirmation. Preserve all other tags/pictures and support multi-selection.
@@ -53,3 +53,11 @@ Primary user requirements:
 - Do not commit any real music/audio assets, API secrets, logs, user paths, `__pycache__`, or generated binaries.
 - Logo/art assets in `assets/` are intended to remain in the app; these are raster graphics, **not a distributable font file**.
 - Review `LICENSE_NOTES.txt` and dependency licensing before any public release; don't invent licensing claims.
+
+## Groove Goblin 1.5 modes
+
+The full Desktop layout is the default. The user explicitly requested closing
+one mode and launching the other. Keep the readiness handshake so failed
+startup preserves the current window; block mode changes during active work and
+confirm before discarding unsaved edits. Both modes share undo/data. Product UI
+uses Groove Goblin branding; internal is_lite names remain compatibility helpers.

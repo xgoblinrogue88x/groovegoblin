@@ -17,8 +17,10 @@ def data_dir():
     if (executable_dir / 'portable.flag').is_file():
         target = executable_dir / 'Data'
     else:
-        from groove_version import is_lite
-        target = Path(os.environ.get('LOCALAPPDATA', Path.home())) / ('GrooveGoblinLite' if is_lite() else 'GrooveGoblin')
+        base=Path(os.environ.get('LOCALAPPDATA', Path.home()))
+        target=base/'GrooveGoblin'
+        # Preserve existing mobile undo records when there is no full-app data.
+        if not target.exists() and (base/'GrooveGoblinLite').is_dir():target=base/'GrooveGoblinLite'
     target.mkdir(parents=True, exist_ok=True)
     # Fail visibly if a portable folder is read-only; never silently relocate undo.
     import tempfile

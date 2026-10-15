@@ -28,27 +28,37 @@ def check_runtime():
 
 def main():
     try:
-        if getattr(sys,'frozen',False):os.environ['GROOVE_GOBLIN_EDITION']='LITE'
+        if getattr(sys,'frozen',False):
+            mobile=Path(sys.executable).stem=='GrooveGoblinMobile' or '--mobile' in sys.argv
+            os.environ['GROOVE_GOBLIN_EDITION']='MOBILE' if mobile else 'FULL'
         check_runtime()
         module = runpy.run_path(str(resource_dir() / 'GrooveGoblin.pyw'), run_name='groove_frozen_app')
         app = module['GrooveGoblin']()
         if '--self-test' in sys.argv:
             # Exercises real Tcl/Tk, Pillow image widgets, every page and the player.
             app.update()
-            if Path(sys.executable).stem=='GrooveGoblinPhone' and app._phone.mode.get()!='Phone':
-                raise RuntimeError('Phone EXE did not select its portrait workspace.')
-            app._phone.mode.set('Auto');app.maxsize(4096,4096)
-            for dimensions in ('800x600', '412x915', '1440x3120', '1024x768', '1920x1080'):
+            if '--handoff-ready' in sys.argv:
+                import time
+                deadline=time.monotonic()+5
+                while not app._handoff_ready and time.monotonic()<deadline:app.update();time.sleep(.02)
+                if not app._handoff_ready:raise RuntimeError('Mode handoff did not acknowledge its ready window.')
+            if app.is_lite and app._phone.mode.get()!='Phone':
+                raise RuntimeError('Mobile EXE did not select its portrait workspace.')
+            if app.is_lite:app._phone.mode.set('Auto')
+            app.maxsize(4096,4096)
+            dimensions_to_test=('800x600','412x915','1440x3120','1024x768','1920x1080') if app.is_lite else ('800x600','1024x768','1920x1080')
+            for dimensions in dimensions_to_test:
                 app.geometry(dimensions)
                 app.update()
                 app._responsive.apply();app.update()
-            app.geometry('412x915');app.update();app._responsive.apply();app.update()
-            for name in ('Albums','Match','Results','Options'):
-                app._phone.select(name);app.update()
+            if app.is_lite:
+                app.geometry('412x915');app.update();app._responsive.apply();app.update()
+                for name in ('Albums','Match','Results','Options'):
+                    app._phone.select(name);app.update()
             for page in (app.dashboard, app.track_editor, app.lookup_page, app.tab_history):
                 app.tabs.select(page)
                 app.update()
-            app._phone.select_tracks('Tags & Artwork');app.update()
+            if app.is_lite:app._phone.select_tracks('Tags & Artwork');app.update()
             # Exercise the frozen decoder and SDL too, using disposable audio.
             import tempfile
             import time
@@ -74,7 +84,7 @@ def main():
             app.destroy()
             output = Path(sys.argv[sys.argv.index('--self-test') + 1])
             output.write_text(json.dumps({'ok': True, 'python': sys.version,
-                                          'data': str(data_dir())}), encoding='utf-8')
+                                          'data': str(data_dir()),'mode':'mobile' if app.is_lite else 'desktop'}), encoding='utf-8')
         else:
             app.mainloop()
         return 0

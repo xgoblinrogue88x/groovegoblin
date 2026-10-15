@@ -91,12 +91,13 @@ def icon(c, name, x, y, size=24, color=MUTED):
 class Button(tk.Canvas):
     def __init__(self, parent, text, command=None, *, width=140, height=44,
                  symbol=None, accent=None, subtitle='', primary=False, font=('Segoe UI',10),
-                 vertical=False, navigation=False, green_active=False, **kw):
+                 vertical=False, navigation=False, green_active=False, blue=False, **kw):
         super().__init__(parent, width=width, height=height, bg=parent.cget('bg'),
                          highlightthickness=0, bd=0, takefocus=True, cursor='hand2', **kw)
         self.text=text;self.command=command;self.symbol=symbol;self.accent=accent
         self.subtitle=subtitle;self.primary=primary;self.font=font
         self.vertical=vertical;self.navigation=navigation;self.green_active=green_active;self.disabled=False;self.active=False
+        self.blue=blue
         self.hover=False
         self.bind('<Configure>',lambda e:self.draw())
         self.bind('<Enter>',lambda e:self.set_hover(True))
@@ -140,6 +141,7 @@ class Button(tk.Canvas):
         elif purple:
             top,bottom=('#9811d7','#550c88') if not self.disabled else ('#482c55','#2a2033')
         else:top,bottom=('#1a252d','#0d141a') if self.hover else ('#131d24','#0a1116')
+        if self.blue:top,bottom=(('#258fe5','#075396') if self.hover else ('#1678c9','#064578')) if not self.disabled else ('#263d50','#1b2b37')
         if self.navigation and not purple and not self.hover:
             top=bottom=self.cget('bg')
         # Supersampled rounded gradient background.
@@ -152,10 +154,23 @@ class Button(tk.Canvas):
         self._background=ImageTk.PhotoImage(image,master=self)
         self.create_image(0,0,anchor='nw',image=self._background)
         outline=GREEN if green_selected else ('#b229ef' if purple else LINE)
+        if self.blue:outline='#59b9ff'
         if self.focus_get() is self:outline=GREEN
         if not self.navigation or purple or self.hover:
             rounded(self,1,1,w-1,h-1,5,fill='',outline=outline,width=1)
         fg='#7d8998' if self.disabled else (BG if green_selected else FG)
+        if self.blue:
+            import tkinter.font as font
+            face=font.Font(master=self,font=self.font);available=max(1,w-24)
+            lines=1;line=''
+            for word in self.text.split():
+                candidate=(line+' '+word).strip()
+                if line and face.measure(candidate)>available:lines+=1;line=word
+                else:line=candidate
+            desired=max(48,lines*face.metrics('linespace')+16)
+            if int(self.cget('height'))!=desired:tk.Canvas.configure(self,height=desired)
+            self.create_text(w/2,h/2,text=self.text,width=available,justify='center',font=self.font,fill=fg,tags='blue-label')
+            return
         col=self.accent or ('#ffffff' if purple else '#b3bfd7')
         if self.disabled:col='#647181'
         text=self.text

@@ -1,4 +1,4 @@
-# Groove Goblin LITE 1.4.0
+# Groove Goblin 1.5
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -6,22 +6,22 @@ local cover-art replacement, playback, previews and Undo. Supports multiple audi
 
 ![Running Scan & Rename with generated test music](docs/interface-linux.png)
 
-## LITE layout
+## Desktop and Mobile Remote Mode
 
-LITE uses one row for Add Folders, Add Files, Clear List, Start Scan, Apply Changes
-and Undo Changes. Albums fill the center; Selected Album Details and an expanded
-MusicBrainz results list fill the right rail. Preview Changes, Now Playing,
-Rename Options and Save Report are omitted from the interface.
+**GrooveGoblin.exe** opens the full desktop layout from version 1.3.3, with
+Preview Changes, Now Playing, Rename Options and Save Report. Later stability,
+scrolling, playback, file-format and safety fixes remain included.
 
-File renaming (`## - Artist - Title`), album-folder renaming
-(`Artist - Album (Year)`) start ON and can be toggled independently using the
-checkboxes beside their naming dropdowns. Album/year tag replacement and undo
-journals remain ON.
-Applying still requires approved matches, collision/stale-file checks and a
-confirmation listing the naming formats and folder changes. Unresolved items
-remain visible through the Apply button's review message. Scan and lookup never
-write music. The LITE installer uses a separate app/data folder from the original
-1.3.3 release; that full release remains downloadable under GitHub Releases.
+The blue **Switch to Mobile Remote Mode** button starts the mobile EXE. In Mobile
+Remote Settings, **Switch to Desktop Mode** starts the full desktop EXE. Both
+buttons show their complete labels, wrapping when needed. The current window
+closes only after the other window confirms successful startup. Switching is
+blocked during scans, searches and file operations; unsaved Track Editor edits
+require confirmation before discarding. If startup fails, the current window stays open.
+
+Switching starts a fresh read-only album/track list; it does not change music.
+Both modes share their undo records. Desktop defaults file renaming OFF; Mobile
+Remote defaults file/folder renaming ON with independent checkboxes.
 
 ## Run on Windows
 
@@ -30,12 +30,12 @@ Only builds that pass the Windows EXE and installer checks are published there.
 
 - **Installer:** run the Setup EXE, then open Groove Goblin from the Start menu.
 - **Portable:** extract the complete portable ZIP into a writable folder, then
-  open **GrooveGoblinLite.exe** with the Groove Goblin icon. Keep its companion files
+  open **GrooveGoblin.exe** with the Groove Goblin icon. Keep its companion files
   and `Data` folder together.
 
 Python, Tcl/Tk, tagging and audio libraries, and FFmpeg are bundled. No separate
 Python/FFmpeg installation or BAT launcher is needed for these downloads.
-Installed undo records live under `%LOCALAPPDATA%\GrooveGoblinLite`; portable undo
+Installed undo records live under `%LOCALAPPDATA%\GrooveGoblin`; portable undo
 records live beside the executable in `Data`. Keep those records when updating.
 See [packaging instructions](packaging/README.md) to reproduce the Windows build.
 
@@ -248,15 +248,16 @@ confirmation; renaming and undo remain enabled.
 
 ## Portrait remote use on Android
 
-Open **GrooveGoblinPhone.exe** (or **Groove Goblin Phone** from the installed
+Open **GrooveGoblinMobile.exe** (or **Groove Goblin Mobile Remote Mode** from the installed
 Start menu) for a portrait window sized for remote use. This is the Windows
 application viewed through Windows App on the phone, not an Android APK.
-The regular EXE automatically uses touch workspaces when the window is narrow
-or portrait-shaped. Settings → Layout offers Auto and Phone.
+The mobile EXE starts in the touch layout. Use the blue Settings button to switch
+back to the full desktop program. Mobile layout sizing also offers Auto and Phone.
 
 The navigation menu replaces the sidebar. Scan actions wrap into two rows.
 Albums use touch-sized cards with a Select Multiple option; Match, Results and
 Options have their own tabs. Track Editor separates Tracks from Tags & Artwork,
 with Select All and a scrolling tag form. Tall forms scroll within their pane;
 navigation and primary actions stay reachable. Wide windows in Auto return to
-the existing desktop layout. Minimum window: 360×540 Windows pixels.
+a compact mobile workspace. The full Desktop Mode is a separate process.
+Minimum mobile window: 360×540 Windows pixels.

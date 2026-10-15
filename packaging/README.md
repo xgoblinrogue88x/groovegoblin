@@ -1,6 +1,6 @@
-# Groove Goblin LITE 1.4.0 Windows packaging
+# Groove Goblin 1.5 Windows packaging
 
-The Windows workflow builds **GrooveGoblinLite.exe**, **GrooveGoblinPhone.exe**, a portable ZIP and a per-user
+The Windows workflow builds **GrooveGoblin.exe**, **GrooveGoblinMobile.exe**, a portable ZIP and a per-user
 Inno Setup installer. CPython 3.12.10, Tcl/Tk, Pillow, Mutagen, pygame-ce/SDL and
 FFmpeg travel with the application. It never runs pip on a user's PC or chooses
 their system Python. PyInstaller's directory layout permits replacement of
@@ -43,7 +43,7 @@ containing the source commit. An unsuccessful run provides no installer release.
 ## Runtime and data
 
 `portable.flag` selects persistent `Data` beside the EXE; installed builds use
-`%LOCALAPPDATA%\GrooveGoblinLite`. Neither uses PyInstaller's internal resource
+`%LOCALAPPDATA%\GrooveGoblin`. Neither uses PyInstaller's internal resource
 directory for undo. Updating/uninstalling must preserve data and user media.
 Both package types check the bundled files against `runtime-manifest.json` and
 exercise Tk plus FFmpeg. Corruption requires reinstalling/extracting the package;
@@ -68,3 +68,8 @@ collected explicitly. Repeat that audit when changing the pinned wheel.
 Builds are unsigned unless a separate signing
 process is configured. No signing identity or completed Windows test is implied
 by the existence of these scripts.
+
+Both modes share data. If no desktop data folder exists but an earlier mobile
+installation has data, that location is reused without copying or overwriting.
+The build tests both real EXEs through the readiness handshake in both directions
+using packaging/test_mode_handoff.py, then installs/launches/uninstalls the package.

@@ -1,6 +1,7 @@
 """Touch workspaces for a portrait remote desktop, using the existing controllers."""
 import tkinter as tk
 import sys
+import os
 from pathlib import Path
 from tkinter import ttk
 from PIL import Image, ImageTk
@@ -100,7 +101,7 @@ class PortraitLayout:
         self.select_tracks_button=Button(editor.clear_list_button.master,'Select All',editor.select_all,width=90,height=40,font=(app.ui_font,10))
         ttk.Style(app).configure('Phone.TCombobox',padding=7)
         ttk.Style(app).configure('Phone.TEntry',padding=6)
-        if '--phone' in sys.argv or (getattr(sys,'frozen',False) and Path(sys.executable).stem=='GrooveGoblinPhone'):
+        if '--mobile' in sys.argv or '--phone' in sys.argv or os.environ.get('GROOVE_GOBLIN_EDITION','').upper()=='MOBILE' or (getattr(sys,'frozen',False) and Path(sys.executable).stem=='GrooveGoblinMobile'):
             app.after_idle(self.open_phone)
         elif app.winfo_screenheight()>app.winfo_screenwidth()*1.15:
             app.geometry(f'{max(360,app.winfo_screenwidth()-32)}x{max(540,app.winfo_screenheight()-80)}')
@@ -314,11 +315,11 @@ class PortraitLayout:
         walk(window)
 
     def about(self):
-        a=self.a;window=tk.Toplevel(a,bg=BG);window.title('About Groove Goblin LITE');window.transient(a)
+        a=self.a;window=tk.Toplevel(a,bg=BG);window.title('About Groove Goblin');window.transient(a)
         window.geometry(f'{min(480,a.winfo_width()-40)}x{min(650,a.winfo_height()-80)}+{a.winfo_rootx()+8}+{a.winfo_rooty()+12}')
         Button(window,'Close',window.destroy,width=20,height=44,primary=True).pack(side='bottom',fill='x',padx=8,pady=8)
         text=tk.Text(window,bg=PANEL,fg=FG,wrap='word',relief='flat',font=(a.ui_font,12),padx=14,pady=14)
         scroll=Scrollbar(window,orient='vertical',command=text.yview,style='Vertical.Goblin.TScrollbar');scroll.pack(side='right',fill='y')
         text.configure(yscrollcommand=scroll.set);text.pack(fill='both',expand=True)
-        text.insert('end',f'GROOVE GOBLIN LITE\nVersion {__version__}\n\nPortrait remote layout\nUse the menu at the top to change sections. Albums, Match, Results and Options have separate touch workspaces. Wider windows automatically restore the desktop layout.\n\nAudio formats\nWAV, AIFF, FLAC, ALAC/M4A, APE, WavPack, MP3, Ogg/Vorbis, WMA, Opus, DSF/DFF.\n\nAAC and raw PCM: filename editing only; PCM needs playback settings. CDA files reference CD tracks; rip the CD first. Container support depends on its codec.\n\nChanges & undo\nScanning and searching never change music. Apply requires your confirmation. Track Editor keeps full-file backups. Organizer Undo restores edited tags and names. Keep your own music backups.\n\nLicense: GPLv3. Dependency notices and sources accompany the Windows package.')
+        text.insert('end',f'GROOVE GOBLIN\nVersion {__version__}\n\nMobile Remote Mode\nUse the menu at the top to change sections. Albums, Match, Results and Options have separate touch workspaces. Use Switch to Desktop Mode in Settings to open the full desktop program.\n\nAudio formats\nWAV, AIFF, FLAC, ALAC/M4A, APE, WavPack, MP3, Ogg/Vorbis, WMA, Opus, DSF/DFF.\n\nAAC and raw PCM: filename editing only; PCM needs playback settings. CDA files reference CD tracks; rip the CD first. Container support depends on its codec.\n\nChanges & undo\nScanning and searching never change music. Apply requires your confirmation. Track Editor keeps full-file backups. Organizer Undo restores edited tags and names. Keep your own music backups.\n\nLicense: GPLv3. Dependency notices and sources accompany the Windows package.')
         text.configure(state='disabled');bind_mousewheel(text,targets=(scroll,));a._about_window=window
