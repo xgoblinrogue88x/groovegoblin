@@ -9,7 +9,7 @@ import unittest
 class NativeOutgoingDragTests(unittest.TestCase):
     def test_native_shell_copy_move_and_cancel(self):
         script=Path(__file__).with_name('windows_drag_shell_smoke.py')
-        try:result=subprocess.run([sys.executable,str(script)],capture_output=True,text=True,timeout=60)
+        try:result=subprocess.run([sys.executable,str(script)],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=60)
         except subprocess.TimeoutExpired as error:
             self.fail('Native Shell timeout: '+repr(error.stdout)+'\n'+repr(error.stderr))
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
@@ -19,7 +19,7 @@ class NativeOutgoingDragTests(unittest.TestCase):
         script=Path(__file__).with_name('windows_drag_gui_smoke.py')
         for mode in ('desktop','lite','mobile'):
             with self.subTest(mode=mode):
-                try:result=subprocess.run([sys.executable,str(script),mode],capture_output=True,text=True,timeout=50)
+                try:result=subprocess.run([sys.executable,str(script),mode],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=50)
                 except subprocess.TimeoutExpired as error:
                     self.fail('Native GUI timeout: '+repr(error.stdout)+'\n'+repr(error.stderr))
                 self.assertEqual(result.returncode,0,result.stdout+result.stderr)

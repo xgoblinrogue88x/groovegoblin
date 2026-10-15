@@ -2,12 +2,15 @@
 from pathlib import Path
 import subprocess
 import sys
+import os
 
 
 def main():
+    sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    os.environ['PYTHONIOENCODING']='utf-8'
     logs = Path('build/test-results'); logs.mkdir(parents=True, exist_ok=True)
     pattern = sys.argv[1] if len(sys.argv) > 1 else 'test_*.py'
-    for module in sorted(Path('tests').glob(pattern)):
+    for module in sorted(Path('tests').glob(pattern), key=lambda p:(p.name!='test_windows_drag.py',p.name)):
         log = logs / (module.stem + '.txt')
         print('Testing ' + module.name, flush=True)
         with log.open('w', encoding='utf-8') as stream:
