@@ -23,7 +23,7 @@ class FolderDrag(WindowsFileDrag):
         C.cast(effect,C.POINTER(DWORD))[0]=self.effect
         try:
             print('Calling Shell DragEnter',flush=True)
-            checked(target.enter(data,keys,Point(),effect),'Shell DragEnter')
+            checked(target.enter(data,keys|1,Point(),effect),'Shell DragEnter')
             print('Calling Shell Drop',flush=True)
             checked(target.drop(data,keys,Point(),effect),'Shell Drop')
             print('Shell Drop returned',flush=True)

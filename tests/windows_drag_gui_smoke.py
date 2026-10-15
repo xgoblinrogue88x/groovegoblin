@@ -59,7 +59,9 @@ try:
     assert not errors,errors
     result=json.loads(report.read_text());assert not result.get('error'),result
     assert {Path(p).resolve() for p in result['paths']}==set(source),result
-    assert result['effect']==2,result
+    # Shell can return NONE after an optimized move. Verify the actual files
+    # and followed editor paths below, rather than requiring a reported effect.
+    assert result['effect'] in (0,2),result
     for p in source:
         new=destination/p.name
         assert new.is_file() and not p.exists(),(str(p),app.status.get())

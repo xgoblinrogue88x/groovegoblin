@@ -48,7 +48,6 @@ class Receiver:
             except Exception as error:
                 report.write_text(json.dumps({'error':str(error)}),encoding='utf-8')
                 return C.c_int32(0x80004005).value
-            finally:user.PostQuitMessage(0)
         self.callbacks=(C.WINFUNCTYPE(HRESULT,C.c_void_p,C.POINTER(GUID),C.POINTER(C.c_void_p))(query),
             C.WINFUNCTYPE(DWORD,C.c_void_p)(add),C.WINFUNCTYPE(DWORD,C.c_void_p)(remove),
             C.WINFUNCTYPE(HRESULT,C.c_void_p,C.c_void_p,DWORD,Point,C.POINTER(DWORD))(enter),
