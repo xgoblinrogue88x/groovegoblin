@@ -545,7 +545,9 @@ from groove_layout import install_layout
 install_layout(GrooveGoblin)
 
 if __name__=='__main__':
-    try:GrooveGoblin().mainloop()
+    try:
+        from groove_modes import maximize_on_launch
+        app=GrooveGoblin();maximize_on_launch(app);app.mainloop()
     except Exception:
         from tkinter import messagebox
         messagebox.showerror('Groove Goblin startup error',traceback.format_exc())

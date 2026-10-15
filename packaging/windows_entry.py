@@ -38,9 +38,15 @@ def main():
         else:
             module = runpy.run_path(str(resource_dir() / 'GrooveGoblin.pyw'), run_name='groove_frozen_app')
             app = module['GrooveGoblin']()
+        from groove_modes import maximize_on_launch
+        maximize_on_launch(app)
         if '--self-test' in sys.argv:
             # Exercises real Tcl/Tk, Pillow image widgets, every page and the player.
             app.update()
+            startup_state=app.state()
+            expected_state='normal' if app.app_mode=='suite' else 'zoomed'
+            if os.name=='nt' and startup_state!=expected_state:
+                raise RuntimeError(f'{app.app_mode} opened {startup_state}; expected {expected_state}.')
             if app.app_mode=='suite':
                 for size in ('320x460','440x650','600x800'):
                     app.geometry(size);app.update()
@@ -54,7 +60,7 @@ def main():
                     if app.logo.width()<100:raise RuntimeError('Suite logo did not load.')
                 app.destroy()
                 Path(sys.argv[sys.argv.index('--self-test')+1]).write_text(
-                    json.dumps({'ok':True,'mode':'suite','data':str(data_dir())}),encoding='utf-8')
+                    json.dumps({'ok':True,'mode':'suite','data':str(data_dir()),'startup_window_state':startup_state}),encoding='utf-8')
                 return 0
             if '--handoff-ready' in sys.argv:
                 import time
@@ -67,6 +73,9 @@ def main():
             if mobile:app._phone.mode.set('Auto')
             if app.app_mode=='lite' and hasattr(app,'_phone'):
                 raise RuntimeError('LITE EXE opened the Mobile layout.')
+            # Startup state was checked above. Restore only for the resize
+            # probes so geometry requests can exercise smaller windows too.
+            app.state('normal');app.update()
             app.maxsize(4096,4096)
             dimensions_to_test=('800x600','412x915','1440x3120','1024x768','1920x1080') if mobile else ('800x600','1024x768','1920x1080')
             for dimensions in dimensions_to_test:
@@ -106,7 +115,8 @@ def main():
             app.destroy()
             output = Path(sys.argv[sys.argv.index('--self-test') + 1])
             output.write_text(json.dumps({'ok': True, 'python': sys.version,
-                                          'data': str(data_dir()),'mode':app.app_mode}), encoding='utf-8')
+                                          'data': str(data_dir()),'mode':app.app_mode,
+                                          'startup_window_state':startup_state}), encoding='utf-8')
         else:
             app.mainloop()
         return 0

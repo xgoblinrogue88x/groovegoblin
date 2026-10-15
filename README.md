@@ -1,4 +1,7 @@
-# Groove Goblin Suite 1.6
+# Groove Goblin Suite 1.6.1
+
+Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
+The suite launcher keeps its normal window size. Windows can still be restored and resized.
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,

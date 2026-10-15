@@ -94,7 +94,7 @@ jobs:
         shell: pwsh
         run: |
           $target = Join-Path $env:RUNNER_TEMP 'Groove Goblin installed'
-          $setup = Start-Process dist/GrooveGoblin-1.6-Windows-x64-Setup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$target`"" -Wait -PassThru
+          $setup = Start-Process dist/GrooveGoblin-1.6.1-Windows-x64-Setup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$target`"" -Wait -PassThru
           if ($setup.ExitCode -ne 0) { throw 'Silent installation or runtime preflight failed' }
           if (Test-Path "$target\portable.flag") { throw 'Installed app accidentally entered portable mode' }
           $executables = @('Groove Goblin Desktop Mode.exe', 'Groove Goblin LITE Mode.exe', 'Groove Goblin Mobile Mode.exe', 'Launch Groove Goblin Suite.exe')
@@ -114,7 +114,7 @@ jobs:
           } | Set-Content dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: GrooveGoblin-1.6-Windows-x64
+          name: GrooveGoblin-1.6.1-Windows-x64
           if-no-files-found: error
           path: |
             dist/*-Setup.exe
@@ -136,6 +136,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = 'v1.6-windows-' + $env:GITHUB_SHA.Substring(0, 7)
-          gh release create $tag dist/GrooveGoblin-1.6-Windows-x64-Setup.exe dist/GrooveGoblin-1.6-Windows-x64-Portable.zip dist/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Groove Goblin 1.6 for Windows' --notes-file packaging/RELEASE_NOTES.md
+          $tag = 'v1.6.1-windows-' + $env:GITHUB_SHA.Substring(0, 7)
+          gh release create $tag dist/GrooveGoblin-1.6.1-Windows-x64-Setup.exe dist/GrooveGoblin-1.6.1-Windows-x64-Portable.zip dist/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Groove Goblin 1.6.1 for Windows' --notes-file packaging/RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw 'Windows artifacts passed tests, but release upload failed' }

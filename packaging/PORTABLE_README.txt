@@ -1,4 +1,7 @@
-Groove Goblin Suite 1.6 — Windows 10/11 x64
+Groove Goblin Suite 1.6.1 — Windows 10/11 x64
+
+Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
+The suite launcher keeps its normal window size. Windows can still be restored and resized.
 
 Extract the entire portable ZIP into a writable folder, then open:
   Launch Groove Goblin Suite.exe

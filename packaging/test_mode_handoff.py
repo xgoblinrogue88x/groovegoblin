@@ -36,6 +36,7 @@ def main():
             if controller.process.wait(timeout=90) or not report.is_file():raise RuntimeError('Child EXE smoke test failed.')
             result=json.loads(report.read_text(encoding='utf-8'))
             if not result['ok'] or result['mode']!=target:raise RuntimeError('Child opened the wrong mode.')
+            if result.get('startup_window_state')!='zoomed':raise RuntimeError('Child mode did not open maximized.')
             results.append(result)
     if len({result['data'] for result in results})!=1:raise RuntimeError('Modes do not share their undo/data location.')
     (ROOT/'build/mode-handoff.json').write_text(json.dumps({'ok':True,'directions':results},indent=2),encoding='utf-8')

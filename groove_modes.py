@@ -13,6 +13,14 @@ from groove_widgets import BG, Button
 from groove_version import MODE_LABELS, MODE_EXECUTABLES
 
 
+def maximize_on_launch(app):
+    if app.app_mode=='suite':return
+    # Let Mobile's initial portrait setup finish before maximizing, so it
+    # cannot replace the startup window size afterwards.
+    app.update_idletasks()
+    if app.tk.call('tk','windowingsystem')=='win32':app.state('zoomed')
+
+
 def launch_command(target):
     if target not in MODE_LABELS:raise ValueError('Unknown application mode')
     if getattr(sys,'frozen',False):
