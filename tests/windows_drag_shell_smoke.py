@@ -15,13 +15,18 @@ from windows_drag_support import ShellFolderTarget,Point,dropped_paths
 class FolderDrag(WindowsFileDrag):
     def __init__(self,folder,effect):super().__init__();self.folder=folder;self.effect=effect
     def _do_drag_drop(self,data,source,effect):
+        print('Native data object ready; reading Unicode paths',flush=True)
         self.paths=dropped_paths(self,data)
+        print('Binding Shell folder target',self.effect,flush=True)
         target=ShellFolderTarget(self,self.folder)
         keys=4 if self.effect==2 else 8
         C.cast(effect,C.POINTER(DWORD))[0]=self.effect
         try:
+            print('Calling Shell DragEnter',flush=True)
             checked(target.enter(data,keys,Point(),effect),'Shell DragEnter')
+            print('Calling Shell Drop',flush=True)
             checked(target.drop(data,keys,Point(),effect),'Shell Drop')
+            print('Shell Drop returned',flush=True)
             return DROP
         finally:target.close()
 
@@ -32,12 +37,14 @@ with tempfile.TemporaryDirectory() as temporary:
         p=root/name;p.parent.mkdir();p.write_bytes((name*20).encode());paths.append(str(p))
     before={p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths}
     copied=root/'Copied';copied.mkdir();api=FolderDrag(copied,1)
+    print('Starting real Shell copy',flush=True)
     result=api.drag(paths,threading.Event())
     assert {Path(p).resolve() for p in api.paths}=={Path(p).resolve() for p in paths} and not result['error'],result
     for p in paths:
         assert Path(p).is_file()
         assert hashlib.sha256((copied/Path(p).name).read_bytes()).hexdigest()==before[p]
     moved=root/'Moved';moved.mkdir();api=FolderDrag(moved,2)
+    print('Starting real Shell move',flush=True)
     result=api.drag(paths,threading.Event())
     assert not result['error'],result
     for p in paths:
@@ -46,6 +53,7 @@ with tempfile.TemporaryDirectory() as temporary:
         assert hashlib.sha256(target.read_bytes()).hexdigest()==before[p]
         assert result['locations'][p]==str(target),(result,str(target))
     cancel=threading.Event();cancel.set()
+    print('Starting native OLE cancellation',flush=True)
     result=WindowsFileDrag().drag([str(p) for p in moved.iterdir()],cancel)
     assert result['canceled'] and all(p.is_file() for p in moved.iterdir()),result
 print('Native Shell drag copy, move, Unicode paths, handle following and OLE cancellation passed',flush=True)
