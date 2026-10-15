@@ -188,6 +188,10 @@ class WindowsFileDrag:
         return self.ole.DoDragDrop(data,source,COPY|MOVE,effect)
 
     def drag(self,paths,cancel):
+        # OLE needs input events to enter its tracking loop. A request canceled
+        # before that loop starts must return without waiting for mouse input.
+        if cancel.is_set():
+            return {'canceled':True,'effect':0,'locations':{},'error':''}
         initialized=False;attached=False;handles={};data=C.c_void_p()
         worker=self.kernel.GetCurrentThreadId()
         try:

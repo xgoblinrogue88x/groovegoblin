@@ -18,9 +18,11 @@ from groove_manual import read_track
 from groove_windows_drag import WindowsFileDrag
 
 os.environ['GROOVE_GOBLIN_EDITION']=sys.argv[1].upper()
+action=sys.argv[2] if len(sys.argv)>2 else 'move'
 fixture=GrooveTests();fixture.setUp()
 api=WindowsFileDrag();user=api.user
 user.SetCursorPos.argtypes=[C.c_int,C.c_int];user.SetCursorPos.restype=W.BOOL
+user.keybd_event.argtypes=[W.BYTE,W.BYTE,W.DWORD,C.c_size_t]
 user.mouse_event.argtypes=[W.DWORD,W.DWORD,W.DWORD,W.DWORD,C.c_size_t]
 user.SetForegroundWindow.argtypes=[W.HWND];user.SetForegroundWindow.restype=W.BOOL
 app=None;receiver=None
@@ -43,34 +45,53 @@ try:
     start=(editor.tree.winfo_rootx()+x+18,editor.tree.winfo_rooty()+y+height//2)
     errors=[];app.report_callback_exception=lambda kind,value,trace:errors.append(str(value))
     def press():
+        if action=='copy':user.keybd_event(0x11,0,0,0)
         user.SetForegroundWindow(app.winfo_id());user.SetCursorPos(*start);user.mouse_event(2,0,0,0,0)
     def move_start():user.SetCursorPos(start[0]+22,start[1]+3)
     app.after(300,press);app.after(500,move_start)
     app.after(1500,lambda:user.SetCursorPos(target['x'],target['y']))
     app.after(2500,lambda:user.mouse_event(4,0,0,0,0))
-    complete=[False]
+    if action=='cancel':
+        app.after(1800,lambda:user.keybd_event(0x1b,0,0,0))
+        app.after(2000,lambda:user.keybd_event(0x1b,0,2,0))
+    if action=='copy':app.after(2800,lambda:user.keybd_event(0x11,0,2,0))
+    complete=[False];started=[False]
     def check():
-        if report.is_file() and not editor.file_drag.active and not app.worker_busy:
+        if editor.file_drag.active:started[0]=True
+        ready=report.is_file() if action!='cancel' else started[0] and 'canceled' in app.status.get().lower()
+        if ready and not editor.file_drag.active and not app.worker_busy:
             complete[0]=True;app.quit()
         else:app.after(100,check)
     app.after(100,check);app.after(20000,app.quit);app.mainloop()
     if not complete[0]:
         editor.file_drag.close();raise RuntimeError('Native GUI drag timed out: '+app.status.get())
     assert not errors,errors
-    result=json.loads(report.read_text());assert not result.get('error'),result
-    assert {Path(p).resolve() for p in result['paths']}==set(source),result
-    # Shell can return NONE after an optimized move. Verify the actual files
-    # and followed editor paths below, rather than requiring a reported effect.
-    assert result['effect'] in (0,2),result
-    for p in source:
-        new=destination/p.name
-        assert new.is_file() and not p.exists(),(str(p),app.status.get())
-        assert hashlib.sha256(new.read_bytes()).hexdigest()==before[str(p)]
-        assert str(new) in editor.records and str(p) not in editor.records,app.status.get()
+    if action=='cancel':
+        assert not report.exists() and not list(destination.iterdir())
+        for p in source:
+            assert p.is_file() and str(p) in editor.records
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==before[str(p)]
+    else:
+        result=json.loads(report.read_text());assert not result.get('error'),result
+        assert {Path(p).resolve() for p in result['paths']}==set(source),result
+        # Shell can return NONE after an optimized move. Verify actual files
+        # and followed editor paths rather than requiring a reported effect.
+        assert result['effect'] in ((0,2) if action=='move' else (1,)),result
+        for p in source:
+            new=destination/p.name
+            assert new.is_file(),(str(p),app.status.get())
+            assert hashlib.sha256(new.read_bytes()).hexdigest()==before[str(p)]
+            if action=='move':
+                assert not p.exists(),(str(p),app.status.get())
+                assert str(new) in editor.records and str(p) not in editor.records,app.status.get()
+            else:
+                assert p.is_file() and str(p) in editor.records
+                assert hashlib.sha256(p.read_bytes()).hexdigest()==before[str(p)]
     assert len(editor.selected())==2,editor.selected()
-    print('Native GUI multi-file drag and Shell move passed in '+sys.argv[1],flush=True)
+    print('Native GUI multi-file drag and Shell '+action+' passed in '+sys.argv[1],flush=True)
 finally:
     user.mouse_event(4,0,0,0,0)
+    user.keybd_event(0x11,0,2,0);user.keybd_event(0x1b,0,2,0)
     if app is not None:app.destroy()
     if receiver is not None:
         if receiver.poll() is None:receiver.terminate()
