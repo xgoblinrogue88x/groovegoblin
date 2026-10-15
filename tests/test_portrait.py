@@ -7,7 +7,10 @@ import test_lite
 
 @unittest.skipUnless(os.name=='nt' or os.environ.get('DISPLAY'),'Tk display required')
 class PortraitTests(unittest.TestCase):
-    setUp=test_lite.LiteTests.setUp
+    edition_name='MOBILE'
+    def setUp(self):
+        test_lite.LiteTests.setUp(self)
+        self.app._phone.mode.set('Auto')
     tearDown=test_lite.LiteTests.tearDown
     load=test_lite.LiteTests.load
     wait=test_lite.LiteTests.wait

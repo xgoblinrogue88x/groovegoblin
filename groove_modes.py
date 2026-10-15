@@ -10,12 +10,13 @@ import tkinter as tk
 from tkinter import messagebox
 from groove_runtime import resource_dir
 from groove_widgets import BG, Button
+from groove_version import MODE_LABELS, MODE_EXECUTABLES
 
 
 def launch_command(target):
-    if target not in ('desktop','mobile'):raise ValueError('Unknown application mode')
+    if target not in MODE_LABELS:raise ValueError('Unknown application mode')
     if getattr(sys,'frozen',False):
-        filename='GrooveGoblin.exe' if target=='desktop' else 'GrooveGoblinMobile.exe'
+        filename=MODE_EXECUTABLES[target]
         executable=Path(sys.executable).resolve().parent/filename
         if not executable.is_file():raise FileNotFoundError(f'{filename} is missing. Reinstall or extract the complete package.')
         return [str(executable)]
@@ -31,8 +32,8 @@ class ModeSwitcher:
         if self.active:return
         if a.worker_busy:
             messagebox.showinfo('Finish current work','Wait for the current scan, search or file operation to finish before switching modes.',parent=a);return
-        editor=a.track_editor
-        if editor.pending or editor.inline or any(v.get() for v in editor.enabled.values()):
+        editor=getattr(a,'track_editor',None)
+        if editor is not None and (editor.pending or editor.inline or any(v.get() for v in editor.enabled.values())):
             if not messagebox.askyesno('Unsaved track edits','Switching modes closes this window. Discard unsaved Track Editor edits and continue?',parent=a):return
         try:
             command=launch_command(target)
@@ -49,12 +50,12 @@ class ModeSwitcher:
         # between the unsaved-edit check and the target's readiness message.
         self.overlay=tk.Frame(a,bg=BG,takefocus=True)
         self.overlay.place(x=0,y=0,relwidth=1,relheight=1)
-        tk.Label(self.overlay,text='Opening '+('Mobile Remote Mode' if target=='mobile' else 'Desktop Mode')+'…',
-                 bg=BG,fg='#79c5ff',font=(a.ui_font,13),wraplength=max(260,a.winfo_width()-40)).place(relx=.5,rely=.5,anchor='center')
+        tk.Label(self.overlay,text='Opening '+MODE_LABELS[target]+'…',
+                 bg=BG,fg='#ffffff',font=(a.ui_font,13),wraplength=max(260,a.winfo_width()-40)).place(relx=.5,rely=.5,anchor='center')
         self.overlay.lift();self.overlay.bind('<Key>',lambda event:'break');self.overlay.focus_set()
         for button in self.buttons:
             if button.winfo_exists():button.state(['disabled'])
-        a.status.set('Opening '+('Mobile Remote Mode' if target=='mobile' else 'Desktop Mode')+'…')
+        a.status.set('Opening '+MODE_LABELS[target]+'…')
         a.after(100,self.poll)
 
     def poll(self):
@@ -92,19 +93,16 @@ class ModeSwitcher:
         messagebox.showerror('Could not switch modes',str(error),parent=self.app)
 
 
-def switch_button(app,parent,target):
-    text='Switch to Mobile Remote Mode' if target=='mobile' else 'Switch to Desktop Mode'
+def switch_button(app,parent,target,verb='Switch to'):
+    text=verb+' '+MODE_LABELS[target]
     button=Button(parent,text,lambda:app._mode_switch.start(target),width=300,height=48,
-                  blue=True,primary=True,font=(app.ui_font,11,'bold'))
+                  wrap_label=True,primary=True,font=(app.ui_font,11,'bold'))
     app._mode_switch.buttons.append(button)
     return button
 
 
 def install_mode_switch(app):
     app._mode_switch=ModeSwitcher(app)
-    if app.is_lite:return
-    app.desktop_mode_button=switch_button(app,app._responsive.w['nav'],'mobile')
-    app.desktop_mode_button.pack(fill='x',pady=(6,1))
 
 
 def register_ready(app):
@@ -115,7 +113,7 @@ def register_ready(app):
     def notify():
         if not app.winfo_viewable():app.after(100,notify);return
         temporary=path.with_suffix('.pending')
-        temporary.write_text(json.dumps({'pid':os.getpid(),'mode':'mobile' if app.is_lite else 'desktop'}),encoding='utf-8')
+        temporary.write_text(json.dumps({'pid':os.getpid(),'mode':app.app_mode}),encoding='utf-8')
         temporary.replace(path)
         app._handoff_ready=True
     app.after(250,notify)

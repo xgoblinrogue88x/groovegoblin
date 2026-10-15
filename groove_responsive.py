@@ -116,13 +116,9 @@ class ResponsiveLayout:
             button.font=font
             button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 39));button.draw()
             button.pack_configure(pady=0 if compact else 1)
-        mode_button=getattr(a,'desktop_mode_button',None)
-        if mode_button is not None:
-            mode_button.font=(a.ui_font,9 if compact else (10 if medium else 11),'bold')
-            mode_button.configure(width=sidebar_width-w['sidebar'].padding*2);mode_button.draw()
         a.update_idletasks()
-        # Reserve the measured navigation (including the wrapped switch button)
-        # before sizing the logo, so the player and version stay inside the rail.
+        # Reserve the measured navigation before sizing the logo, so the player
+        # and version stay inside the rail.
         logo_budget=max(1,height-w['sidebar'].padding*2-w['nav'].winfo_reqheight()-player_height-6-self.version.winfo_reqheight()-(4 if compact else 12)-8)
         logo_width=max(1,min(40 if compact else (174 if medium else 238),int(logo_budget*self.logo_source.width/self.logo_source.height)))
         if logo_width!=self.logo_size:

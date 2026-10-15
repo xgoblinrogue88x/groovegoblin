@@ -11,7 +11,7 @@ from unittest.mock import patch
 @unittest.skipUnless(os.name=='nt' or os.environ.get('DISPLAY'),'Tk display required')
 class LiteTests(unittest.TestCase):
     def setUp(self):
-        edition=patch.dict(os.environ,{'GROOVE_GOBLIN_EDITION':'LITE'})
+        edition=patch.dict(os.environ,{'GROOVE_GOBLIN_EDITION':getattr(self,'edition_name','LITE')})
         edition.start();self.addCleanup(edition.stop)
         path=Path(__file__).resolve().parents[1]/'GrooveGoblin.pyw'
         loader=importlib.machinery.SourceFileLoader('groove_lite_test_app',str(path))
@@ -57,8 +57,8 @@ class LiteTests(unittest.TestCase):
             self.assertLess(w['details'].winfo_rooty()-a.lite_toolbar.winfo_rooty(),55)
         for page in (a.track_editor,a.lookup_page,a.tab_history,a.tab_albums):
             a.tabs.select(page);a.update();self.assertFalse(w['player'].winfo_ismapped())
-        self.assertIn('Mobile Remote Mode',a.title())
-        self.assertNotIn('LITE',a.title())
+        self.assertIn('LITE Mode',a.title())
+        self.assertFalse(hasattr(a,'_phone'))
 
     def load(self):
         from groove_core import scan_folders

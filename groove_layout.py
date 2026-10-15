@@ -423,41 +423,8 @@ def install_layout(cls):
         else:self.results_tree.body.focus_set();self.status.set('Select an online result, then click its Select button.')
 
     def show_settings(self):
-        self.tabs.select(self.tab_albums)
-        window=tk.Toplevel(self);window.title('Groove Goblin - Settings');window.configure(bg=BG);window.geometry('460x260')
-        self.settings_window=window
-        target='desktop' if self.is_lite else 'mobile'
-        from groove_modes import switch_button
-        window.geometry('460x340')
-        if hasattr(self,'_phone'):
-            layout=tk.Frame(window,bg=BG);layout.pack(fill='x',padx=20,pady=(10,0))
-            tk.Label(layout,text='Layout',bg=BG,fg=FG,font=(self.ui_font,11)).pack(side='left',padx=(0,10))
-            choice=ttk.Combobox(layout,textvariable=self._phone.mode,values=['Auto','Phone'],state='readonly',width=10,font=(self.ui_font,11))
-            choice.pack(side='left',fill='x',expand=True)
-            def change_layout(event):
-                if self._phone.mode.get()=='Phone':self._phone.open_phone()
-                else:self._responsive.schedule()
-            choice.bind('<<ComboboxSelected>>',change_layout)
-            window.geometry('460x420')
-        Check(window,'Search MusicBrainz after scan',self.auto_lookup,width=390,font=(self.ui_font,10)).pack(anchor='w',padx=20,pady=(20,5))
-        tk.Label(window,text='Online searches send artist / album lookup text,\nnot audio files. Results can load public cover previews.\nTurn online scanning off to work offline.\n\nUndo journals save changed fields and paths.\nKeep separate music backups.',bg=BG,fg=MUTED,font=(self.ui_font,10),justify='left').pack(anchor='w',padx=20,pady=10)
-        actions=tk.Frame(window,bg=BG);actions.pack(fill='x',padx=20,pady=(0,10))
-        self.settings_search_button=Button(actions,'Search All Albums Online',self.lookup_all,width=260,height=48,
-            wrap_label=True,font=(self.ui_font,11,'bold'))
-        self.settings_search_button.pack(fill='x',pady=(0,6))
-        self.settings_switch_button=switch_button(self,actions,target)
-        self.settings_switch_button.pack(fill='x')
-        action_buttons=(self.settings_search_button,self.settings_switch_button)
-        def fit_actions(event):
-            if event.width<40:return
-            buttons=action_buttons
-            height=max(button.label_height(event.width) for button in buttons)
-            for button in buttons:
-                button.min_label_height=height
-                if int(button.cget('height'))!=height:button.configure(height=height)
-                else:button.draw()
-        actions.bind('<Configure>',fit_actions)
-        if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(window,480)
+        from groove_settings import show_settings
+        return show_settings(self)
 
     def add_files(self):
         if self.worker_busy:return

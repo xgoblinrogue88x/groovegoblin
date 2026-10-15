@@ -1,6 +1,7 @@
-# Groove Goblin 1.5.1 Windows packaging
+# Groove Goblin 1.6 Windows packaging
 
-The Windows workflow builds **GrooveGoblin.exe**, **GrooveGoblinMobile.exe**, a portable ZIP and a per-user
+The Windows workflow builds **Groove Goblin Desktop Mode.exe**, **Groove Goblin LITE Mode.exe**,
+**Groove Goblin Mobile Mode.exe**, **Launch Groove Goblin Suite.exe**, a portable ZIP and a per-user
 Inno Setup installer. CPython 3.12.10, Tcl/Tk, Pillow, Mutagen, pygame-ce/SDL and
 FFmpeg travel with the application. It never runs pip on a user's PC or chooses
 their system Python. PyInstaller's directory layout permits replacement of

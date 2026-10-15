@@ -8,6 +8,7 @@ import sys
 import traceback
 
 from groove_runtime import configure_ffmpeg, data_dir, resource_dir, verify_payload
+from groove_version import initial_mode, MODE_LABELS
 
 
 def check_runtime():
@@ -29,36 +30,57 @@ def check_runtime():
 def main():
     try:
         if getattr(sys,'frozen',False):
-            mobile=Path(sys.executable).stem=='GrooveGoblinMobile' or '--mobile' in sys.argv
-            os.environ['GROOVE_GOBLIN_EDITION']='MOBILE' if mobile else 'FULL'
+            os.environ['GROOVE_GOBLIN_EDITION']=initial_mode().upper()
         check_runtime()
-        module = runpy.run_path(str(resource_dir() / 'GrooveGoblin.pyw'), run_name='groove_frozen_app')
-        app = module['GrooveGoblin']()
+        if initial_mode()=='suite':
+            from groove_suite import SuiteLauncher
+            app=SuiteLauncher()
+        else:
+            module = runpy.run_path(str(resource_dir() / 'GrooveGoblin.pyw'), run_name='groove_frozen_app')
+            app = module['GrooveGoblin']()
         if '--self-test' in sys.argv:
             # Exercises real Tcl/Tk, Pillow image widgets, every page and the player.
             app.update()
+            if app.app_mode=='suite':
+                for size in ('320x460','440x650','600x800'):
+                    app.geometry(size);app.update()
+                    for mode,button in app.launch_buttons.items():
+                        label=button.find_withtag('wrapped-label')[0]
+                        x1,y1,x2,y2=button.bbox(label)
+                        if button.text!='Launch '+MODE_LABELS[mode] or not button.primary or button.blue:
+                            raise RuntimeError('Suite launch buttons do not match their modes/style.')
+                        if x1<0 or y1<0 or x2>button.winfo_width() or y2>button.winfo_height():
+                            raise RuntimeError('Suite launch button label is clipped.')
+                    if app.logo.width()<100:raise RuntimeError('Suite logo did not load.')
+                app.destroy()
+                Path(sys.argv[sys.argv.index('--self-test')+1]).write_text(
+                    json.dumps({'ok':True,'mode':'suite','data':str(data_dir())}),encoding='utf-8')
+                return 0
             if '--handoff-ready' in sys.argv:
                 import time
                 deadline=time.monotonic()+5
                 while not app._handoff_ready and time.monotonic()<deadline:app.update();time.sleep(.02)
                 if not app._handoff_ready:raise RuntimeError('Mode handoff did not acknowledge its ready window.')
-            if app.is_lite and app._phone.mode.get()!='Phone':
+            mobile=app.app_mode=='mobile'
+            if mobile and app._phone.mode.get()!='Phone':
                 raise RuntimeError('Mobile EXE did not select its portrait workspace.')
-            if app.is_lite:app._phone.mode.set('Auto')
+            if mobile:app._phone.mode.set('Auto')
+            if app.app_mode=='lite' and hasattr(app,'_phone'):
+                raise RuntimeError('LITE EXE opened the Mobile layout.')
             app.maxsize(4096,4096)
-            dimensions_to_test=('800x600','412x915','1440x3120','1024x768','1920x1080') if app.is_lite else ('800x600','1024x768','1920x1080')
+            dimensions_to_test=('800x600','412x915','1440x3120','1024x768','1920x1080') if mobile else ('800x600','1024x768','1920x1080')
             for dimensions in dimensions_to_test:
                 app.geometry(dimensions)
                 app.update()
                 app._responsive.apply();app.update()
-            if app.is_lite:
+            if mobile:
                 app.geometry('412x915');app.update();app._responsive.apply();app.update()
                 for name in ('Albums','Match','Results','Options'):
                     app._phone.select(name);app.update()
             for page in (app.dashboard, app.track_editor, app.lookup_page, app.tab_history):
                 app.tabs.select(page)
                 app.update()
-            if app.is_lite:app._phone.select_tracks('Tags & Artwork');app.update()
+            if mobile:app._phone.select_tracks('Tags & Artwork');app.update()
             # Exercise the frozen decoder and SDL too, using disposable audio.
             import tempfile
             import time
@@ -84,7 +106,7 @@ def main():
             app.destroy()
             output = Path(sys.argv[sys.argv.index('--self-test') + 1])
             output.write_text(json.dumps({'ok': True, 'python': sys.version,
-                                          'data': str(data_dir()),'mode':'mobile' if app.is_lite else 'desktop'}), encoding='utf-8')
+                                          'data': str(data_dir()),'mode':app.app_mode}), encoding='utf-8')
         else:
             app.mainloop()
         return 0

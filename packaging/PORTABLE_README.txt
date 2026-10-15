@@ -1,31 +1,35 @@
-Groove Goblin 1.5.1 — Windows 10/11 x64
+Groove Goblin Suite 1.6 — Windows 10/11 x64
 
-PORTABLE: Extract the entire ZIP into a writable folder. Open GrooveGoblin.exe
-(the goblin icon). Keep _internal, runtime-manifest.json and portable.flag
-alongside it. No Python, pip, FFmpeg installation, BAT file or admin rights
-are needed. Keep Data when updating: it contains your undo records/backups.
+Extract the entire portable ZIP into a writable folder, then open:
+  Launch Groove Goblin Suite.exe
+The logo window offers Launch Desktop Mode, Launch LITE Mode and Launch Mobile Mode.
 
-INSTALLER: Run the Setup EXE. It installs for your Windows account and creates
-a Start menu shortcut to GrooveGoblin.exe. Installed app data/undo records are
-under %LOCALAPPDATA%\GrooveGoblin, preserved when uninstalling.
+Or launch a mode directly:
+  Groove Goblin Desktop Mode.exe — full layout, previews and Now Playing.
+  Groove Goblin LITE Mode.exe — compact 1.3.7 layout with current stability fixes.
+  Groove Goblin Mobile Mode.exe — portrait workspaces for Android remote use.
 
-The bundled runtime is checked at startup. Missing or damaged components
-produce a visible error and startup-error.log; repair by rerunning Setup or
-extracting a fresh complete ZIP. Do not copy only the EXE. Existing system
-Python installations are untouched. Local editing works offline; online album
-lookup and cover searches need internet. Device/audio drivers remain Windows'
-responsibility. Test playback before applying changes to your library.
+In every mode, Settings contains purple switches beneath Search All Albums Online.
+Switching waits for the new window before closing the old one. Finish active work
+first; unsaved Track Editor edits require confirmation before discarding. Lists
+start fresh when switching; music is unchanged. All modes share undo/data.
 
-Application license: GPLv3 (LICENSE). Dependency notices: ThirdParty.
-Matching application/dependency source archives: Sources. FFmpeg is compiled
-without GPL/nonfree options or external codec libraries; its configuration and
-LGPL license accompany its matching source. Build instructions are in the
-application source archive's packaging/README.md.
+Keep _internal, runtime-manifest.json and portable.flag beside the four EXEs.
+Keep Data when updating: it contains your undo records and backups. Do not copy
+only an EXE. Python, Tcl/Tk, tagging/artwork/playback libraries and FFmpeg are
+bundled. No BAT file, system Python installation or administrator rights needed.
 
-For Android remote desktop / Samsung S25 Ultra portrait use, open
-GrooveGoblinMobile.exe. It uses the same _internal and Data folders.
-GrooveGoblin.exe opens the full Desktop Mode.
-The desktop blue button switches to Mobile Remote Mode; the blue button in
-Mobile Remote Settings switches back. Switching starts a fresh list, leaves
-music untouched and keeps the same undo location. Finish active work first.
-Existing mobile undo data is reused when no desktop data folder exists.
+INSTALLER: Run Setup. Start menu shortcuts open the suite or each mode directly.
+Installed undo/data records live under %LOCALAPPDATA%\GrooveGoblin, preserved
+when uninstalling. Earlier mobile undo records are reused if no desktop data
+folder exists. Existing system Python installations are untouched.
+
+Missing/damaged runtime components produce a visible error and startup-error.log;
+repair by rerunning Setup or extracting a complete fresh ZIP. Local editing works
+offline; MusicBrainz and cover previews need internet. Remote phone use runs the
+Windows application through Windows App, not an Android APK.
+
+Application license: GPLv3 (LICENSE). ThirdParty holds dependency notices and
+Sources holds matching application/dependency sources. The bundled LGPL FFmpeg
+build excludes GPL/nonfree options and external codecs. Reproducible Windows
+build instructions are in the application source archive's packaging/README.md.

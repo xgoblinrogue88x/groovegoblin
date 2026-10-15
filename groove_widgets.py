@@ -177,6 +177,7 @@ class Button(tk.Canvas):
             rounded(self,1,1,w-1,h-1,5,fill='',outline=outline,width=1)
         fg='#7d8998' if self.disabled else (BG if green_selected else FG)
         if self.blue or self.wrap_label:
+            if self.primary and not self.disabled:fg='#ffffff'
             available=max(1,w-24)
             desired=max(self.min_label_height,self.label_height(w))
             if int(self.cget('height'))!=desired:tk.Canvas.configure(self,height=desired)

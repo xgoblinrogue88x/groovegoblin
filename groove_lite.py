@@ -110,8 +110,9 @@ def install_lite(app):
         image=app._responsive.logo_source.copy();image.thumbnail((size,320),Image.Resampling.LANCZOS)
         app.logo=ImageTk.PhotoImage(image,master=app);app._logo_label.configure(image=app.logo)
         app._responsive.logo_size=None
-        app._responsive.version.configure(text=f'Groove Goblin v{__version__}')
+        app._responsive.version.configure(text=f'Groove Goblin {"LITE " if app.app_mode=="lite" else ""}v{__version__}')
     app._lite_apply=apply_layout
     apply_layout()
-    from groove_portrait import PortraitLayout
-    app._phone=PortraitLayout(app)
+    if app.app_mode=='mobile':
+        from groove_portrait import PortraitLayout
+        app._phone=PortraitLayout(app)

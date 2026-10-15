@@ -1,4 +1,4 @@
-# Groove Goblin 1.5.1
+# Groove Goblin Suite 1.6
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -6,32 +6,39 @@ local cover-art replacement, playback, previews and Undo. Supports multiple audi
 
 ![Running Scan & Rename with generated test music](docs/interface-linux.png)
 
-## Desktop and Mobile Remote Mode
+## Desktop, LITE and Mobile Mode
 
-**GrooveGoblin.exe** opens the full desktop layout from version 1.3.3, with
-Preview Changes, Now Playing, Rename Options and Save Report. Later stability,
-scrolling, playback, file-format and safety fixes remain included.
+Open **Launch Groove Goblin Suite.exe** for the logo and three purple launch
+buttons, or open a mode directly:
 
-The blue **Switch to Mobile Remote Mode** button sits directly below About in
-the desktop sidebar. In Mobile Remote Settings, **Switch to Desktop Mode** sits
-below Search All Albums Online with the same width and height. Both
-buttons show their complete labels, wrapping when needed. The current window
-closes only after the other window confirms successful startup. Switching is
-blocked during scans, searches and file operations; unsaved Track Editor edits
-require confirmation before discarding. If startup fails, the current window stays open.
+- **Groove Goblin Desktop Mode.exe:** the full 1.3.3 layout with Preview Changes,
+  Now Playing, Rename Options and Save Report.
+- **Groove Goblin LITE Mode.exe:** the compact 1.3.7 layout with its single action
+  row, expanded album/search lists and independent rename checkboxes/presets.
+- **Groove Goblin Mobile Mode.exe:** portrait touch workspaces for remote phone use.
 
-Switching starts a fresh read-only album/track list; it does not change music.
-Both modes share their undo records. Desktop defaults file renaming OFF; Mobile
-Remote defaults file/folder renaming ON with independent checkboxes.
+All three modes use the current scanning, scrolling, playback, file-format,
+collision/stale-file protection and undo code. In **Settings**, below **Search
+All Albums Online**, two purple buttons with white text switch to the other
+modes. There are no mode-switch buttons on the main screens. Complete labels
+wrap when needed; short Settings windows scroll to keep all controls reachable.
+The term Mobile Mode replaces Mobile Remote Mode.
+
+Switching closes the current window only after the other window confirms
+successful startup. Active scans, searches and file operations block switching;
+unsaved Track Editor edits require confirmation before discarding. Failed startup
+keeps the current window open. Switching starts a fresh album/track list and does
+not change music. All modes share undo/data. Desktop defaults file renaming OFF;
+LITE and Mobile default file/folder renaming ON with independent checkboxes.
 
 ## Run on Windows
 
 Get the installer or portable ZIP from [Windows downloads](https://github.com/xgoblinrogue88x/groovegoblin/releases).
 Only builds that pass the Windows EXE and installer checks are published there.
 
-- **Installer:** run the Setup EXE, then open Groove Goblin from the Start menu.
+- **Installer:** run the Setup EXE, then open Launch Groove Goblin Suite from the Start menu.
 - **Portable:** extract the complete portable ZIP into a writable folder, then
-  open **GrooveGoblin.exe** with the Groove Goblin icon. Keep its companion files
+  open **Launch Groove Goblin Suite.exe** with the Groove Goblin icon. Keep its companion files
   and `Data` folder together.
 
 Python, Tcl/Tk, tagging and audio libraries, and FFmpeg are bundled. No separate
@@ -249,11 +256,11 @@ confirmation; renaming and undo remain enabled.
 
 ## Portrait remote use on Android
 
-Open **GrooveGoblinMobile.exe** (or **Groove Goblin Mobile Remote Mode** from the installed
+Open **Groove Goblin Mobile Mode.exe** (or **Groove Goblin Mobile Mode** from the installed
 Start menu) for a portrait window sized for remote use. This is the Windows
 application viewed through Windows App on the phone, not an Android APK.
-The mobile EXE starts in the touch layout. Use the blue Settings button to switch
-back to the full desktop program. Mobile layout sizing also offers Auto and Phone.
+The mobile EXE starts in the touch layout. Use the purple switches in Settings to open
+Desktop Mode or LITE Mode. Mobile layout sizing also offers Auto and Phone.
 
 The navigation menu replaces the sidebar. Scan actions wrap into two rows.
 Albums use touch-sized cards with a Select Multiple option; Match, Results and

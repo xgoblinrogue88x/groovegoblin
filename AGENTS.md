@@ -54,10 +54,13 @@ Primary user requirements:
 - Logo/art assets in `assets/` are intended to remain in the app; these are raster graphics, **not a distributable font file**.
 - Review `LICENSE_NOTES.txt` and dependency licensing before any public release; don't invent licensing claims.
 
-## Groove Goblin 1.5 modes
+## Groove Goblin Suite 1.6 modes
 
-The full Desktop layout is the default. The user explicitly requested closing
-one mode and launching the other. Keep the readiness handshake so failed
-startup preserves the current window; block mode changes during active work and
-confirm before discarding unsaved edits. Both modes share undo/data. Product UI
-uses Groove Goblin branding; internal is_lite names remain compatibility helpers.
+The suite launcher offers Desktop, LITE (the 1.3.7 compact layout), and Mobile
+(the portrait layout formerly called Mobile Remote Mode). Each has a separately
+named EXE. The full Desktop layout remains the source default. All mode switches
+belong only in Settings under Search All Albums Online, purple with white text.
+Keep the readiness handshake so failed startup preserves the current window;
+block mode changes during active work and confirm before discarding unsaved
+edits. All modes share undo/data and current stability fixes. Internal is_lite
+means either compact mode; only Mobile installs the portrait controller.

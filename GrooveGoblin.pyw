@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from groove_drop import FolderDropMixin
 from groove_widgets import Scrollbar, bind_mousewheel
-from groove_version import __version__, is_lite
+from groove_version import __version__, is_lite, initial_mode, MODE_LABELS
 from groove_naming import DEFAULT_FILE_FORMAT, DEFAULT_FOLDER_FORMAT
 from groove_core import (scan_folders, plan_actions, apply_actions, undo_journal,
                          newest_journal, export_preview, backup_dir, year4)
@@ -22,8 +22,9 @@ FG='#e9f2f4'; MUTED='#9eb0bd'; GREEN='#71f28b'; PURPLE='#cc75ff'; ORANGE='#ffc77
 class GrooveGoblin(FolderDropMixin, tk.Tk):
     def __init__(self):
         super().__init__()
+        self.app_mode=initial_mode()
         self.is_lite=is_lite()
-        self.title(f'Groove Goblin {__version__} - '+('Mobile Remote Mode' if self.is_lite else 'Music Tagger & Organizer'))
+        self.title(f'Groove Goblin {__version__} - '+MODE_LABELS[self.app_mode])
         self.geometry('1220x790');self.minsize(740,520)
         self.configure(bg=BG)
         try:self.iconphoto(True,tk.PhotoImage(file=str(BASE/'assets/groove_goblin_app_icon.png')))

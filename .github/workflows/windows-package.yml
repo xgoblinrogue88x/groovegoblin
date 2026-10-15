@@ -94,15 +94,15 @@ jobs:
         shell: pwsh
         run: |
           $target = Join-Path $env:RUNNER_TEMP 'Groove Goblin installed'
-          $setup = Start-Process dist/GrooveGoblin-1.5.1-Windows-x64-Setup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$target`"" -Wait -PassThru
+          $setup = Start-Process dist/GrooveGoblin-1.6-Windows-x64-Setup.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$target`"" -Wait -PassThru
           if ($setup.ExitCode -ne 0) { throw 'Silent installation or runtime preflight failed' }
           if (Test-Path "$target\portable.flag") { throw 'Installed app accidentally entered portable mode' }
-          $report = Join-Path $env:RUNNER_TEMP 'installed-smoke.json'
-          $app = Start-Process "$target\GrooveGoblin.exe" -ArgumentList "--self-test `"$report`"" -Wait -PassThru
-          if ($app.ExitCode -ne 0 -or !(Test-Path $report)) { throw 'Installed EXE did not launch' }
-          $phoneReport = Join-Path $env:RUNNER_TEMP 'installed-phone-smoke.json'
-          $phone = Start-Process "$target\GrooveGoblinMobile.exe" -ArgumentList "--self-test `"$phoneReport`"" -Wait -PassThru
-          if ($phone.ExitCode -ne 0 -or !(Test-Path $phoneReport)) { throw 'Installed Phone EXE did not launch' }
+          $executables = @('Groove Goblin Desktop Mode.exe', 'Groove Goblin LITE Mode.exe', 'Groove Goblin Mobile Mode.exe', 'Launch Groove Goblin Suite.exe')
+          foreach ($executable in $executables) {
+            $report = Join-Path $env:RUNNER_TEMP ($executable + '-smoke.json')
+            $app = Start-Process (Join-Path $target $executable) -ArgumentList "--self-test `"$report`"" -Wait -PassThru
+            if ($app.ExitCode -ne 0 -or !(Test-Path $report)) { throw "Installed $executable did not launch" }
+          }
           $uninstall = Start-Process "$target\unins000.exe" -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($uninstall.ExitCode -ne 0) { throw 'Uninstall failed' }
       - name: Artifact checksums
@@ -114,13 +114,13 @@ jobs:
           } | Set-Content dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: GrooveGoblin-1.5.1-Windows-x64
+          name: GrooveGoblin-1.6-Windows-x64
           if-no-files-found: error
           path: |
             dist/*-Setup.exe
             dist/*-Portable.zip
             dist/SHA256SUMS.txt
-            build/frozen-smoke.json
+            build/frozen-*-smoke.json
       - name: Retain diagnostic logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -129,13 +129,13 @@ jobs:
           if-no-files-found: ignore
           path: |
             build/test-results/**
-            build/frozen-smoke.json
+            build/frozen-*-smoke.json
             build/ffmpeg/build-configuration.txt
       - name: Publish tested Windows downloads
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = 'v1.5.1-windows-' + $env:GITHUB_SHA.Substring(0, 7)
-          gh release create $tag dist/GrooveGoblin-1.5.1-Windows-x64-Setup.exe dist/GrooveGoblin-1.5.1-Windows-x64-Portable.zip dist/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Groove Goblin 1.5.1 for Windows' --notes-file packaging/RELEASE_NOTES.md
+          $tag = 'v1.6-windows-' + $env:GITHUB_SHA.Substring(0, 7)
+          gh release create $tag dist/GrooveGoblin-1.6-Windows-x64-Setup.exe dist/GrooveGoblin-1.6-Windows-x64-Portable.zip dist/SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'Groove Goblin 1.6 for Windows' --notes-file packaging/RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw 'Windows artifacts passed tests, but release upload failed' }

@@ -1,39 +1,35 @@
-Groove Goblin 1.5.1 for Windows 10/11 x64
+Groove Goblin Suite 1.6 for Windows 10/11 x64
 
-- GrooveGoblin.exe: the full desktop layout from 1.3.3 with current stability fixes.
-- GrooveGoblinMobile.exe: launch Mobile Remote Mode directly for Android remote use.
-- Full desktop includes Preview Changes, Now Playing, rename options and Save Report.
-- Blue Switch to Mobile Remote Mode button directly below About in the desktop sidebar.
-- Matching blue Switch to Desktop Mode button below Search All Albums Online in Mobile Remote Settings, with equal width and height.
-- Button labels wrap to stay fully visible at narrow widths and native font sizes.
+Four EXEs share one complete runtime:
+- Launch Groove Goblin Suite.exe: full logo above three stacked purple launch buttons.
+- Groove Goblin Desktop Mode.exe: full desktop layout with previews and Now Playing.
+- Groove Goblin LITE Mode.exe: restored 1.3.7 compact layout with current fixes.
+- Groove Goblin Mobile Mode.exe: portrait workspaces for Android remote use.
 
-Switching launches the other EXE and closes the old window only after startup is
-acknowledged. Active work blocks switching; unsaved Track Editor edits require
-confirmation. Failed startup keeps the current window open. Switching starts a
-fresh album/track list and never changes music. Both modes share undo/data.
+All mode switches are in Settings, below Search All Albums Online. Buttons are
+purple with white text and show their full labels. Desktop offers Mobile then
+LITE; Mobile offers Desktop then LITE; LITE offers Mobile then Desktop. There
+are no switches on the main screens. Mobile Mode replaces Mobile Remote Mode.
+Settings can scroll in short windows; the launcher and buttons resize.
 
-The LITE product branding is retired. The complete goblin/logo Windows icon,
-portrait workspaces, touch controls, scrolling, decoder, collision/stale-file
-checks and undo improvements remain. Desktop defaults filename renaming off;
-Mobile Remote retains independent rename checkboxes enabled by default.
+All modes use the current scanning, playback, file-format, scrolling,
+collision/stale-file protection, confirmation and undo code. Desktop defaults
+file renaming off; LITE and Mobile retain independent rename checkboxes on by
+default. Scanning/searching remain read-only. No new music-writing behavior.
 
-Installer: run Setup.exe; both modes get Start menu shortcuts. Portable: extract
-the entire ZIP and open either EXE. All Python/Tk, tagging/artwork/playback
-libraries and FFmpeg are bundled. Keep the portable Data folder when updating.
-Installed data is under %LOCALAPPDATA%\GrooveGoblin. An earlier mobile data folder
-is reused when no desktop folder exists, without merging or overwriting records.
-The installer upgrades the original full product; earlier mobile-only installs
-remain separate and their data is preserved.
+Switches and launcher choices close the old window only after the new EXE
+acknowledges startup. Failed startup keeps the current window open. Active work
+blocks switching; discarding unsaved Track Editor edits requires confirmation.
+Switching starts fresh lists without changing music. All modes share undo/data.
 
-Publishing requires Windows regression tests, frozen runtime tests for both
-modes, real cross-process handoff checks in both directions, silent install,
-installed EXE launch and uninstall checks. Download SHA256 checksums are included.
-Physical S25 Ultra touch gestures, audible output and 125%/150% native scaling
-still need hands-on checks; automated playback uses a dummy output.
+Installer and portable ZIP include Python/Tk, tagging/artwork/playback libraries,
+FFmpeg, complete logo icons, GPLv3 license, notices and matching sources. Extract
+the entire portable ZIP and keep its Data folder when updating. Installed data
+remains under %LOCALAPPDATA%\GrooveGoblin (or the preserved legacy mobile folder).
+The installer upgrades the existing full product and refreshes its shortcuts.
 
-Application license: GPLv3. Notices and matching application/dependency sources
-accompany both downloads. Supported-format limits remain documented in About.
-
-The mobile workspace dropdown now uses an accented header, larger arrow, dark
-popup and clear selection highlight. Its seven choices and navigation behavior
-are unchanged. Sidebar sizing reserves room for the moved button and player.
+Publishing requires Windows regression tests, four frozen EXE launch tests,
+six real mode-switch routes and three suite-launch routes, installed EXE tests,
+and uninstall checks. SHA256 download checksums accompany the packages.
+Physical phone touch gestures, audible output and native 125%/150% scaling still
+need hands-on checks; automated playback uses a dummy output.
