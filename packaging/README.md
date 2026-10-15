@@ -1,4 +1,4 @@
-# Groove Goblin 1.5 Windows packaging
+# Groove Goblin 1.5.1 Windows packaging
 
 The Windows workflow builds **GrooveGoblin.exe**, **GrooveGoblinMobile.exe**, a portable ZIP and a per-user
 Inno Setup installer. CPython 3.12.10, Tcl/Tk, Pillow, Mutagen, pygame-ce/SDL and

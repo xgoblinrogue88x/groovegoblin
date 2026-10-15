@@ -1,4 +1,4 @@
-# Groove Goblin 1.5
+# Groove Goblin 1.5.1
 
 Windows desktop music tagger and organizer with a responsive dark Tkinter
 interface, MusicBrainz album lookup, naming presets, manual track editing,
@@ -12,8 +12,9 @@ local cover-art replacement, playback, previews and Undo. Supports multiple audi
 Preview Changes, Now Playing, Rename Options and Save Report. Later stability,
 scrolling, playback, file-format and safety fixes remain included.
 
-The blue **Switch to Mobile Remote Mode** button starts the mobile EXE. In Mobile
-Remote Settings, **Switch to Desktop Mode** starts the full desktop EXE. Both
+The blue **Switch to Mobile Remote Mode** button sits directly below About in
+the desktop sidebar. In Mobile Remote Settings, **Switch to Desktop Mode** sits
+below Search All Albums Online with the same width and height. Both
 buttons show their complete labels, wrapping when needed. The current window
 closes only after the other window confirms successful startup. Switching is
 blocked during scans, searches and file operations; unsaved Track Editor edits

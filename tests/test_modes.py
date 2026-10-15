@@ -9,6 +9,7 @@ import test_gui
 import test_lite
 import groove_modes
 import groove_runtime
+from groove_version import __version__
 
 
 @unittest.skipUnless(os.name=='nt' or os.environ.get('DISPLAY'),'Tk display required')
@@ -19,7 +20,7 @@ class ModeTests(unittest.TestCase):
     def test_default_full_layout_and_blue_label_fit_through_resizing(self):
         a=self.app
         self.assertFalse(a.is_lite)
-        self.assertEqual(a.title().split(' - ')[0],'Groove Goblin 1.5')
+        self.assertEqual(a.title().split(' - ')[0],'Groove Goblin '+__version__)
         for width,height in ((800,600),(1088,550),(1920,1080),(900,650)):
             a.geometry(f'{width}x{height}');a.update();a._responsive.apply();a.update()
             for key in ('preview','player','opts'):self.assertTrue(a._responsive.w[key].winfo_ismapped(),key)
@@ -30,6 +31,13 @@ class ModeTests(unittest.TestCase):
                 x1,y1,x2,y2=b.bbox(label)
                 self.assertGreaterEqual(x1,4);self.assertGreaterEqual(y1,4)
                 self.assertLessEqual(x2,b.winfo_width()-4);self.assertLessEqual(y2,b.winfo_height()-4)
+                about=a.nav_buttons['about']
+                self.assertIs(b.master,about.master)
+                self.assertGreaterEqual(b.winfo_rooty(),about.winfo_rooty()+about.winfo_height())
+                sidebar=a._responsive.w['sidebar']
+                for widget in (b,a.sidebar_player_panel,a._responsive.version):
+                    self.assertGreaterEqual(widget.winfo_rooty(),sidebar.winfo_rooty())
+                    self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),sidebar.winfo_rooty()+sidebar.winfo_height())
         self.assertFalse(a.opt_filenames.get())
 
     def test_switch_blocked_while_busy_and_unsaved_cancel_keeps_current_app(self):
@@ -96,6 +104,10 @@ class MobileSwitchTests(unittest.TestCase):
     def test_mobile_settings_blue_button_shows_full_label_and_targets_desktop(self):
         a=self.app;a.geometry('360x640');a.update();a._responsive.apply();a.update();a.show_settings();a.update()
         b=a.settings_switch_button;self.assertTrue(b.winfo_ismapped());self.assertTrue(b.blue)
+        search=a.settings_search_button
+        self.assertEqual(b.winfo_width(),search.winfo_width())
+        self.assertEqual(b.winfo_height(),search.winfo_height())
+        self.assertGreaterEqual(b.winfo_rooty(),search.winfo_rooty()+search.winfo_height())
         label=b.find_withtag('blue-label')[0];self.assertEqual(b.itemcget(label,'text'),'Switch to Desktop Mode')
         x1,y1,x2,y2=b.bbox(label)
         self.assertGreaterEqual(x1,4);self.assertGreaterEqual(y1,4)

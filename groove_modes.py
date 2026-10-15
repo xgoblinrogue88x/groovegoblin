@@ -103,14 +103,8 @@ def switch_button(app,parent,target):
 def install_mode_switch(app):
     app._mode_switch=ModeSwitcher(app)
     if app.is_lite:return
-    # Keep the full desktop layout intact below a full-width mode action.
-    import tkinter as tk
-    app._page_row=1
-    app.content.rowconfigure(0,weight=0);app.content.rowconfigure(1,weight=1)
-    app.dashboard.grid_configure(row=1)
-    bar=tk.Frame(app.content,bg=BG);bar.grid(row=0,column=0,sticky='ew',pady=(0,6))
-    app.desktop_mode_button=switch_button(app,bar,'mobile')
-    app.desktop_mode_button.pack(fill='x')
+    app.desktop_mode_button=switch_button(app,app._responsive.w['nav'],'mobile')
+    app.desktop_mode_button.pack(fill='x',pady=(6,1))
 
 
 def register_ready(app):

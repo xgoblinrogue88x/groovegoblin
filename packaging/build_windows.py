@@ -153,7 +153,7 @@ def main():
     subprocess.run([sys.executable,'packaging/test_mode_handoff.py',str(app)],cwd=ROOT,check=True,timeout=180)
     # Never include test-generated undo/data in the portable ZIP.
     shutil.rmtree(app / 'Data', ignore_errors=True)
-    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-1.5-Windows-x64-Portable'), 'zip',
+    shutil.make_archive(str(ROOT / 'dist/GrooveGoblin-1.5.1-Windows-x64-Portable'), 'zip',
                         root_dir=ROOT / 'dist', base_dir='GrooveGoblin')
 
 

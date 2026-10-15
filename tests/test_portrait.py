@@ -95,3 +95,19 @@ class PortraitTests(unittest.TestCase):
         a.geometry('1088x550');a.update();a._responsive.apply();a.update();self.assertTrue(a._phone.active)
         a._phone.mode.set('Auto');a._responsive.apply();a.update();self.assertFalse(a._phone.active)
         self.assertEqual(self.errors,[])
+
+    def test_styled_navigation_popup_keeps_choices_and_changes_section(self):
+        a=self.phone(360,640);nav=a._phone.nav
+        self.assertEqual(tuple(nav.cget('values')),tuple(b.text for b in a.nav_buttons.values()))
+        self.assertEqual(nav.cget('style'),'Mobile.Nav.TCombobox')
+        a._phone.style_nav_popup()
+        popup=str(nav.tk.call('ttk::combobox::PopdownWindow',str(nav)))
+        self.assertEqual(nav.tk.call(popup+'.f.l','cget','-background'),'#101c23')
+        self.assertEqual(nav.tk.call(popup+'.f.l','cget','-selectforeground'),'#c0ffda')
+        nav.tk.call('ttk::combobox::Post',str(nav));a.update()
+        self.assertTrue(int(nav.tk.call('winfo','ismapped',popup)))
+        self.assertEqual(int(nav.tk.call(popup+'.f.l','size')),len(a.nav_buttons))
+        nav.tk.call('ttk::combobox::Unpost',str(nav))
+        nav.current(2);nav.event_generate('<<ComboboxSelected>>');a.update()
+        self.assertEqual(a._active_page,'tracks')
+        self.assertEqual(self.errors,[])

@@ -17,6 +17,12 @@ GREEN = '#72f98b'
 PURPLE = '#ab16ec'
 
 
+def has_focus(widget):
+    # Native ttk menus can own focus without a Python widget wrapper.
+    try:return widget.focus_get() is widget
+    except (KeyError,tk.TclError):return False
+
+
 def rounded(canvas, x1, y1, x2, y2, radius=5, **kw):
     r = min(radius, (x2-x1)/2, (y2-y1)/2)
     return canvas.create_polygon(x1+r,y1,x2-r,y1,x2,y1,x2,y1+r,x2,y2-r,
@@ -91,13 +97,14 @@ def icon(c, name, x, y, size=24, color=MUTED):
 class Button(tk.Canvas):
     def __init__(self, parent, text, command=None, *, width=140, height=44,
                  symbol=None, accent=None, subtitle='', primary=False, font=('Segoe UI',10),
-                 vertical=False, navigation=False, green_active=False, blue=False, **kw):
+                 vertical=False, navigation=False, green_active=False, blue=False, wrap_label=False, **kw):
         super().__init__(parent, width=width, height=height, bg=parent.cget('bg'),
                          highlightthickness=0, bd=0, takefocus=True, cursor='hand2', **kw)
         self.text=text;self.command=command;self.symbol=symbol;self.accent=accent
         self.subtitle=subtitle;self.primary=primary;self.font=font
         self.vertical=vertical;self.navigation=navigation;self.green_active=green_active;self.disabled=False;self.active=False
         self.blue=blue
+        self.wrap_label=wrap_label;self.min_label_height=48
         self.hover=False
         self.bind('<Configure>',lambda e:self.draw())
         self.bind('<Enter>',lambda e:self.set_hover(True))
@@ -131,6 +138,16 @@ class Button(tk.Canvas):
         if not self.disabled and self.command:
             self.focus_set();return self.command()
 
+    def label_height(self,width):
+        import tkinter.font as font
+        face=font.Font(master=self,font=self.font);available=max(1,width-24)
+        lines=1;line=''
+        for word in self.text.split():
+            candidate=(line+' '+word).strip()
+            if line and face.measure(candidate)>available:lines+=1;line=word
+            else:line=candidate
+        return max(48,lines*face.metrics('linespace')+16)
+
     def draw(self):
         self.delete('all')
         w=self.winfo_width() if self.winfo_width()>1 else int(self.cget('width'));h=self.winfo_height() if self.winfo_height()>1 else int(self.cget('height'))
@@ -155,21 +172,15 @@ class Button(tk.Canvas):
         self.create_image(0,0,anchor='nw',image=self._background)
         outline=GREEN if green_selected else ('#b229ef' if purple else LINE)
         if self.blue:outline='#59b9ff'
-        if self.focus_get() is self:outline=GREEN
+        if has_focus(self):outline=GREEN
         if not self.navigation or purple or self.hover:
             rounded(self,1,1,w-1,h-1,5,fill='',outline=outline,width=1)
         fg='#7d8998' if self.disabled else (BG if green_selected else FG)
-        if self.blue:
-            import tkinter.font as font
-            face=font.Font(master=self,font=self.font);available=max(1,w-24)
-            lines=1;line=''
-            for word in self.text.split():
-                candidate=(line+' '+word).strip()
-                if line and face.measure(candidate)>available:lines+=1;line=word
-                else:line=candidate
-            desired=max(48,lines*face.metrics('linespace')+16)
+        if self.blue or self.wrap_label:
+            available=max(1,w-24)
+            desired=max(self.min_label_height,self.label_height(w))
             if int(self.cget('height'))!=desired:tk.Canvas.configure(self,height=desired)
-            self.create_text(w/2,h/2,text=self.text,width=available,justify='center',font=self.font,fill=fg,tags='blue-label')
+            self.create_text(w/2,h/2,text=self.text,width=available,justify='center',font=self.font,fill=fg,tags='blue-label' if self.blue else 'wrapped-label')
             return
         col=self.accent or ('#ffffff' if purple else '#b3bfd7')
         if self.disabled:col='#647181'
@@ -222,7 +233,7 @@ class Check(tk.Canvas):
         rounded(self,3,mid-size/2,3+size,mid+size/2,2,fill=color,outline='#788c98' if not enabled else color,width=1)
         if enabled:icon(self,'check',6,mid-5,10,BG)
         self.create_text(27,mid,anchor='w',text=self.text,font=self.font,fill='#8291a2' if self.disabled and not enabled else FG)
-        if self.focus_get() is self:self.create_rectangle(0,1,max(self.winfo_width(),int(self.cget('width')))-1,24,outline=GREEN)
+        if has_focus(self):self.create_rectangle(0,1,max(self.winfo_width(),int(self.cget('width')))-1,24,outline=GREEN)
 
 
 class Radio(Check):

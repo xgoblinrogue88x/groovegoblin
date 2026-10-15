@@ -1,10 +1,10 @@
-Groove Goblin 1.5 for Windows 10/11 x64
+Groove Goblin 1.5.1 for Windows 10/11 x64
 
 - GrooveGoblin.exe: the full desktop layout from 1.3.3 with current stability fixes.
 - GrooveGoblinMobile.exe: launch Mobile Remote Mode directly for Android remote use.
 - Full desktop includes Preview Changes, Now Playing, rename options and Save Report.
-- Blue Switch to Mobile Remote Mode button above the desktop workspace.
-- Matching blue Switch to Desktop Mode button in Mobile Remote Settings.
+- Blue Switch to Mobile Remote Mode button directly below About in the desktop sidebar.
+- Matching blue Switch to Desktop Mode button below Search All Albums Online in Mobile Remote Settings, with equal width and height.
 - Button labels wrap to stay fully visible at narrow widths and native font sizes.
 
 Switching launches the other EXE and closes the old window only after startup is
@@ -33,3 +33,7 @@ still need hands-on checks; automated playback uses a dummy output.
 
 Application license: GPLv3. Notices and matching application/dependency sources
 accompany both downloads. Supported-format limits remain documented in About.
+
+The mobile workspace dropdown now uses an accented header, larger arrow, dark
+popup and clear selection highlight. Its seven choices and navigation behavior
+are unchanged. Sidebar sizing reserves room for the moved button and player.

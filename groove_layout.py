@@ -31,6 +31,10 @@ class PageNavigation:
         if lookup:a.lookup_page.refresh_albums()
         if page is a.tab_editor:a.album_entry.focus_set()
         if hasattr(a,'_phone'):a._responsive.schedule()
+        elif hasattr(a,'_responsive'):
+            # Section changes alter the footer height. Fit the sidebar to the
+            # resulting space immediately instead of waiting for a resize timer.
+            a.update_idletasks();a._responsive.apply()
 
 
 def install_layout(cls):
@@ -424,8 +428,6 @@ def install_layout(cls):
         self.settings_window=window
         target='desktop' if self.is_lite else 'mobile'
         from groove_modes import switch_button
-        self.settings_switch_button=switch_button(self,window,target)
-        self.settings_switch_button.pack(fill='x',padx=20,pady=(10,0))
         window.geometry('460x340')
         if hasattr(self,'_phone'):
             layout=tk.Frame(window,bg=BG);layout.pack(fill='x',padx=20,pady=(10,0))
@@ -439,7 +441,22 @@ def install_layout(cls):
             window.geometry('460x420')
         Check(window,'Search MusicBrainz after scan',self.auto_lookup,width=390,font=(self.ui_font,10)).pack(anchor='w',padx=20,pady=(20,5))
         tk.Label(window,text='Online searches send artist / album lookup text,\nnot audio files. Results can load public cover previews.\nTurn online scanning off to work offline.\n\nUndo journals save changed fields and paths.\nKeep separate music backups.',bg=BG,fg=MUTED,font=(self.ui_font,10),justify='left').pack(anchor='w',padx=20,pady=10)
-        Button(window,'Search All Albums Online',self.lookup_all,width=260,font=self.button_font).pack(anchor='w',padx=20)
+        actions=tk.Frame(window,bg=BG);actions.pack(fill='x',padx=20,pady=(0,10))
+        self.settings_search_button=Button(actions,'Search All Albums Online',self.lookup_all,width=260,height=48,
+            wrap_label=True,font=(self.ui_font,11,'bold'))
+        self.settings_search_button.pack(fill='x',pady=(0,6))
+        self.settings_switch_button=switch_button(self,actions,target)
+        self.settings_switch_button.pack(fill='x')
+        action_buttons=(self.settings_search_button,self.settings_switch_button)
+        def fit_actions(event):
+            if event.width<40:return
+            buttons=action_buttons
+            height=max(button.label_height(event.width) for button in buttons)
+            for button in buttons:
+                button.min_label_height=height
+                if int(button.cget('height'))!=height:button.configure(height=height)
+                else:button.draw()
+        actions.bind('<Configure>',fit_actions)
         if getattr(getattr(self,'_phone',None),'active',False):self._phone.fit_dialog(window,480)
 
     def add_files(self):

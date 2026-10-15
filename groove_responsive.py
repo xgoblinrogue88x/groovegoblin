@@ -104,13 +104,8 @@ class ResponsiveLayout:
         a.update_idletasks()
         player_height=max(226 if compact else (242 if medium else 252),
                           w['player'].body.winfo_reqheight()+w['player'].padding*2+2)
-        nav_height=(24 if compact else (36 if medium else 44))+2
-        logo_budget=max(48,height-len(a.nav_buttons)*nav_height-player_height-54)
-        logo_width=min(40 if compact else (174 if medium else 238),int(logo_budget*self.logo_source.width/self.logo_source.height))
-        if logo_width!=self.logo_size:
-            img=self.logo_source.copy();img.thumbnail((logo_width,320),Image.Resampling.LANCZOS)
-            a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
         self.version.grid()
+        self.version.grid_configure(pady=(0,4) if compact else (4,8))
         for name,button in a.nav_buttons.items():
             button.text=self.nav_text[name]
             # Keep the full navigation titles readable in the narrower sidebar.
@@ -119,7 +114,20 @@ class ResponsiveLayout:
             while button.text and font[1]>8 and tkfont.Font(master=a,font=(*font,'bold')).measure(button.text)>available:
                 font=(font[0],font[1]-1,*font[2:])
             button.font=font
-            button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 44));button.draw()
+            button.configure(width=sidebar_width-20,height=24 if compact else (36 if medium else 40));button.draw()
+            button.pack_configure(pady=0 if compact else 1)
+        mode_button=getattr(a,'desktop_mode_button',None)
+        if mode_button is not None:
+            mode_button.font=(a.ui_font,9 if compact else (10 if medium else 11),'bold')
+            mode_button.configure(width=sidebar_width-w['sidebar'].padding*2);mode_button.draw()
+        a.update_idletasks()
+        # Reserve the measured navigation (including the wrapped switch button)
+        # before sizing the logo, so the player and version stay inside the rail.
+        logo_budget=max(1,height-w['sidebar'].padding*2-w['nav'].winfo_reqheight()-player_height-6-self.version.winfo_reqheight()-(4 if compact else 12)-8)
+        logo_width=max(1,min(40 if compact else (174 if medium else 238),int(logo_budget*self.logo_source.width/self.logo_source.height)))
+        if logo_width!=self.logo_size:
+            img=self.logo_source.copy();img.thumbnail((logo_width,max(1,int(logo_budget))),Image.Resampling.LANCZOS)
+            a.logo=ImageTk.PhotoImage(img,master=a);a._logo_label.configure(image=a.logo);self.logo_size=logo_width
         w['player'].configure(height=player_height)
         w['player'].grid_configure(pady=(3,3))
 

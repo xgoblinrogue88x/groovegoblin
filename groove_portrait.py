@@ -57,15 +57,26 @@ class PortraitLayout:
         self.a=app;self.w=app._responsive.w;self.active=False;self.busy=False;self.view='Albums';self.track_view='Tracks'
         self.mode=tk.StringVar(value='Auto')
         app.minsize(360,540)
-        self.header=tk.Frame(app._desktop,bg=PANEL)
+        self.header=tk.Frame(app._desktop,bg='#101c23',highlightthickness=1,highlightbackground='#31545e')
         self.header.columnconfigure(1,weight=1)
         image=app._responsive.logo_source.copy()
         image.thumbnail((40,48),Image.Resampling.LANCZOS)
         self.logo=ImageTk.PhotoImage(image,master=app)
-        tk.Label(self.header,image=self.logo,bg=PANEL).grid(row=0,column=0,padx=(8,4),pady=4)
+        tk.Label(self.header,image=self.logo,bg='#101c23').grid(row=0,column=0,rowspan=2,padx=(8,4),pady=6)
+        self.nav_caption=tk.Label(self.header,text='WORKSPACE',bg='#101c23',fg=GREEN,font=(app.ui_font,8,'bold'),anchor='w')
+        self.nav_caption.grid(row=0,column=1,sticky='ew',padx=(12,10),pady=(6,2))
+        style=ttk.Style(app)
+        style.configure('Mobile.Nav.TCombobox',fieldbackground='#142932',background='#203f49',foreground=FG,
+            arrowcolor=GREEN,bordercolor='#426874',lightcolor='#426874',darkcolor='#426874',
+            padding=(12,8),arrowsize=20,borderwidth=1)
+        style.map('Mobile.Nav.TCombobox',fieldbackground=[('readonly','#142932')],foreground=[('readonly',FG)],
+            selectbackground=[('readonly','#142932')],selectforeground=[('readonly',FG)],
+            bordercolor=[('focus',GREEN),('active','#6bacba')],background=[('active','#2d535e')])
+        style.configure('Mobile.Nav.Popup.TFrame',background='#31545e',borderwidth=1,relief='flat')
         self.nav=ttk.Combobox(self.header,state='readonly',width=20,font=(app.ui_font,12),
-            values=[b.text for b in app.nav_buttons.values()])
-        self.nav.grid(row=0,column=1,sticky='ew',padx=8,pady=8)
+            style='Mobile.Nav.TCombobox',values=[b.text for b in app.nav_buttons.values()],height=7)
+        self.nav.configure(postcommand=self.style_nav_popup)
+        self.nav.grid(row=1,column=1,sticky='ew',padx=(10,8),pady=(0,8))
         self.nav.bind('<<ComboboxSelected>>',self.navigate)
         self.strip=tk.Frame(app.dashboard,bg=BG)
         self.strip_buttons=[]
@@ -120,6 +131,15 @@ class PortraitLayout:
         if index>=0:list(self.a.nav_buttons.values())[index].invoke()
         self.a._responsive.schedule()
 
+    def style_nav_popup(self):
+        popup=str(self.nav.tk.call('ttk::combobox::PopdownWindow',str(self.nav)))
+        self.nav.tk.call(popup+'.f','configure','-style','Mobile.Nav.Popup.TFrame')
+        self.nav.tk.call(popup+'.f.l','configure','-background','#101c23','-foreground',FG,
+            '-selectbackground','#24513e','-selectforeground','#c0ffda','-font',self.nav.cget('font'),
+            '-relief','flat','-borderwidth',0,'-highlightthickness',0,'-selectborderwidth',0,'-activestyle','none')
+        if self.nav.tk.call('winfo','exists',popup+'.f.sb'):
+            self.nav.tk.call(popup+'.f.sb','configure','-style','Vertical.Goblin.TScrollbar')
+
     def select(self,name):
         self.view=name;self.right.canvas.yview_moveto(0);self.apply()
 
@@ -148,6 +168,7 @@ class PortraitLayout:
             self.unit=max(1,min(2.4,a._desktop.winfo_width()/480,a._desktop.winfo_height()/900))
             px=lambda value:round(value*self.unit)
             self.nav.configure(font=(a.ui_font,px(12)))
+            self.nav_caption.configure(font=(a.ui_font,px(8),'bold'))
             for child in self.options.winfo_children():
                 if isinstance(child,Check):child.font=(a.ui_font,px(12));child.configure(height=px(44));child.draw()
                 elif isinstance(child,tk.Label):child.configure(font=(a.ui_font,px(11)),wraplength=max(280,a.winfo_width()-56))
