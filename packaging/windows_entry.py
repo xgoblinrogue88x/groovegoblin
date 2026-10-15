@@ -73,6 +73,9 @@ def main():
             if mobile:app._phone.mode.set('Auto')
             if app.app_mode=='lite' and hasattr(app,'_phone'):
                 raise RuntimeError('LITE EXE opened the Mobile layout.')
+            if os.name=='nt':
+                if not app.track_editor.file_drag.enabled:raise RuntimeError('Outgoing file drag is disabled.')
+                app.track_editor.file_drag.native_api()  # Verify the frozen native module and DLL entry points.
             # Startup state was checked above. Restore only for the resize
             # probes so geometry requests can exercise smaller windows too.
             app.state('normal');app.update()

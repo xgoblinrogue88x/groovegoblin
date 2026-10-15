@@ -1,7 +1,20 @@
-Groove Goblin Suite 1.6.1 for Windows 10/11 x64
+Groove Goblin Suite 1.7 for Windows 10/11 x64
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
+
+New in 1.7: drag selected tracks from Track Editor into Windows Explorer in all
+three modes. Disc/track numbers sort numerically; disc sorting also orders the
+tracks within each disc. Multi-selection stays intact when starting a drag.
+Ctrl copies, Shift moves and Esc cancels. Explorer owns transfers, collision
+dialogs and undo; selected unsaved edits must be saved/discarded first.
+
+Playback stops for the transfer. Same-volume moves update editor paths while
+preserving other tracks/staged edits and sort order. Files that cannot be
+followed (such as moves to another drive) are removed from the editor; add their
+destination to reload. Scan results for affected albums are invalidated so a
+stale organizer plan cannot be applied. Existing tag/rename undo stays unchanged.
+The new OLE work runs on an STA worker; no native drag callback calls Tk.
 
 Four EXEs share one complete runtime:
 - Launch Groove Goblin Suite.exe: full logo above three stacked purple launch buttons.

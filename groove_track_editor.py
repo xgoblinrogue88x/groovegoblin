@@ -4,6 +4,7 @@ import json
 import os
 import queue
 import threading
+import re
 from pathlib import Path
 from types import SimpleNamespace
 import tkinter as tk
@@ -25,7 +26,7 @@ class TrackEditor(tk.Frame):
     def __init__(self,app):
         super().__init__(app.content,bg=BG)
         self.app=app;self.storage_base=data_dir();self.records={};self.pending={};self.loading=False;self.photo=None;self.cover_cache={};self.list_cleared=False
-        self.player=MusicPlayer();self.seeking=False;self.timer=None;self.inline=None
+        self.player=MusicPlayer();self.seeking=False;self.timer=None;self.inline=None;self.sort_field=None;self.sort_reverse=False
         self.columnconfigure(0,weight=1);self.rowconfigure(1,weight=1)
         toolbar=tk.Frame(self,bg=BG);toolbar.grid(row=0,column=0,sticky='ew',pady=(0,6))
         tk.Label(toolbar,text='Track Editor',bg=BG,fg=GREEN,font=(app.ui_font,12,'bold')).pack(side='left',padx=(0,12))
@@ -53,7 +54,7 @@ class TrackEditor(tk.Frame):
         self.tree=ttk.Treeview(listing,columns=FIELDS,show='headings',selectmode='extended',style='Editor.Treeview')
         for field in FIELDS:
             self.tree.heading(field,text=LABELS[field],command=lambda f=field:self.sort(f))
-            self.tree.column(field,width=210 if field=='filename' else (60 if field in ('track','disc','year') else 145),minwidth=45,stretch=False)
+            self.tree.column(field,width=210 if field=='filename' else (92 if field=='disc' else (60 if field in ('track','year') else 145)),minwidth=45,stretch=False)
         self.tree.tag_configure('even',background='#0e181f')
         self.tree.tag_configure('odd',background=PANEL)
         self.tree.tag_configure('staged',foreground=GREEN)
@@ -67,6 +68,8 @@ class TrackEditor(tk.Frame):
         self.tree.bind('<<TreeviewSelect>>',self.selection_changed)
         self.tree.bind('<Double-1>',self.begin_inline)
         self.tree.bind('<Control-a>',self.select_all)
+        from groove_track_drag import TrackFileDrag
+        self.file_drag=TrackFileDrag(self)
         self.side_panel=Panel(self.body,padding=8,width=320)
         self.side_panel.grid(row=0,column=1,sticky='nsew')
         self.side=self.side_panel.body;self.side.columnconfigure(0,weight=1)
@@ -134,7 +137,7 @@ class TrackEditor(tk.Frame):
             self.checks[field].configure(width=93 if compact else 105,height=20 if compact else 24)
             self.checks[field].font=(self.app.ui_font,8 if compact else 9);self.checks[field].draw()
             self.entries[field].configure(font=(self.app.ui_font,8 if compact else 9))
-        self.track_hint.configure(text='Double-click to edit' if compact else 'Ctrl / Shift selects tracks · Double-click to edit · * staged')
+        self.track_hint.configure(text='Drag out · Double-click to edit' if compact else 'Ctrl / Shift selects tracks · Drag out to Windows · Double-click to edit')
         self.summary.configure(wraplength=width-16)
         self.help.configure(text='Check fields to set; blank clears a tag.' if compact else 'Checked fields apply to selected tracks.\nBlank checked fields clear that tag.')
         for button in (self.stage_button,self.discard_button):button.configure(height=28 if compact else 32)
@@ -154,8 +157,25 @@ class TrackEditor(tk.Frame):
         self.tree.selection_set(self.tree.get_children());return 'break'
 
     def sort(self,field):
-        for index,path in enumerate(sorted(self.tree.get_children(),key=lambda p:self.values(p).get(field,'').casefold())):
+        if self.app.worker_busy:return
+        self.sort_reverse=not self.sort_reverse if self.sort_field==field else False
+        self.sort_field=field;self.apply_sort()
+
+    def apply_sort(self):
+        if not self.sort_field:return
+        def natural(value):
+            return tuple((0,int(part)) if part.isdigit() else (1,part.casefold()) for part in re.split(r'(\d+)',str(value)))
+        def number(value):
+            value=str(value).split('/')[0].strip()
+            return (0,int(value)) if value.isdigit() else (1,natural(value))
+        def key(path):
+            values=self.values(path);field=self.sort_field;value=values.get(field,'')
+            primary=number(value) if field in ('disc','track') else natural(value)
+            return (primary,number(values.get('track','')),natural(values.get('filename',''))) if field=='disc' else (primary,)
+        for index,path in enumerate(sorted(self.tree.get_children(),key=key,reverse=self.sort_reverse)):
             self.tree.move(path,'',index)
+            tags=('even' if index%2==0 else 'odd',)+(('staged',) if path in self.pending else ())
+            self.tree.item(path,tags=tags)
 
     def refresh(self):
         selected=self.selected()
@@ -165,6 +185,7 @@ class TrackEditor(tk.Frame):
             values=[data.get(field,'') for field in FIELDS]
             if path in self.pending:values[0]='* '+values[0]
             self.tree.insert('','end',iid=path,values=values,tags=(('even' if index%2==0 else 'odd'),)+(('staged',) if path in self.pending else ()))
+        self.apply_sort()
         self.tree.selection_set([p for p in selected if p in self.records])
         self.track_count.configure(text=f'{len(self.records)} tracks · {len(self.pending)} staged')
         self.summary.configure(text=f'{len(self.pending)} tracks have unsaved changes' if self.pending else 'No staged changes')
@@ -182,8 +203,8 @@ class TrackEditor(tk.Frame):
                 self.vars[field].set(next(iter(values)) if len(values)==1 else '')
                 self.enabled[field].set(False)
         finally:self.loading=False
-        editable=bool(selected) and all(can_tag(p) for p in selected)
-        renameable=bool(selected) and all(can_rename(p) for p in selected)
+        editable=bool(selected) and not self.file_drag.active and all(can_tag(p) for p in selected)
+        renameable=bool(selected) and not self.file_drag.active and all(can_rename(p) for p in selected)
         for field in FIELDS:
             self.checks[field].disabled=not (renameable if field=='filename' else editable)
             self.checks[field].draw()
@@ -359,7 +380,8 @@ class TrackEditor(tk.Frame):
         self.app.queue.put(('manual_relocated',actual,folders,records))
 
     def handle_event(self,kind,*args):
-        if kind=='manual_loaded':
+        if kind=='manual_drag_finished':self.file_drag.finish(*args)
+        elif kind=='manual_loaded':
             if args[0]:self.list_cleared=False
             for path,record in args[0].items():
                 if path not in self.pending:self.records[path]=record
@@ -660,6 +682,7 @@ class TrackEditor(tk.Frame):
 
     def close(self,event):
         if event.widget is not self:return
+        self.file_drag.close()
         if self.timer:
             try:self.app.after_cancel(self.timer)
             except tk.TclError:pass

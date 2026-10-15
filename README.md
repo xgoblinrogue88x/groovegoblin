@@ -1,4 +1,4 @@
-# Groove Goblin Suite 1.6.1
+# Groove Goblin Suite 1.7
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -272,3 +272,27 @@ with Select All and a scrolling tag form. Tall forms scroll within their pane;
 navigation and primary actions stay reachable. Wide windows in Auto return to
 a compact mobile workspace. The full Desktop Mode is a separate process.
 Minimum mobile window: 360×540 Windows pixels.
+
+## Drag tracks from Track Editor into Windows folders
+
+In Desktop, LITE or Mobile Mode, click **Disc number** to group discs numerically
+(1, 2, …, 10). Tracks within each disc sort by track number. Click the heading
+again to reverse the sort. Ctrl-click or Shift-click to select the tracks you
+want, then drag any selected row into a folder in Windows Explorer. The whole
+selection travels together; one selected track works too. Hold Ctrl while
+dragging to copy, Shift to move, or Esc to cancel. Windows/Explorer chooses and
+performs the transfer, including its normal collision prompts and undo.
+
+Save or discard edits for selected tracks before dragging. Playback is stopped
+to release file locks. Groove Goblin does not rewrite audio or tags during a
+drag and never deletes sources merely because a target reports a move. After a
+same-volume move, the editor follows the files to their new paths and keeps the
+selection/sort. Unrelated staged edits and loaded tracks remain. If a moved file
+cannot be followed (for example a move to another drive), its stale row is
+removed; add the destination folder to load it again. Only organizer albums
+containing moved/unavailable tracks are removed from the stale scan results.
+
+Use **Explorer's undo** for Explorer moves; Groove Goblin's Undo buttons cover
+its own tagging/renaming operations. Native outgoing drag requires Windows and
+a target that accepts file drops. Remote touch/drag forwarding depends on your
+Windows App session's input mode.

@@ -216,6 +216,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
 
     def toggle_fullscreen(self): self.attributes('-fullscreen',not bool(self.attributes('-fullscreen')))
     def confirm_close(self):
+        if getattr(getattr(getattr(self,'track_editor',None),'file_drag',None),'active',False):
+            messagebox.showinfo('Windows file drag','Finish or cancel the Windows file drag before closing Groove Goblin.',parent=self);return
         if self.worker_busy and not messagebox.askyesno('Work in progress','A file operation, scan or lookup is running. Close Groove Goblin anyway?'):return
         if hasattr(self,'track_editor') and (self.track_editor.pending or self.track_editor.inline or any(v.get() for v in self.track_editor.enabled.values())):
             if not messagebox.askyesno('Unsaved track edits','Discard unsaved Track Editor changes and close?'):return

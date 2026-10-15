@@ -1,4 +1,4 @@
-Groove Goblin Suite 1.6.1 — Windows 10/11 x64
+Groove Goblin Suite 1.7 — Windows 10/11 x64
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -36,3 +36,9 @@ Application license: GPLv3 (LICENSE). ThirdParty holds dependency notices and
 Sources holds matching application/dependency sources. The bundled LGPL FFmpeg
 build excludes GPL/nonfree options and external codecs. Reproducible Windows
 build instructions are in the application source archive's packaging/README.md.
+
+TRACK EDITOR FILE DRAG: Sort by Disc number, select tracks with Ctrl/Shift and
+start dragging from any selected row into Explorer. Ctrl copies; Shift moves;
+Esc cancels. Save/discard selected unsaved edits first. Playback stops to release
+locks. Explorer handles collisions and file-move undo. Same-volume paths update;
+if a moved file cannot be followed, add its destination folder to reload it.
