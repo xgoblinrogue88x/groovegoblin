@@ -223,12 +223,13 @@ def write_fields(path,fmt,changes):
     else:audio.save()
 
 
-def snapshot_album(path,include_title=False):
+def snapshot_album(path,include_title=False,include_track=False):
     audio=open_audio(path);kind=family(audio);tags=audio.tags
     keys={'id3':['TALB','TDRC','TYER'],'mp4':['\xa9alb','\xa9day'],'asf':['WM/AlbumTitle','WM/Year'],
           'ape':['Album','Year'],'vorbis':['album','date','year']}[kind]
     if include_title:keys=[*keys,{'id3':'TIT2','mp4':'\xa9nam','asf':'Title','ape':'Title','vorbis':'title'}[kind]]
-    return {'format':'container','family':kind,'fields':{key:text_values(tags,key,kind) if tags is not None and key in tags else None for key in keys},
+    if include_track:keys=[*keys,{'id3':'TRCK','mp4':'trkn','asf':'WM/TrackNumber','ape':'Track','vorbis':'tracknumber'}[kind]]
+    return {'format':'container','family':kind,'fields':{key:([list(pair) for pair in tags[key]] if kind=='mp4' and key=='trkn' else text_values(tags,key,kind)) if tags is not None and key in tags else None for key in keys},
             'version':tags.version[1] if kind=='id3' and tags else 4,'tags_existed':tags is not None}
 
 
@@ -239,9 +240,10 @@ def restore_album(path,snapshot):
     for key,values in snapshot['fields'].items():
         if kind=='id3':
             tags.delall(key)
-            cls={'TALB':TALB,'TDRC':TDRC,'TYER':TYER,'TIT2':TIT2}[key]
+            cls={'TALB':TALB,'TDRC':TDRC,'TYER':TYER,'TIT2':TIT2,'TRCK':TRCK}[key]
             if values:tags.add(cls(encoding=3,text=values))
         elif values is None:remove_key(tags,key)
+        elif kind=='mp4' and key=='trkn':tags[key]=[tuple(pair) for pair in values]
         else:tags[key]=values
     if not snapshot['tags_existed'] and not tags:audio.delete()
     elif kind=='id3':audio.save(v2_version=snapshot.get('version',4))

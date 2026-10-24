@@ -1,4 +1,4 @@
-# Groove Goblin Suite 1.8
+# Groove Goblin Suite 1.8.2
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -152,7 +152,7 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
 
 Scanning, lookup and staging are read-only. Saves and organizer applies require
 confirmation. Manual edits touch only explicitly selected fields and front art;
-organizer tag updates touch album/year and verified song titles. Neither transcodes audio. Unrelated tags
+organizer tag updates touch album/year and verified song titles/track numbers. Neither transcodes audio. Unrelated tags
 and other artwork remain intact. Filename edits stay in the same directory and
 preserve the audio extension. Existing output paths and stale-file conflicts
 are rejected.
@@ -316,5 +316,16 @@ otherwise the names stay unchanged. Missing numbering, unavailable tracklists
 and lookup errors are explained in the apply confirmation; correct numbering
 or edit unresolved titles in Track Editor. Local album approval without an
 online tracklist keeps song titles unchanged. Turning off tag replacement in
-Desktop also keeps Title tags unchanged. Artist, track/disc tags, artwork,
+Desktop also keeps Title tags unchanged. Artist, disc tags, artwork,
 comments, ReplayGain and source audio are preserved.
+
+## 1.8.2: accepted album metadata
+
+After Album Lookup/Verify All, approve and Apply to write the accepted album
+name, year-only date (YYYY), song titles and verified track numbers in every
+mode. Track numbers are matched by unique song titles where possible, otherwise
+verified disc/track positions; unresolved or conflicting tracklists stay unchanged.
+Corrected numbers also feed filename presets. Track tags use plain numbers
+(1, 2, …); Undo restores previous numbering including totals or missing tags,
+full dates, names and titles. Desktop's tag replacement checkbox controls these
+writes; LITE/Mobile retain their enabled tag defaults. Lookup alone is read-only.

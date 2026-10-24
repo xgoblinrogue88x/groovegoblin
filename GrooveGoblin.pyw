@@ -515,7 +515,8 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             notes=list(dict.fromkeys(a['title_note'] for a in self.actions if self.opt_tags.get() and a.get('title_note','').startswith('Song titles unchanged')))
             messagebox.showinfo('Nothing to change','There are no approved changes to apply.'+('\n\n'+'\n'.join(notes[:4]) if notes else ''));return
         title_count=sum(t.get('needs_title',False) for a in tochange for t in a['tracks'])
-        title_summary=f'Update {title_count} song-title tags from matched release tracklists.\n'
+        track_count=sum(t.get('needs_track',False) for a in tochange for t in a['tracks'])
+        title_summary=f'Update {title_count} song-title tags from matched release tracklists.\nUpdate {track_count} track-number tags. Album tags use the accepted name; dates use YYYY only.\n'
         title_notes=[f'{a["album"]}: {a["title_note"]}' for a in tochange if a.get('title_note','').startswith('Song titles unchanged')]
         if self.opt_tags.get() and title_notes:
             title_summary+='\n'+'\n'.join(title_notes[:4])+ ('\n…' if len(title_notes)>4 else '')+'\n'

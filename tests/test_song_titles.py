@@ -134,10 +134,32 @@ class SongTitleTests(unittest.TestCase):
         for p in paths:
             if not can_tag(p):continue
             with self.subTest(container=p.suffix):
-                before=read_fields(p)['title'];snapshot=tag_snapshot(p,include_title=True)
-                set_tags(p,'Album','1998',title='Correct Song')
+                write_fields(p,p.suffix,{'track':'9/12'})
+                before=read_fields(p)['title'];snapshot=tag_snapshot(p,include_title=True,include_track=True)
+                set_tags(p,'Album','1998',title='Correct Song',track='1')
                 self.assertEqual(read_fields(p)['title'],'Correct Song')
+                self.assertEqual(read_fields(p)['track'],'1')
                 restore_tags(p,snapshot);self.assertEqual(read_fields(p)['title'],before)
+                self.assertEqual(read_fields(p)['track'],'9/12')
+
+    def test_full_date_is_normalized_even_when_album_and_year_already_match(self):
+        for ext in ('mp3','flac'):
+            p=(self.f.add_mp3('Date '+ext,'song.mp3','One',album='Correct Album',year='1998-06-15') if ext=='mp3' else self.f.add_flac('Date '+ext,'song.flac','One',album='Correct Album',year='1998-06-15'))
+            a=self.album([p.parent]);actions,issues=plan_actions([a],{'folders':False,'filenames':False})
+            self.assertFalse(issues);self.assertTrue(actions[0]['changed'])
+            journal=apply_actions(actions,self.f.root/'program',{})
+            self.assertEqual(read_fields(p)['year'],'1998')
+            self.assertFalse(undo_journal(journal));self.assertEqual(read_fields(p)['year'],'1998-06-15')
+
+    def test_missing_track_number_is_filled_from_unique_song_and_undo_removes_it(self):
+        p=self.f.add_flac('Missing Number','song.flac','Known Song')
+        tags=FLAC(p);tags.pop('tracknumber');tags.save()
+        a=self.album([p.parent]);self.releases([[['Known Song']]]);a.title_match=self.match(a)
+        self.assertEqual(a.title_match['numbers'],{str(p):'1'})
+        actions,issues=plan_actions([a],{'folders':False,'filenames':False});self.assertFalse(issues)
+        journal=apply_actions(actions,self.f.root/'program',{})
+        self.assertEqual(FLAC(p)['tracknumber'],['1'])
+        self.assertFalse(undo_journal(journal));self.assertNotIn('tracknumber',FLAC(p))
 
     def test_partial_title_write_failure_has_write_ahead_undo(self):
         from unittest.mock import patch
@@ -212,6 +234,28 @@ class TitleFlowTests(unittest.TestCase):
         self.assertEqual(approved.title_match['titles'],{str(p):'Correct Song'})
         self.assertEqual(approved.title_match['album'],'CORRECT ALBUM')
         self.assertEqual(p.read_bytes(),unchanged)
+
+    def test_accepted_lookup_repairs_track_album_and_year_tags_and_undo(self):
+        a=self.app;f=self.fixture;p=f.add_mp3('Numbered Album','old.mp3','Known Song',year='1998-06-15')
+        write_fields(p,'.mp3',{'track':'9/12'});original=read_fields(p)
+        a.matched,_=scan_folders([p.parent]);album=a.matched[0];a.album_map={album.uid:album};a.selected_id=album.uid
+        album.lookup_results=[{'id':'group','artist':album.artist,'title':'Accepted Album','year':'1998'}]
+        a.populate_albums();a.populate_results(album);a.results_tree.selection_set('0')
+        def get(endpoint,params):
+            return ({'releases':[{'id':'release','status':'Official'}]} if endpoint=='release/' else {'media':[{'position':1,'tracks':[{'position':1,'title':'Known Song'}]}]})
+        with patch.object(a.mb,'get',side_effect=get):a.use_result();self.wait()
+        self.assertEqual(album.title_match['numbers'],{str(p):'1'})
+        a.refresh_preview();action=a.actions[0];self.assertTrue(action['tracks'][0]['needs_track'])
+        q=Path(action['dest_folder'])/action['tracks'][0]['new_name']
+        with patch.object(self.module.messagebox,'askyesno',return_value=True) as confirm,patch.object(self.module.messagebox,'showinfo'):
+            a.apply();self.wait()
+            self.assertIn('Update 1 track-number tags',confirm.call_args.args[1])
+            fields=read_fields(q)
+            self.assertEqual((fields['track'],fields['album'],fields['year']),('1','Accepted Album','1998'))
+            self.assertEqual(fields['artist'],original['artist'])
+            a.undo();self.wait()
+        restored=read_fields(p)
+        self.assertEqual((restored['track'],restored['album'],restored['year']),('9/12',original['album'],'1998-06-15'))
 
     def test_manual_result_title_lookup_failure_and_stale_result_preserve_music(self):
         a=self.app;f=self.fixture;p=f.add_mp3('Album','old.mp3','Wrong');before=p.read_bytes()

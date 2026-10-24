@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from mutagen.flac import FLAC
-from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TDRC, TYER, TIT2
+from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TDRC, TYER, TIT2, TRCK
 from mutagen.mp3 import MP3
 from legacy_collections import match as legacy_match
 from groove_naming import (FILE_FORMATS, FOLDER_FORMATS, DEFAULT_FILE_FORMAT,
@@ -64,6 +64,7 @@ class Track:
     disc: Optional[int]
     signature: list
     tag_title: Optional[str]=None
+    tag_track: Optional[str]=None
 
 @dataclass
 class Album:
@@ -100,7 +101,7 @@ def inspect_track(path):
     year=data['year'];number=int_prefix(data['track']);disc=int_prefix(data['disc'])
     if not title:
         title=re.sub(r'^\s*(?:\d+[-_. ])?\d+\s*[-_. ]+','',p.stem).replace('_',' ').strip()
-    return Track(str(p),p.suffix.lower(),artist,albumartist,album,title,year,number,disc,file_signature(p),data['title'])
+    return Track(str(p),p.suffix.lower(),artist,albumartist,album,title,year,number,disc,file_signature(p),data['title'],data['track'])
 
 def majority(values):
     data=[v.strip() for v in values if v and v.strip()]
@@ -212,6 +213,7 @@ def plan_actions(albums,options):
         match_valid=(bool(a.mbid) and match.get('group_id')==a.mbid
                      and match.get('album')==a.album and match.get('artist')==a.artist)
         titles=match.get('titles',{}) if opts['tags'] and match_valid else {}
+        numbers=match.get('numbers',{}) if opts['tags'] and match_valid else {}
         try:
             occupied={p.name.casefold():p for p in Path(a.folder).iterdir()} if opts['filenames'] else {}
         except OSError as error:
@@ -219,10 +221,13 @@ def plan_actions(albums,options):
         for t in a.tracks:
             old_name=Path(t.path).name
             title=titles.get(t.path) or t.title
+            old_track=t.tag_track if t.tag_track is not None else str(t.number or '')
+            new_track=numbers.get(t.path,old_track)
+            needs_track=t.path in numbers and new_track!=old_track
             old_title=t.tag_title if t.tag_title is not None else t.title
             needs_title=bool(t.path in titles and title!=old_title)
             try:
-                new_name=filename_destination(replace(t,title=title),a.artist,opts.get('file_format',DEFAULT_FILE_FORMAT),a.album) if opts['filenames'] else old_name
+                new_name=filename_destination(replace(t,title=title,number=int(new_track) if t.path in numbers else t.number),a.artist,opts.get('file_format',DEFAULT_FILE_FORMAT),a.album) if opts['filenames'] else old_name
             except ValueError as error:
                 problems.append(f'{t.path}: {error}');bad=True;break
             if new_name.casefold() in names:
@@ -233,9 +238,10 @@ def plan_actions(albums,options):
             if opts['filenames'] and existing is not None and existing.resolve()!=Path(t.path).resolve():
                 # A destination may be another track's original filename; simultaneous rename is unsafe.
                 problems.append(f'{a.folder}: output filename already exists: {newpath}');bad=True;break
-            needs_tags=opts['tags'] and (needs_title or norm(t.album)!=norm(a.album) or year4(t.year)!=year4(a.year) or t.album!=a.album)
+            needs_tags=opts['tags'] and (needs_title or needs_track or t.year!=year4(a.year) or t.album!=a.album)
             tracks.append({'old_path':t.path,'old_name':old_name,'new_name':new_name,'signature':t.signature,
                            'title':title,'old_title':old_title,'needs_title':needs_title,
+                           'old_track':old_track,'new_track':new_track,'needs_track':needs_track,
                            'needs_tags':needs_tags,'old_album':t.album,'old_year':t.year})
         if any(t['needs_tags'] and not can_tag(t['old_path']) for t in tracks):
             problems.append(f'{a.folder}: raw AAC/PCM cannot store supported embedded tags; turn off Replace album / year tags to rename only');bad=True
@@ -246,29 +252,30 @@ def plan_actions(albums,options):
                         'title_note':match.get('note','') if match_valid else 'Song titles unchanged: verify a matching MusicBrainz tracklist first.'})
     return actions,problems
 
-# Targeted album/year and optional verified title only. Artist, track/disc, pictures, comments and ReplayGain are preserved.
-def tag_snapshot(path,include_title=False):
+# Targeted album/year and optional verified title/track only. Artist, disc, pictures, comments and ReplayGain are preserved.
+def tag_snapshot(path,include_title=False,include_track=False):
     p=Path(path)
-    if p.suffix.lower() not in {'.flac','.mp3'}:return snapshot_album(p,include_title=include_title)
+    if p.suffix.lower() not in {'.flac','.mp3'}:return snapshot_album(p,include_title=include_title,include_track=include_track)
     if p.suffix.lower()=='.flac':
         a=FLAC(str(p)); d={str(k).lower():list(v) for k,v in (a.tags or {}).items()}
-        return {'format':'flac','fields':{key:d.get(key) for key in ('album','date','year')+(('title',) if include_title else ())}}
+        return {'format':'flac','fields':{key:d.get(key) for key in ('album','date','year')+(('title',) if include_title else ())+(('tracknumber',) if include_track else ())}}
     try: id3=ID3(str(p))
     except ID3NoHeaderError: id3=ID3()
     fields={}
-    for key in ('TALB','TDRC','TYER')+(('TIT2',) if include_title else ()):
+    for key in ('TALB','TDRC','TYER')+(('TIT2',) if include_title else ())+(('TRCK',) if include_track else ()):
         frames=id3.getall(key)
         fields[key]=[list(map(str,f.text)) for f in frames]
     return {'format':'mp3','fields':fields,'id3_existed':bool(id3.keys()),'v2_major':id3.version[1] if id3.version[1] in (3,4) else 4}
 
-def set_tags(path,album,year,title=None):
+def set_tags(path,album,year,title=None,track=None):
     p=Path(path)
     if p.suffix.lower() not in {'.flac','.mp3'}:
-        write_fields(p,p.suffix.lower(),{'album':album,'year':year,**({'title':title} if title is not None else {})});return
+        write_fields(p,p.suffix.lower(),{'album':album,'year':year,**({'title':title} if title is not None else {}),**({'track':track} if track is not None else {})});return
     if p.suffix.lower()=='.flac':
         a=FLAC(str(p)); a['album']=[album];a['date']=[year]
         if 'year' in a:a['year']=[year]
         if title is not None:a['title']=[title]
+        if track is not None:a['tracknumber']=[track]
         a.save()
     else:
         try:id3=ID3(str(p))
@@ -278,6 +285,7 @@ def set_tags(path,album,year,title=None):
         id3.delall('TDRC');id3.add(TDRC(encoding=3,text=[year]))
         if id3.getall('TYER'):id3.delall('TYER');id3.add(TYER(encoding=3,text=[year]))
         if title is not None:id3.delall('TIT2');id3.add(TIT2(encoding=3,text=[title]))
+        if track is not None:id3.delall('TRCK');id3.add(TRCK(encoding=3,text=[track]))
         id3.save(str(p),v2_version=major)
 
 def restore_tags(path,snapshot):
@@ -293,7 +301,7 @@ def restore_tags(path,snapshot):
     else:
         try:id3=ID3(str(p))
         except ID3NoHeaderError:id3=ID3()
-        cls={'TALB':TALB,'TDRC':TDRC,'TYER':TYER,'TIT2':TIT2}
+        cls={'TALB':TALB,'TDRC':TDRC,'TYER':TYER,'TIT2':TIT2,'TRCK':TRCK}
         for key,v in d.items():
             id3.delall(key)
             for t in v:id3.add(cls[key](encoding=3,text=t))
@@ -350,13 +358,15 @@ def apply_actions(actions,app_base,options,callback=None):
                 need_tags=t['needs_tags'];rename_file=t['new_name']!=t['old_name']
                 if not need_tags and not rename_file:continue
                 src=Path(t['old_path']);dst=src.with_name(t['new_name'])
-                snapshot=tag_snapshot(src,include_title=t.get('needs_title',False)) if need_tags else None
+                snapshot=tag_snapshot(src,include_title=t.get('needs_title',False),include_track=t.get('needs_track',False)) if need_tags else None
                 rec={'old_name':src.name,'new_name':dst.name,'snapshot':snapshot,'tags_changed':False,'file_renamed':False}
                 entry['tracks'].append(rec);atomic_json(journal_path,journal)
                 if need_tags:
                     rec['tags_changed']=True;atomic_json(journal_path,journal)
-                    if t.get('needs_title'):set_tags(src,a['album'],a['year'],title=t['title'])
-                    else:set_tags(src,a['album'],a['year'])
+                    changes={}
+                    if t.get('needs_title'):changes['title']=t['title']
+                    if t.get('needs_track'):changes['track']=t['new_track']
+                    set_tags(src,a['album'],a['year'],**changes)
                 if rename_file:
                     rec['file_renamed']=True;atomic_json(journal_path,journal)
                     src.rename(dst)
@@ -428,6 +438,7 @@ def export_preview(actions,problems,destination):
             tags=('tag update' if t['needs_tags'] else 'tags unchanged')
             rows.append(f'  {t["old_name"]} -> {t["new_name"]} [{tags}]')
             if t.get('needs_title'):rows.append(f'    Title: {t["old_title"] or "(missing)"} -> {t["title"]}')
+            if t.get('needs_track'):rows.append(f'    Track: {t["old_track"] or "(missing)"} -> {t["new_track"]}')
         if a.get('title_note'):rows.append(a['title_note'])
         rows.append('')
     rows.extend(['Problems / skipped:']+[f'- {p}' for p in problems])

@@ -1,4 +1,12 @@
-Groove Goblin Suite 1.8 for Windows 10/11 x64
+Groove Goblin 1.8.2 updates accepted album tags, year-only dates (YYYY),
+verified song titles and track numbers in Desktop, LITE and Mobile. Unique song
+titles can identify missing/incorrect numbers; verified positions remain the
+fallback. Matching editions must agree. Preview and confirmation include number
+changes, naming presets use corrected numbers, and Undo restores previous
+numbering, full dates, titles and album names. Unrelated tags/art/audio remain
+intact. Verification alone stays read-only; approve and Apply to write.
+
+Groove Goblin Suite 1.8.2 for Windows 10/11 x64
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.

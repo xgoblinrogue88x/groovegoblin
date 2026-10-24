@@ -104,8 +104,9 @@ class MusicBrainz:
     def track_title_match(self,album,result,cancel=None):
         """Read-only title proposals; never pair files by their display order.
 
-        Release groups contain multiple editions. Require numbered, complete
-        discs (or an explicit partial selection), and consensus between matching
+        Release groups contain multiple editions. Match unique song names or
+        numbered positions, complete discs (or explicit file selections), and
+        require consensus between matching
         editions unless existing song titles clearly identify one tracklist.
         """
         match={'group_id':result.get('id',''),'album':result.get('title',''),
@@ -114,8 +115,6 @@ class MusicBrainz:
             match['note']='Song titles unchanged: '+reason
             return match
         if not match['group_id']:return unchanged('no MusicBrainz release selected.')
-        if any(not t.number or t.number<1 for t in album.tracks):
-            return unchanged('track numbers are missing; correct them in Track Editor and verify again.')
         if cancel and cancel.is_set():return unchanged('verification canceled.')
         data=self.get('release/',{'release-group':match['group_id'],'limit':12})
         releases=sorted((r for r in data.get('releases',[]) if r.get('status')=='Official' and r.get('id')),
@@ -143,20 +142,25 @@ class MusicBrainz:
             # A box-set disc can become a single-disc album without rewriting
             # its disc tag (e.g. Collection disc 4 -> Fair Warning disc 1).
             if sole_disc and len({t.disc for t in album.tracks if t.disc})>1:continue
-            local=[(sole_disc or t.disc,t.number) for t in album.tracks]
+            local=[]
+            for t in album.tracks:
+                hits=[p for p,title in positions.items() if key(t.title) and key(title)==key(t.title)
+                      and (sole_disc or not t.disc or p[0]==t.disc)]
+                local.append(hits[0] if len(hits)==1 else (sole_disc or t.disc,t.number))
             if len(set(local))!=len(local) or any(p not in positions for p in local):continue
             if not album.partial_selection and any(count!=counts[disc] for disc,count in Counter(d for d,n in local).items()):continue
             titles={t.path:positions[p] for t,p in zip(album.tracks,local)}
             score=sum(bool(key(t.title)) and key(t.title)==key(titles[t.path]) for t in album.tracks)
-            candidates.append((score,release['id'],titles))
-        if not candidates:return unchanged('no release fits the disc/track numbers and track counts; review in Track Editor.')
-        variants={tuple(sorted(titles.items())) for score,rid,titles in candidates}
+            numbers={t.path:str(p[1]) for t,p in zip(album.tracks,local)}
+            candidates.append((score,release['id'],titles,numbers))
+        if not candidates:return unchanged('track numbers are missing or no release fits the songs, disc/track numbers and track counts; review in Track Editor.')
+        variants={(tuple(sorted(titles.items())),tuple(sorted(numbers.items()))) for score,rid,titles,numbers in candidates}
         if len(variants)>1:
-            best=max(score for score,rid,titles in candidates)
+            best=max(score for score,rid,titles,numbers in candidates)
             candidates=[c for c in candidates if c[0]==best]
-            if best<max(2,(len(album.tracks)+1)//2) or len({tuple(sorted(c[2].items())) for c in candidates})>1:
+            if best<max(2,(len(album.tracks)+1)//2) or len({(tuple(sorted(c[2].items())),tuple(sorted(c[3].items()))) for c in candidates})>1:
                 return unchanged('release editions disagree on song names; review in Track Editor.')
-        match['titles']=candidates[0][2];match['release_id']=candidates[0][1]
+        match['titles']=candidates[0][2];match['numbers']=candidates[0][3];match['release_id']=candidates[0][1]
         match['note']=f'Song titles matched for {len(match["titles"])} tracks using disc/track numbers.'
         return match
 
