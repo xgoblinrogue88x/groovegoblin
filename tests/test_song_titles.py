@@ -235,6 +235,25 @@ class TitleFlowTests(unittest.TestCase):
         self.assertEqual(approved.title_match['album'],'CORRECT ALBUM')
         self.assertEqual(p.read_bytes(),unchanged)
 
+    def test_blank_flac_lookup_writes_all_six_fields_in_this_mode(self):
+        a=self.app;f=self.fixture;p=f.add_flac('Empty Album','01 - ACDC - Are You Ready.flac','')
+        keys=('title','album','year','track','artist','albumartist');write_fields(p,'.flac',{k:'' for k in keys})
+        before=p.read_bytes();a.roots=[str(p.parent)];a.matched,_=scan_folders(a.roots)
+        album=a.matched[0];a.album_map={album.uid:album};a.selected_id=album.uid
+        album.lookup_results=[{'id':'group','artist':'AC/DC','title':'The Razors Edge','year':'1990'}]
+        a.populate_albums();a.populate_results(album);a.results_tree.selection_set('0')
+        def get(endpoint,params):
+            return ({'releases':[{'id':'release','status':'Official'}]} if endpoint=='release/' else {'media':[{'position':1,'tracks':[{'position':1,'title':'Are You Ready','artist-credit':[{'name':'AC/DC'}]}]}]})
+        with patch.object(a.mb,'get',side_effect=get):a.use_result();self.wait()
+        self.assertEqual(p.read_bytes(),before);self.assertEqual(album.title_match['artists'],{str(p):'AC/DC'})
+        action=a.actions[0];q=Path(action['dest_folder'])/action['tracks'][0]['new_name']
+        with patch.object(self.module.messagebox,'askyesno',return_value=True),patch.object(self.module.messagebox,'showinfo') as info:
+            a.apply();self.wait();self.assertIn('tag writes verified for 1 files',info.call_args.args[1])
+            actual=read_fields(q)
+            self.assertEqual([actual[k] for k in keys],['Are You Ready','The Razors Edge','1990','1','AC/DC','AC/DC'])
+            a.undo();self.wait()
+        self.assertEqual([read_fields(p)[k] for k in keys],['']*6)
+
     def test_accepted_lookup_repairs_track_album_and_year_tags_and_undo(self):
         a=self.app;f=self.fixture;p=f.add_mp3('Numbered Album','old.mp3','Known Song',year='1998-06-15')
         write_fields(p,'.mp3',{'track':'9/12'});original=read_fields(p)
@@ -274,6 +293,9 @@ class TitleFlowTests(unittest.TestCase):
         # A failed title check must also be explained if folder/album tags
         # already match and there are no other changes to apply.
         a.opt_folders.set(False);a.opt_filenames.set(False)
+        write_fields(p,'.mp3',{'albumartist':album.artist})
+        from groove_core import inspect_track
+        album.tracks=[inspect_track(p)]
         album.album=album.tracks[0].album;album.year=album.tracks[0].year;album.mbid='group'
         album.title_match={'group_id':'group','album':album.album,'artist':album.artist,'titles':{},'note':'Song titles unchanged: lookup failed.'}
         with patch.object(self.module.messagebox,'showinfo') as info:

@@ -1,4 +1,4 @@
-# Groove Goblin Suite 1.8.2
+# Groove Goblin Suite 1.8.3
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -314,10 +314,10 @@ releases. Disc track counts must fit (except explicit file selections). If
 editions disagree, enough existing titles must identify a single tracklist;
 otherwise the names stay unchanged. Missing numbering, unavailable tracklists
 and lookup errors are explained in the apply confirmation; correct numbering
-or edit unresolved titles in Track Editor. Local album approval without an
-online tracklist keeps song titles unchanged. Turning off tag replacement in
-Desktop also keeps Title tags unchanged. Artist, disc tags, artwork,
-comments, ReplayGain and source audio are preserved.
+or edit unresolved titles in Track Editor. Existing song titles stay unchanged without an online tracklist; missing
+titles can be filled from filename hints after approval. Turning off tag replacement in
+Desktop also keeps Title tags unchanged. Disc tags, artwork, comments, ReplayGain and source audio are preserved.
+Version 1.8.3 also updates artist and album artist as described below.
 
 ## 1.8.2: accepted album metadata
 
@@ -329,3 +329,15 @@ Corrected numbers also feed filename presets. Track tags use plain numbers
 (1, 2, …); Undo restores previous numbering including totals or missing tags,
 full dates, names and titles. Desktop's tag replacement checkbox controls these
 writes; LITE/Mobile retain their enabled tag defaults. Lookup alone is read-only.
+
+## 1.8.3: embedded metadata, including blank tags
+
+Scan & Rename writes title, album, YYYY date, track number, artist and album
+artist when Write music tags is on (default). Explicit numbered filenames such
+as 01 - Artist - Title supply missing local title/number hints for review and
+online matching; scan never writes tags. Artist and album artist come from the
+approved album/track match. Compilation track artists are preserved unless a
+verified track artist is available. Apply reopens each file and checks all fields
+it wrote before renaming or reporting success. Undo restores the previous tags,
+including fields that were absent. Tag writing OFF is explicitly rename-only.
+Raw AAC/PCM cannot store supported embedded tags; CDA must be ripped first.

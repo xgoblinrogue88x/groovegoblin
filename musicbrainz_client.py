@@ -124,8 +124,8 @@ class MusicBrainz:
         candidates=[]
         for release in releases:
             if cancel and cancel.is_set():return unchanged('verification canceled.')
-            details=self.get('release/'+release['id'],{'inc':'recordings'})
-            media=details.get('media',[]);positions={};counts=Counter();valid=True
+            details=self.get('release/'+release['id'],{'inc':'recordings+artist-credits'})
+            media=details.get('media',[]);positions={};credits={};counts=Counter();valid=True
             for medium in media:
                 disc=medium.get('position')
                 if not isinstance(disc,int) or disc<1:valid=False;break
@@ -135,6 +135,9 @@ class MusicBrainz:
                         or not title.strip() or any(ord(c)<32 for c in title) or (disc,number) in positions):
                         valid=False;break
                     positions[disc,number]=title.strip();counts[disc]+=1
+                    ac=track.get('artist-credit') or track.get('recording',{}).get('artist-credit',[])
+                    credit=''.join(part if isinstance(part,str) else (part.get('name') or part.get('artist',{}).get('name',''))+part.get('joinphrase','') for part in ac).strip()
+                    if credit:credits[disc,number]=credit
             if not valid or not positions:continue
             # Missing disc tags are safe only for a single-disc release.
             if len(counts)>1 and any(not t.disc for t in album.tracks):continue
@@ -152,15 +155,16 @@ class MusicBrainz:
             titles={t.path:positions[p] for t,p in zip(album.tracks,local)}
             score=sum(bool(key(t.title)) and key(t.title)==key(titles[t.path]) for t in album.tracks)
             numbers={t.path:str(p[1]) for t,p in zip(album.tracks,local)}
-            candidates.append((score,release['id'],titles,numbers))
+            artists={t.path:credits[p] for t,p in zip(album.tracks,local) if p in credits}
+            candidates.append((score,release['id'],titles,numbers,artists))
         if not candidates:return unchanged('track numbers are missing or no release fits the songs, disc/track numbers and track counts; review in Track Editor.')
-        variants={(tuple(sorted(titles.items())),tuple(sorted(numbers.items()))) for score,rid,titles,numbers in candidates}
+        variants={(tuple(sorted(titles.items())),tuple(sorted(numbers.items()))) for score,rid,titles,numbers,artists in candidates}
         if len(variants)>1:
-            best=max(score for score,rid,titles,numbers in candidates)
+            best=max(score for score,rid,titles,numbers,artists in candidates)
             candidates=[c for c in candidates if c[0]==best]
             if best<max(2,(len(album.tracks)+1)//2) or len({(tuple(sorted(c[2].items())),tuple(sorted(c[3].items()))) for c in candidates})>1:
                 return unchanged('release editions disagree on song names; review in Track Editor.')
-        match['titles']=candidates[0][2];match['numbers']=candidates[0][3];match['release_id']=candidates[0][1]
+        match['titles']=candidates[0][2];match['numbers']=candidates[0][3];match['artists']={p:v for p,v in candidates[0][4].items() if all(c[4].get(p)==v for c in candidates)};match['release_id']=candidates[0][1]
         match['note']=f'Song titles matched for {len(match["titles"])} tracks using disc/track numbers.'
         return match
 

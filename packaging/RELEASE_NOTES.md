@@ -1,3 +1,10 @@
+Groove Goblin 1.8.3: fill and update embedded title, album, year, track, artist
+and album artist in every mode. Blank numbered Artist - Title files can provide
+reviewable hints. Tag writes are read back before renames/success reporting;
+failures stop with an undo journal. Tag writing OFF explicitly means rename-only.
+Existing audio, artwork and unrelated tags remain intact. Raw AAC/PCM/CDA retain
+their documented limitations.
+
 Groove Goblin 1.8.2 updates accepted album tags, year-only dates (YYYY),
 verified song titles and track numbers in Desktop, LITE and Mobile. Unique song
 titles can identify missing/incorrect numbers; verified positions remain the

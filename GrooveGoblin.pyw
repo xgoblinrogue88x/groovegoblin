@@ -290,7 +290,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                 elif typ=='apply_done':
                     self.log('APPLY COMPLETE. Undo journal: '+str(args[0]));self.status.set('Applied changes. Undo is available in Logs & Undo.')
                     self.matched=[];self.album_map={};self.populate_albums();self.refresh_preview();self.tabs.select(self.tab_history)
-                    messagebox.showinfo('Groove Goblin','Changes applied successfully. Undo information has been saved.')
+                    messagebox.showinfo('Groove Goblin',f'Changes applied. Embedded tag writes verified for {args[1]} files. Undo information has been saved.' if len(args)>1 and args[1] else 'Names updated only; no embedded tags were changed. Undo information has been saved.')
                 elif typ=='undo_done':
                     err=args[0]
                     if err: messagebox.showwarning('Undo partially completed','\n'.join(err[:12]));self.log('UNDO WARNINGS:\n'+'\n'.join(err))
@@ -516,7 +516,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             messagebox.showinfo('Nothing to change','There are no approved changes to apply.'+('\n\n'+'\n'.join(notes[:4]) if notes else ''));return
         title_count=sum(t.get('needs_title',False) for a in tochange for t in a['tracks'])
         track_count=sum(t.get('needs_track',False) for a in tochange for t in a['tracks'])
-        title_summary=f'Update {title_count} song-title tags from matched release tracklists.\nUpdate {track_count} track-number tags. Album tags use the accepted name; dates use YYYY only.\n'
+        title_summary=f'Update {title_count} song-title tags from verified matches or missing-tag filename hints.\nUpdate {track_count} track-number tags. Album tags use the accepted name; dates use YYYY only.\n'
         title_notes=[f'{a["album"]}: {a["title_note"]}' for a in tochange if a.get('title_note','').startswith('Song titles unchanged')]
         if self.opt_tags.get() and title_notes:
             title_summary+='\n'+'\n'.join(title_notes[:4])+ ('\n…' if len(title_notes)>4 else '')+'\n'
@@ -530,6 +530,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         else:confirmation=f'Apply changes to {len(tochange)} album folders?\n\n'+\
                   'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'+\
                   'An undo journal will be stored in the application Logs folder.\n'+title_summary+'\nProceed?'
+        confirmation+='\nMetadata tag writing: '+('ON — title, album, year, track, artist, album artist; writes are read back and checked.' if self.opt_tags.get() else 'OFF — rename files/folders only; no embedded tags will change.')
         if not messagebox.askyesno('Apply changes?',confirmation,icon='warning'):return
         self.track_editor.player.stop()
         actions=list(tochange);options=self.option_dict();loaded=list(self.track_editor.records)
@@ -538,7 +539,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             mappings={t['old_path']:str(Path(a['dest_folder'])/t['new_name']) for a in actions for t in a['tracks']}
             folders={a['folder']:a['dest_folder'] for a in actions}
             self.track_editor.relocate_worker(mappings,folders,loaded)
-            self.queue.put(('apply_done',path))
+            self.queue.put(('apply_done',path,sum(t['needs_tags'] for a in actions for t in a['tracks'])))
         self.run_background(work)
     def undo(self):
         path=newest_journal(DATA)

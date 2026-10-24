@@ -1,4 +1,4 @@
-# Groove Goblin 1.8.2 Windows packaging
+# Groove Goblin 1.8.3 Windows packaging
 
 The Windows workflow builds **Groove Goblin Desktop Mode.exe**, **Groove Goblin LITE Mode.exe**,
 **Groove Goblin Mobile Mode.exe**, **Launch Groove Goblin Suite.exe**, a portable ZIP and a per-user

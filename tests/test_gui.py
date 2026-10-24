@@ -417,7 +417,8 @@ class LayoutTests(unittest.TestCase):
             a.refresh_preview()
             rows = a.preview_tree.get_children()
             self.assertTrue(rows)
-            self.assertTrue(all(a.preview_tree.item(row, 'values')[0] == action for row in rows))
+            allowed={action} if action=='FOLDER' else {'TAGS','TITLE','TRACK','ARTIST','ALBUM ARTIST'}
+            self.assertTrue(all(a.preview_tree.item(row, 'values')[0] in allowed for row in rows))
         self.assertEqual(before, hashlib.sha256(media.read_bytes()).digest())
         a.clear()
         self.assertEqual(a.var_album.get(), '')
