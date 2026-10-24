@@ -174,7 +174,7 @@ class TitleFlowTests(unittest.TestCase):
 
     def test_verify_preview_apply_and_undo_titles_in_mode(self):
         from groove_manual import read_track
-        a=self.app;f=self.fixture;p=f.add_mp3('Album','old.mp3','Wrong');original=p.read_bytes()
+        a=self.app;f=self.fixture;p=f.add_mp3('Album','old.mp3','Wrong / Original');original=p.read_bytes()
         a.roots=[str(p.parent)];a.matched,_=scan_folders(a.roots);album=a.matched[0]
         a.album_map={album.uid:album};a.selected_id=album.uid;a.populate_albums()
         a.track_editor.records={str(p):read_track(p)};a.track_editor.refresh()
@@ -192,14 +192,16 @@ class TitleFlowTests(unittest.TestCase):
         if not a.is_lite:
             a.set_preview_filter('Tags')
             self.assertTrue(any('Correct Song' in str(row) for row in a.preview_tree.data.values()))
+            a.update();a.preview_tree.draw()
+            self.assertIn('Wrong / Original',[a.preview_tree.body.itemcget(i,'text') for i in a.preview_tree.body.find_all() if a.preview_tree.body.type(i)=='text'])
         with patch.object(self.module.messagebox,'askyesno',return_value=True) as confirm,patch.object(self.module.messagebox,'showinfo'):
             a.apply();self.wait()
             self.assertIn('Update 1 song-title tags',confirm.call_args.args[1])
             self.assertEqual(read_fields(q)['title'],'Correct Song');self.assertFalse(p.exists())
             self.assertEqual(a.track_editor.records[str(q)]['title'],'Correct Song')
             a.undo();self.wait()
-        self.assertTrue(p.exists());self.assertEqual(read_fields(p)['title'],'Wrong')
-        self.assertEqual(a.track_editor.records[str(p)]['title'],'Wrong')
+        self.assertTrue(p.exists());self.assertEqual(read_fields(p)['title'],'Wrong / Original')
+        self.assertEqual(a.track_editor.records[str(p)]['title'],'Wrong / Original')
         # An album approved locally may differ from the database only in case.
         # Keep that approved album/artist spelling while preparing song titles.
         a.matched,_=scan_folders([p.parent]);approved=a.matched[0]

@@ -510,7 +510,7 @@ class Table(tk.Frame):
                 self.checkbox(c,8,mid,row.get('enabled',True))
                 x=widths[0]
                 icon(c,'folder' if action=='FOLDER' else 'music',x+5,mid-10,20,'#ffca40')
-                self.text(c,x+35,mid,PathName(old),widths[1]-30)
+                self.text(c,x+35,mid,old if action=='TITLE' else PathName(old),widths[1]-30)
                 x+=widths[1];self.text(c,x+9,mid,PathName(new) if action=='FOLDER' else new,widths[2],GREEN if action!='SKIP' else '#ffce53', bold=True)
                 x+=widths[2];self.text(c,x+9,mid,row.get('files','—'),widths[3]);x+=widths[3]
                 self.badge(c,x+7,mid,('Skipped' if not row.get('enabled',True) else 'Review') if action=='SKIP' else (('Rename' if w<700 else 'Will Rename') if action in ('FOLDER','FILENAME') else ('Tag' if w<700 else 'Will Tag')),action!='SKIP',width=widths[-1]-8)
