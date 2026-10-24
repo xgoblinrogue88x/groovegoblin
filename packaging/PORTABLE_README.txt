@@ -1,4 +1,4 @@
-Groove Goblin Suite 1.7 — Windows 10/11 x64
+Groove Goblin Suite 1.8 — Windows 10/11 x64
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -42,3 +42,8 @@ start dragging from any selected row into Explorer. Ctrl copies; Shift moves;
 Esc cancels. Save/discard selected unsaved edits first. Playback stops to release
 locks. Explorer handles collisions and file-move undo. Same-volume paths update;
 if a moved file cannot be followed, add its destination folder to reload it.
+
+SONG TITLES: Verify All > Search MusicBrainz, review/approve, then Apply.
+Embedded Title tags and title-based filenames use the matched tracklist in all
+modes. Missing/ambiguous numbering or editions keep titles unchanged, explained
+in the apply confirmation. Desktop previews old/new titles; Undo restores them.

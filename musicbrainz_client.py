@@ -1,7 +1,7 @@
 """MusicBrainz public API client. Standard-library HTTPS, throttled to 1 req/sec.
 Online matching returns SUGGESTIONS and never writes files.
 """
-import json,re,time,threading,urllib.parse,urllib.request,urllib.error
+import json,re,time,threading,unicodedata,urllib.parse,urllib.request,urllib.error
 from collections import Counter
 from groove_core import norm, year4
 from groove_version import __version__
@@ -100,6 +100,65 @@ class MusicBrainz:
             best=max(best,len(want & actual)/len(want))
             if best>=0.94:break
         return best
+
+    def track_title_match(self,album,result,cancel=None):
+        """Read-only title proposals; never pair files by their display order.
+
+        Release groups contain multiple editions. Require numbered, complete
+        discs (or an explicit partial selection), and consensus between matching
+        editions unless existing song titles clearly identify one tracklist.
+        """
+        match={'group_id':result.get('id',''),'album':result.get('title',''),
+               'artist':result.get('artist') or album.artist,'titles':{},'note':''}
+        def unchanged(reason):
+            match['note']='Song titles unchanged: '+reason
+            return match
+        if not match['group_id']:return unchanged('no MusicBrainz release selected.')
+        if any(not t.number or t.number<1 for t in album.tracks):
+            return unchanged('track numbers are missing; correct them in Track Editor and verify again.')
+        if cancel and cancel.is_set():return unchanged('verification canceled.')
+        data=self.get('release/',{'release-group':match['group_id'],'limit':12})
+        releases=sorted((r for r in data.get('releases',[]) if r.get('status')=='Official' and r.get('id')),
+                        key=lambda r:r.get('date') or '9999')[:4]
+        def key(text):
+            return ''.join(c for c in unicodedata.normalize('NFKC',str(text)).casefold() if c.isalnum())
+        candidates=[]
+        for release in releases:
+            if cancel and cancel.is_set():return unchanged('verification canceled.')
+            details=self.get('release/'+release['id'],{'inc':'recordings'})
+            media=details.get('media',[]);positions={};counts=Counter();valid=True
+            for medium in media:
+                disc=medium.get('position')
+                if not isinstance(disc,int) or disc<1:valid=False;break
+                for track in medium.get('tracks',[]):
+                    number=track.get('position');title=track.get('title') or track.get('recording',{}).get('title')
+                    if (not isinstance(number,int) or number<1 or not isinstance(title,str)
+                        or not title.strip() or any(ord(c)<32 for c in title) or (disc,number) in positions):
+                        valid=False;break
+                    positions[disc,number]=title.strip();counts[disc]+=1
+            if not valid or not positions:continue
+            # Missing disc tags are safe only for a single-disc release.
+            if len(counts)>1 and any(not t.disc for t in album.tracks):continue
+            sole_disc=next(iter(counts)) if len(counts)==1 else None
+            # A box-set disc can become a single-disc album without rewriting
+            # its disc tag (e.g. Collection disc 4 -> Fair Warning disc 1).
+            if sole_disc and len({t.disc for t in album.tracks if t.disc})>1:continue
+            local=[(sole_disc or t.disc,t.number) for t in album.tracks]
+            if len(set(local))!=len(local) or any(p not in positions for p in local):continue
+            if not album.partial_selection and any(count!=counts[disc] for disc,count in Counter(d for d,n in local).items()):continue
+            titles={t.path:positions[p] for t,p in zip(album.tracks,local)}
+            score=sum(bool(key(t.title)) and key(t.title)==key(titles[t.path]) for t in album.tracks)
+            candidates.append((score,release['id'],titles))
+        if not candidates:return unchanged('no release fits the disc/track numbers and track counts; review in Track Editor.')
+        variants={tuple(sorted(titles.items())) for score,rid,titles in candidates}
+        if len(variants)>1:
+            best=max(score for score,rid,titles in candidates)
+            candidates=[c for c in candidates if c[0]==best]
+            if best<max(2,(len(album.tracks)+1)//2) or len({tuple(sorted(c[2].items())) for c in candidates})>1:
+                return unchanged('release editions disagree on song names; review in Track Editor.')
+        match['titles']=candidates[0][2];match['release_id']=candidates[0][1]
+        match['note']=f'Song titles matched for {len(match["titles"])} tracks using disc/track numbers.'
+        return match
 
     def suggest(self,album):
         """Guess conservatively from existing tags or recordings, always requires review unless verified."""

@@ -1,7 +1,7 @@
 """Groove Goblin - dark Windows GUI for multi-format music tagging.
 Run with Python 3.10+ and the packages in requirements.txt. Uses built-in tkinter; no cloud account.
 """
-import os, queue, sys, threading, traceback, json
+import os, queue, sys, threading, traceback, json, copy
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -262,6 +262,15 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                         self.populate_albums();self.refresh_preview()
                         if uid==self.selected_id:self.show_editor()
                         self.lookup_page.receive(uid,results)
+                elif typ=='title_match':
+                    uid,match=args
+                    if uid in self.album_map:
+                        album=self.album_map[uid]
+                        if (album.album==match['album'] and album.artist==match['artist']
+                            and (not album.mbid or album.mbid==match['group_id'])):
+                            album.mbid=match['group_id'];album.title_match=match
+                            self.refresh_preview()
+                            if uid==self.selected_id:self.show_editor()
                 elif typ=='lookup_canceled':
                     if args[0]==self.lookup_page.uid:self.lookup_page.info.set('Search canceled. You can search again.')
                     self.status.set('Album Lookup canceled.')
@@ -323,6 +332,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
     def worker_match_albums(self,albums,*,include_approved=False):
         searched=failed=missing=0
         for i,a in enumerate(albums,1):
+            a=copy.deepcopy(a)
             if self.cancel.is_set():break
             if a.approved and not include_approved:continue
             if not a.artist:
@@ -331,11 +341,24 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             try:
                 result,results=self.mb.suggest(a);searched+=1
                 self.queue.put(('suggest',a.uid,result,results))
+                chosen=({'id':a.mbid,'title':a.album,'artist':a.artist} if a.approved and a.mbid else result)
+                if chosen and (not a.approved or chosen.get('title')==a.album and (chosen.get('artist') or a.artist)==a.artist):
+                    self.worker_title_match(a,{**chosen,'artist':a.artist})
             except Exception as e:
                 failed+=1;self.queue.put(('log',f'Online lookup failed for {a.folder}: {e}'))
         summary=f'Online lookup: {searched} searched, {failed} failed, {missing} missing artist. '
         summary+='Canceled.' if self.cancel.is_set() else ('Check your connection and View Logs; you can retry.' if failed else 'Review suggestions before approving.')
         self.queue.put(('status',summary))
+    def worker_title_match(self,album,result):
+        self.queue.put(('status',f'Checking song titles: {album.artist} / {result["title"]}'))
+        try:match=self.mb.track_title_match(album,result,cancel=self.cancel)
+        except Exception as error:
+            self.queue.put(('log',f'Song-title lookup failed for {album.folder}: {error}'))
+            match={'group_id':result.get('id',''),'album':result['title'],'artist':album.artist,
+                   'titles':{},'note':'Song titles unchanged: lookup failed; check your connection and verify again.'}
+        if self.cancel.is_set():return
+        self.queue.put(('title_match',album.uid,match))
+        self.queue.put(('status',match['note']))
     def lookup_all(self):
         if not self.matched:messagebox.showinfo('Scan first','Scan music folders before searching online.');return
         albums=list(self.matched)
@@ -411,6 +434,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
         artist=self.var_artist.get().strip();album=self.var_album.get().strip();year=year4(self.var_year.get())
         if not artist or not album or not year:
             messagebox.showwarning('Missing match information','Enter an artist, an album name, and a valid four-digit release year.');return
+        if a.artist!=artist or a.album!=album:a.mbid='';a.title_match={}
         a.artist=artist;a.album=album;a.year=year;a.enabled=self.var_enabled.get()
         a.approved=True;a.match_source='Manually approved';a.confidence=1.0
         self.populate_albums();self.refresh_preview();self.status.set('Album approved. Review the preview below before applying.')
@@ -433,12 +457,15 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
             self.queue.put(('status',f'Found {len(hits)} possible release groups for {artist}.'))
         self.run_background(work)
     def use_result(self):
+        if self.worker_busy:return
         a=self.selected_album();selection=self.results_tree.selection()
         if not a or not selection:return
         r=a.lookup_results[int(selection[0])]
         if not r.get('year'):messagebox.showwarning('No original release year','This database entry has no earliest release year. Enter a year manually.');return
         self.var_artist.set(r['artist'] or a.artist);self.var_album.set(r['title']);self.var_year.set(r['year'])
-        self.save_match();a.match_source='MusicBrainz result chosen manually';a.mbid=r['id'];self.populate_albums()
+        self.save_match();a.match_source='MusicBrainz result chosen manually';a.mbid=r['id'];a.title_match={};self.populate_albums()
+        target=copy.deepcopy(a);result={**r,'artist':a.artist}
+        self.run_background(lambda:self.worker_title_match(target,result))
 
     def option_dict(self):return {'tags':self.opt_tags.get(),'folders':self.opt_folders.get(),'filenames':self.opt_filenames.get(),
                                   'file_format':self.file_format.get(),'folder_format':self.folder_format.get()}
@@ -457,6 +484,7 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                 if t['needs_tags']:
                     tags+=1
                     tree.insert('', 'end',values=('TAGS',t['old_name'],f'{a["album"]} ({a["year"]})',a['artist']))
+                    if t['needs_title']:tree.insert('', 'end',values=('TITLE',t['old_title'] or '(missing)',t['title'],t['old_name']))
                 if t['old_name']!=t['new_name']:
                     files+=1
                     tree.insert('', 'end',values=('FILENAME',t['old_name'],t['new_name'],Path(a['folder']).name))
@@ -482,17 +510,24 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                 messagebox.showwarning('Resolve review items','Approve or exclude unresolved albums before applying.\n\n'+'\n'.join(self.problems[:10]));return
             self.tabs.select(self.tab_preview)
             messagebox.showwarning('Resolve review items','Some enabled albums have no approved match or conflict with existing folders. Review the Preview Changes tab, or disable those albums.');return
-        if not tochange:messagebox.showinfo('Nothing to change','All selected albums already match your requested naming format.');return
+        if not tochange:
+            notes=list(dict.fromkeys(a['title_note'] for a in self.actions if self.opt_tags.get() and a.get('title_note','').startswith('Song titles unchanged')))
+            messagebox.showinfo('Nothing to change','There are no approved changes to apply.'+('\n\n'+'\n'.join(notes[:4]) if notes else ''));return
+        title_count=sum(t.get('needs_title',False) for a in tochange for t in a['tracks'])
+        title_summary=f'Update {title_count} song-title tags from matched release tracklists.\n'
+        title_notes=[f'{a["album"]}: {a["title_note"]}' for a in tochange if a.get('title_note','').startswith('Song titles unchanged')]
+        if self.opt_tags.get() and title_notes:
+            title_summary+='\n'+'\n'.join(title_notes[:4])+ ('\n…' if len(title_notes)>4 else '')+'\n'
         if self.is_lite:
             summary='\n'.join(f'{Path(a["folder"]).name} → {Path(a["dest_folder"]).name}' for a in tochange[:8])
             file_format=self.file_format.get() if self.opt_filenames.get() else 'Off'
             folder_format=self.folder_format.get() if self.opt_folders.get() else 'Off'
             confirmation=(f'Apply changes to {len(tochange)} albums?\n\nRename files: {file_format}\n'
-                f'Rename folders: {folder_format}\nReplace album / year tags and keep an undo journal.\n\n'
+                f'Rename folders: {folder_format}\nReplace album / year tags and keep an undo journal.\n'+title_summary+'\n'
                 +summary+('\n…' if len(tochange)>8 else '')+'\n\nProceed?')
         else:confirmation=f'Apply changes to {len(tochange)} album folders?\n\n'+\
                   'This will edit the enabled tag fields and possibly rename folders/files as previewed.\n'+\
-                  'An undo journal will be stored in the application Logs folder.\n\nProceed?'
+                  'An undo journal will be stored in the application Logs folder.\n'+title_summary+'\nProceed?'
         if not messagebox.askyesno('Apply changes?',confirmation,icon='warning'):return
         self.track_editor.player.stop()
         actions=list(tochange);options=self.option_dict();loaded=list(self.track_editor.records)

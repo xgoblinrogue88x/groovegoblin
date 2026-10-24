@@ -203,7 +203,8 @@ class LayoutTests(unittest.TestCase):
         page.refresh_albums();page.target.current(1);page.target.event_generate('<<ComboboxSelected>>');a.update()
         self.assertEqual(page.uid,album.uid)
         with patch.object(a.mb,'search_albums',return_value=[hit]):page.search_button.invoke();self.wait_lookup()
-        page.results.selection_set('0');page.choose_button.invoke();a.update()
+        with patch.object(a.mb,'track_title_match',return_value={'group_id':'mock','album':'Chosen Album','artist':'Test Artist','titles':{},'note':'Song titles unchanged: test fixture.'}):
+            page.results.selection_set('0');page.choose_button.invoke();self.wait_lookup()
         self.assertTrue(album.approved);self.assertEqual(album.album,'Chosen Album');self.assertEqual(album.year,'1998')
         self.assertTrue(a.actions);self.assertEqual({p:p.read_bytes() for p in paths},before)
         a.tabs.select(a.tab_albums);a.update();self.assertTrue(a.dashboard.winfo_ismapped())

@@ -332,7 +332,7 @@ def install_layout(cls):
         self.folder_format_box=ttk.Combobox(opts,textvariable=self.folder_format,values=list(FOLDER_FORMATS),state='readonly',font=(self.ui_font,9))
         self.folder_format_box.pack(fill='x',padx=(27,0),pady=(0,3))
         self.folder_format_box.bind('<<ComboboxSelected>>',lambda e:self.refresh_preview())
-        Check(opts,'Replace album / year tags',self.opt_tags,self.refresh_preview,width=320,font=(self.ui_font,9)).pack(anchor='w')
+        Check(opts,'Replace album / year / song titles',self.opt_tags,self.refresh_preview,width=320,font=(self.ui_font,9)).pack(anchor='w')
         Check(opts,'Keep an undo journal (always on)',self.journal_required,width=320,disabled=True,font=(self.ui_font,9)).pack(anchor='w')
 
         details=Panel(self.tab_editor,height=322,padding=11)
@@ -511,6 +511,8 @@ def install_layout(cls):
             for track in action['tracks']:
                 if track['needs_tags']:
                     tags+=1;rows.append(('TAGS',track['old_path'],f'{action["album"]} ({action["year"]})',action['artist'],{**common,'files':1}))
+                    if track['needs_title']:
+                        rows.append(('TITLE',track['old_title'] or '(missing)',track['title'],track['old_name'],{**common,'files':1}))
                 if track['old_name']!=track['new_name']:
                     filenames+=1;rows.append(('FILENAME',track['old_path'],track['new_name'],action['artist'],{**common,'files':1}))
         planned={action['album_uid'] for action in self.actions}
@@ -522,7 +524,7 @@ def install_layout(cls):
                 self.preview_tree.insert('','end',values=('SKIP',album.folder,'Skipped' if not album.enabled else ('Awaiting approval' if album.status!='READY' else 'Review naming / metadata'),album.match_source),album_uid=album.uid,files=album.file_count,enabled=album.enabled)
         else:
             for kind,old,new,detail,extra in rows:
-                if chosen and kind!=chosen:continue
+                if chosen and kind!=chosen and not (chosen=='TAGS' and kind=='TITLE'):continue
                 if self.preview_view.get()=='Selected' and extra['album_uid']!=self.selected_id:continue
                 self.preview_tree.insert('','end',values=(kind,old,new,detail),**extra)
         counts={'Folders':folders,'Tags':tags,'Filenames':filenames,'Skipped':len(skipped)}

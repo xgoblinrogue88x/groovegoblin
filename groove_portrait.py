@@ -96,7 +96,7 @@ class PortraitLayout:
             self.rename_controls.append((combo,var))
         for text,var,command in (('Scan subfolders',app.scan_subfolders,None),('Search online after scan',app.auto_lookup,None),('Show only problems',app.show_problems,app.populate_albums)):
             check=Check(self.options,text,var,command,width=20,font=(app.ui_font,12));check.configure(height=44);check.pack(fill='x',padx=8)
-        tk.Label(self.options,text='Album grouping, album/year tag replacement and undo journaling stay on. Scanning never changes music.',bg=PANEL,fg=MUTED,font=(app.ui_font,11),wraplength=300,justify='left').pack(fill='x',padx=12,pady=12)
+        tk.Label(self.options,text='Album grouping, album/year/song-title tag replacement and undo journaling stay on. Scanning never changes music.',bg=PANEL,fg=MUTED,font=(app.ui_font,11),wraplength=300,justify='left').pack(fill='x',padx=12,pady=12)
         self.cancel=Button(self.options,'Cancel Current Search',app.cancel_search,width=20,height=44,font=(app.ui_font,11))
         self.cancel.pack(fill='x',padx=8,pady=8)
         self.multi=Button(app.tab_albums,'Select Multiple',self.toggle_multi,width=140,height=40,font=(app.ui_font,10),green_active=True)

@@ -1,7 +1,16 @@
-Groove Goblin Suite 1.7 for Windows 10/11 x64
+Groove Goblin Suite 1.8 for Windows 10/11 x64
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
+
+New in 1.8: verified song titles update embedded Title tags in Desktop, LITE and
+Mobile. Verify with MusicBrainz or choose an album result, approve and apply.
+Numbered tracks/discs and release track counts must fit. Matching editions must
+agree, or existing titles must identify one tracklist. Ambiguous/missing
+numbering and lookup failures keep titles unchanged, with an apply warning.
+Desktop previews old/new titles; every mode confirms the update count. Naming
+presets use corrected titles. Undo restores original, missing and multi-value
+titles. Artist/track/disc tags, artwork, comments, ReplayGain and audio stay intact.
 
 New in 1.7: drag selected tracks from Track Editor into Windows Explorer in all
 three modes. Disc/track numbers sort numerically; disc sorting also orders the
@@ -31,7 +40,7 @@ Settings can scroll in short windows; the launcher and buttons resize.
 All modes use the current scanning, playback, file-format, scrolling,
 collision/stale-file protection, confirmation and undo code. Desktop defaults
 file renaming off; LITE and Mobile retain independent rename checkboxes on by
-default. Scanning/searching remain read-only. No new music-writing behavior.
+default. Scanning/searching remain read-only. Only approved album/year and matched song-title fields are changed.
 
 Switches and launcher choices close the old window only after the new EXE
 acknowledges startup. Failed startup keeps the current window open. Active work

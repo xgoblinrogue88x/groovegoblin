@@ -1,4 +1,4 @@
-# Groove Goblin Suite 1.7
+# Groove Goblin Suite 1.8
 
 Desktop, LITE and Mobile open maximized on Windows, including when switching modes.
 The suite launcher keeps its normal window size. Windows can still be restored and resized.
@@ -152,7 +152,7 @@ scanned list. A drop while this screen is open scans and imports the new tracks.
 
 Scanning, lookup and staging are read-only. Saves and organizer applies require
 confirmation. Manual edits touch only explicitly selected fields and front art;
-organizer tag updates touch album/year. Neither transcodes audio. Unrelated tags
+organizer tag updates touch album/year and verified song titles. Neither transcodes audio. Unrelated tags
 and other artwork remain intact. Filename edits stay in the same directory and
 preserve the audio extension. Existing output paths and stale-file conflicts
 are rejected.
@@ -296,3 +296,25 @@ Use **Explorer's undo** for Explorer moves; Groove Goblin's Undo buttons cover
 its own tagging/renaming operations. Native outgoing drag requires Windows and
 a target that accepts file drops. Remote touch/drag forwarding depends on your
 Windows App session's input mode.
+
+## Verified song-title tags (all modes)
+
+In **Verify All**, choose **Search MusicBrainz**, review the album match, then
+**Approve Current Suggestions** and **Apply**. Choosing a result in Album Lookup
+also checks its song titles. Verification and preview remain read-only. Apply
+updates embedded Title tags from the matched release tracklist, and file naming
+presets use those corrected titles too. Desktop shows old/new titles in the
+File Tags preview; every mode's apply confirmation reports the title-update count.
+Undo restores the original titles (including missing or multi-value titles),
+album/year tags and file/folder names. Loaded Track Editor titles refresh too.
+
+Titles are paired by track/disc numbers, never by filename or current row order.
+Matching checks up to four official editions from the first twelve returned
+releases. Disc track counts must fit (except explicit file selections). If
+editions disagree, enough existing titles must identify a single tracklist;
+otherwise the names stay unchanged. Missing numbering, unavailable tracklists
+and lookup errors are explained in the apply confirmation; correct numbering
+or edit unresolved titles in Track Editor. Local album approval without an
+online tracklist keeps song titles unchanged. Turning off tag replacement in
+Desktop also keeps Title tags unchanged. Artist, track/disc tags, artwork,
+comments, ReplayGain and source audio are preserved.

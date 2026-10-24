@@ -1,5 +1,5 @@
 """One version string for the window, About, journals and network user agent."""
-__version__ = '1.7'
+__version__ = '1.8'
 
 MODE_LABELS = {'desktop':'Desktop Mode','lite':'LITE Mode','mobile':'Mobile Mode'}
 MODE_EXECUTABLES = {mode:'Groove Goblin '+label+'.exe' for mode,label in MODE_LABELS.items()}
