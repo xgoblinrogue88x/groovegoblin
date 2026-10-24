@@ -342,8 +342,9 @@ class GrooveGoblin(FolderDropMixin, tk.Tk):
                 result,results=self.mb.suggest(a);searched+=1
                 self.queue.put(('suggest',a.uid,result,results))
                 chosen=({'id':a.mbid,'title':a.album,'artist':a.artist} if a.approved and a.mbid else result)
-                if chosen and (not a.approved or chosen.get('title')==a.album and (chosen.get('artist') or a.artist)==a.artist):
-                    self.worker_title_match(a,{**chosen,'artist':a.artist})
+                if chosen and (not a.approved or chosen.get('title','').casefold()==a.album.casefold()
+                               and (chosen.get('artist') or a.artist).casefold()==a.artist.casefold()):
+                    self.worker_title_match(a,{**chosen,'artist':a.artist,'title':a.album if a.approved else chosen['title']})
             except Exception as e:
                 failed+=1;self.queue.put(('log',f'Online lookup failed for {a.folder}: {e}'))
         summary=f'Online lookup: {searched} searched, {failed} failed, {missing} missing artist. '

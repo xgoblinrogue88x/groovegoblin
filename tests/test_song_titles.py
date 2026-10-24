@@ -200,6 +200,16 @@ class TitleFlowTests(unittest.TestCase):
             a.undo();self.wait()
         self.assertTrue(p.exists());self.assertEqual(read_fields(p)['title'],'Wrong')
         self.assertEqual(a.track_editor.records[str(p)]['title'],'Wrong')
+        # An album approved locally may differ from the database only in case.
+        # Keep that approved album/artist spelling while preparing song titles.
+        a.matched,_=scan_folders([p.parent]);approved=a.matched[0]
+        approved.album='CORRECT ALBUM';approved.artist=approved.artist.upper();approved.approved=True
+        a.album_map={approved.uid:approved};unchanged=p.read_bytes()
+        with patch.object(a.mb,'suggest',return_value=(result,[result])),patch.object(a.mb,'get',side_effect=get):
+            a.lookup_all();self.wait()
+        self.assertEqual(approved.title_match['titles'],{str(p):'Correct Song'})
+        self.assertEqual(approved.title_match['album'],'CORRECT ALBUM')
+        self.assertEqual(p.read_bytes(),unchanged)
 
     def test_manual_result_title_lookup_failure_and_stale_result_preserve_music(self):
         a=self.app;f=self.fixture;p=f.add_mp3('Album','old.mp3','Wrong');before=p.read_bytes()
